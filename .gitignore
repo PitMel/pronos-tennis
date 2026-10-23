@@ -1,0 +1,15 @@
+# Secrets : ne jamais les enregistrer dans ce dépôt public
+.env
+.env.*
+*.key
+*.pem
+secrets*
+# Réponses brutes de l'API enregistrées sur le poste de Pierre
+reponses_api/
+# Outils et systèmes
+node_modules/
+*.log
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/settings.json
