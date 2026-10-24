@@ -12,8 +12,8 @@ Règles de travail de Pierre : tout reste gratuit ; jamais de clé ni de secret 
 | 0 — Prérequis | Dépôt GitHub (public) et projet Supabase (Europe) créés. Git et Node.js installés sur le PC de Pierre, dépôt cloné et à jour. L'application GitHub « Claude » est installée : Claude peut pousser. |
 | 1.1 — Moteur de points + tests | **Fait** : 76 tests. |
 | 1.2 — Schéma Supabase, sécurité, comptes | **Fait et installé sur le vrai projet** : migration 0001 (11 tables, RLS) ; 4 comptes Auth créés par Pierre ; profils créés (`supabase/comptes.sql`) : **Pierre** administrateur (groupe réel), **André, Paul, Jacques** faux comptes (groupe test). |
-| 1.3 — Tests de sécurité | **Fait** : 70 tests de simulation (+ 19 pour la correction) et `supabase/verification-securite.sql` joué sur le vrai projet : **88 vérifications OK, 0 échec**, tout annulé (aucune donnée résiduelle). À rejouer après chaque migration. |
-| 1.4 — Correction par l'administrateur (migration 0002) | **Fait et installé sur le vrai projet** (voir section ci-dessous). 19 tests ; 25 failles volontaires introduites, 24 détectées, 1 redondance voulue. |
+| 1.3 — Tests de sécurité | **Fait** : 70 tests de simulation (+ 19 pour la correction) et `supabase/verification-securite.sql` joué sur le vrai projet : **89 vérifications OK, 0 échec**, tout annulé (aucune donnée résiduelle). À rejouer après chaque migration. |
+| 1.4 — Correction par l'administrateur (migration 0002) | **Fait et installé sur le vrai projet** (0002 + 0003, voir section ci-dessous). 19 tests ; 25 failles volontaires introduites, 24 détectées, 1 redondance voulue. |
 | 2 à 6 | À faire (cahier des charges, section 15). |
 
 Total : 165 tests, tous verts (`npm install` puis `npm test`, environ 1 minute).
@@ -54,12 +54,12 @@ Total : 165 tests, tous verts (`npm install` puis `npm test`, environ 1 minute).
 
 ## Migration 0002 — correction par l'administrateur (fait, installé et vérifié)
 
-**Fichiers** : `supabase/migrations/0002_correction_admin.sql`, `tests/securite/correction-admin.test.js`.
+**Fichiers** : `supabase/migrations/0002_correction_admin.sql`, `supabase/migrations/0003_admin_corrige_son_pari.sql` (retire l'interdiction de corriger son propre pari), `tests/securite/correction-admin.test.js`.
 - **Fonctions** (administrateur seulement, vérifié dans la fonction) : `admin_saisir_pari(match, joueur, choix, confiance, sets, motif)` et `admin_saisir_pari_tournoi(tournoi, joueur, vainqueur, finaliste, motif)`. Elles créent ou remplacent le pari d'un joueur **même après le match et la révélation**, et renvoient seulement `cree` ou `remplace` (jamais le contenu d'un pari : écriture « à l'aveugle »).
 - **Mention** : colonnes `corrige_par_admin` et `corrige_le` sur `bets` et `tournament_bets`, visibles avec le pari. Droits d'écriture limités par colonne : ni un joueur ni l'administrateur (hors fonctions) ne peuvent les écrire.
 - **Journal** : table `corrections_admin` (fermée), lue par l'administrateur seulement via la vue `corrections_admin_visibles` ; « avant » et « après » ne s'affichent que si le pari est révélé ou appartient à un faux compte.
 - **Résultats** : tout changement de statut, vainqueur, sets, score, fin de match ou neutralisation par l'administrateur connecté pose `matches.modifie_manuellement` ; la synchronisation (sans identité) ne le pose pas.
-- **Choix de conception (à signaler à Pierre)** : l'administrateur ne corrige pas son propre pari ; pas de correction dans un tournoi clos (le rouvrir d'abord) ; une correction du pari tournoi peut désigner un joueur déjà éliminé (le joueur avait parié avant) — cette dérogation n'est active que dans la fonction et pour l'administrateur ; les confiance 6–10, choix 1/2 et sets en Grand Chelem restent contrôlés.
+- **Choix de conception (à signaler à Pierre)** : l'administrateur **peut corriger son propre pari** (décision de Pierre du 24 oct., migration 0003 ; la mention « corrigé par l'administrateur » reste visible de tous et le journal est tenu) ; pas de correction dans un tournoi clos (le rouvrir d'abord) ; une correction du pari tournoi peut désigner un joueur déjà éliminé (le joueur avait parié avant) — cette dérogation n'est active que dans la fonction et pour l'administrateur ; les confiance 6–10, choix 1/2 et sets en Grand Chelem restent contrôlés.
 - **Deux vues** (page joueur identique pour tous / page administrateur séparée) : à construire à l'étape interface ; la sécurité réelle est déjà dans la base.
 
 ## Décisions prises (en plus du cahier des charges)
@@ -71,7 +71,7 @@ Par Pierre, 23 octobre 2026 :
 - Affichage du score en trois étapes (avant bonus vainqueur/finaliste, après, après bonification 1er/2e).
 - Égalités à 3 ou plus : valeur exacte en fraction (5/3), arrondi à l'affichage seulement (1,67).
 
-Par Pierre, 24 octobre 2026 : l'administrateur peut réécrire un pari de vrai joueur ou en saisir un manquant, même après le match, avec mention « corrigé par l'administrateur » ; deux vues séparées ; clôture automatique « tournoi clos » (finale terminée et comptée ; l'administrateur peut forcer, corriger, rouvrir) acceptée.
+Par Pierre, 24 octobre 2026 : l'administrateur peut aussi corriger son propre pari ; l'administrateur peut réécrire un pari de vrai joueur ou en saisir un manquant, même après le match, avec mention « corrigé par l'administrateur » ; deux vues séparées ; clôture automatique « tournoi clos » (finale terminée et comptée ; l'administrateur peut forcer, corriger, rouvrir) acceptée.
 
 Choix de conception faits par Claude (à signaler à Pierre s'ils le gênent) :
 - L'administrateur lit la table brute `matches` (nécessaire pour corriger résultats et statuts) : en tant que joueur, il peut donc voir un résultat avant la révélation. Aucun pari n'est concerné.

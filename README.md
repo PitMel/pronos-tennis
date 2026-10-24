@@ -13,6 +13,7 @@ Plateforme gratuite de pronostics entre amis sur le simple messieurs ATP (14 tou
 | `tests/` | Tests du moteur (exemples de la section 13 du cahier des charges et toutes les règles des sections 4 à 8) |
 | `supabase/migrations/` | Schéma de la base, règles de sécurité et révélation des paris (SQL, à exécuter dans Supabase) |
 | `supabase/migrations/0002_correction_admin.sql` | Correction par l'administrateur : paris réécrits ou saisis à la place d'un joueur, mention « corrigé », journal |
+| `supabase/migrations/0003_admin_corrige_son_pari.sql` | L'administrateur peut aussi corriger son propre pari (avec mention et journal) |
 | `supabase/comptes.sql` | Création des profils (administrateur et faux comptes) après création des utilisateurs dans Supabase |
 | `supabase/verification-securite.sql` | Vérification de sécurité à lancer sur la VRAIE base (comptes fictifs, tentatives d'accès interdit, tout est annulé à la fin) |
 | `tests/securite/` | Tests de sécurité : rejouent la migration dans une base PostgreSQL embarquée et tentent des accès interdits |

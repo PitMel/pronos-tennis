@@ -50,12 +50,21 @@ test('un administrateur désactivé perd le droit de corriger', async () => {
   }
 });
 
-test('l’administrateur ne corrige pas son propre pari', async () => {
+test('l’administrateur corrige son propre pari : mention posée, visible des autres, journal tenu', async () => {
   const m = await matchSansLea();
-  await refuse(corriger(ID.pierre, m, ID.pierre, 2, 10), /propre pari/);
-  await refuse(corrigerTournoi(ID.pierre, TOURNOI.masters, ID.pierre, TENNIS.alcaraz, TENNIS.sinner), /propre pari/);
-  assert.deepEqual((await b.admin('select choix, confiance from public.bets where match_id = $1 and joueur_id = $2', [m, ID.pierre])).rows,
-    [{ choix: 1, confiance: 8 }], 'le pari de Pierre est intact');
+  assert.equal((await corriger(ID.pierre, m, ID.pierre, 2, 10, null, 'erreur de clic')).rows[0].r, 'remplace');
+  assert.deepEqual(await pari(ID.pierre, m, ID.pierre), [{ choix: 2, confiance: 10, sets: null, corrige_par_admin: true }]);
+  // quand le groupe est complet, les autres voient la mention sur le pari de Pierre
+  await corriger(ID.pierre, m, ID.lea, 1, 8);
+  assert.deepEqual(await pari(ID.marc, m, ID.pierre), [{ choix: 2, confiance: 10, sets: null, corrige_par_admin: true }]);
+  const j = (await journal(ID.pierre)).filter((l) => l.ref_id === m && l.joueur_id === ID.pierre);
+  assert.equal(j.length, 1);
+  assert.deepEqual(j[0].avant, { choix: 1, confiance: 8, sets: null });
+  assert.deepEqual(await journal(ID.marc), [], 'les autres joueurs ne voient pas le journal');
+  // pari tournoi
+  const t = TOURNOI.finals;
+  assert.equal((await corrigerTournoi(ID.pierre, t, ID.pierre, TENNIS.alcaraz, TENNIS.sinner)).rows[0].r, 'cree');
+  assert.equal((await b.admin('select corrige_par_admin from public.tournament_bets where tournament_id = $1 and joueur_id = $2', [t, ID.pierre])).rows[0].corrige_par_admin, true);
 });
 
 // ------------------------------------------------------------------ saisie à la place d'un joueur, après le match

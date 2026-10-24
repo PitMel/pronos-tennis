@@ -177,7 +177,6 @@ begin
   perform pg_temp.v('Léa n''a pas parié : résultat caché à Marc', '0', pg_temp.comme(u_marc, 'authenticated', format('select 1 from public.matches_visibles where id = %s and vainqueur is not null', m5)));
   perform pg_temp.v('un visiteur n''appelle pas la correction', 'ERR', pg_temp.comme(null, 'anon', format('select public.admin_saisir_pari(%s::bigint, %L::uuid, 1::smallint, 8::smallint, null::smallint, null::text)', m5, u_lea)));
   perform pg_temp.v('un joueur n''appelle pas la correction', 'ERR', pg_temp.comme(u_lea, 'authenticated', format('select public.admin_saisir_pari(%s::bigint, %L::uuid, 1::smallint, 8::smallint, null::smallint, null::text)', m5, u_lea)));
-  perform pg_temp.v('l''administrateur ne corrige pas son propre pari', 'ERR', pg_temp.comme(u_pierre, 'authenticated', format('select public.admin_saisir_pari(%s::bigint, %L::uuid, 2::smallint, 10::smallint, null::smallint, null::text)', m5, u_pierre)));
   perform pg_temp.v('l''administrateur saisit le pari manquant de Léa après le match', '1', pg_temp.comme(u_pierre, 'authenticated', format('select public.admin_saisir_pari(%s::bigint, %L::uuid, 2::smallint, 9::smallint, null::smallint, %L::text)', m5, u_lea, 'verification')));
   perform pg_temp.v('groupe complet : Marc voit les 3 paris', '3', pg_temp.comme(u_marc, 'authenticated', format('select 1 from public.bets where match_id = %s', m5)));
   perform pg_temp.v('mention « corrigé par l''administrateur » sur le pari de Léa seulement', '1', pg_temp.comme(u_marc, 'authenticated', format('select 1 from public.bets where match_id = %s and corrige_par_admin', m5)));
@@ -193,6 +192,9 @@ begin
   perform pg_temp.v('… et le marquage est bien posé', '1', (select count(*)::text from public.matches where id = m5 and modifie_manuellement));
   perform pg_temp.v('droit d''exécution fermé à anon (correction)', 'false', (select has_function_privilege('anon', 'public.admin_saisir_pari(bigint, uuid, smallint, smallint, smallint, text)', 'execute')::text));
   perform pg_temp.v('droit d''exécution fermé à anon (correction tournoi)', 'false', (select has_function_privilege('anon', 'public.admin_saisir_pari_tournoi(bigint, uuid, bigint, bigint, text)', 'execute')::text));
+
+  perform pg_temp.v('l''administrateur corrige son propre pari', '1', pg_temp.comme(u_pierre, 'authenticated', format('select public.admin_saisir_pari(%s::bigint, %L::uuid, 2::smallint, 10::smallint, null::smallint, null::text)', m5, u_pierre)));
+  perform pg_temp.v('… et la mention est visible des autres (2 paris corrigés : Léa et Pierre)', '2', pg_temp.comme(u_marc, 'authenticated', format('select 1 from public.bets where match_id = %s and corrige_par_admin', m5)));
 
   -- ---------------------------------------------------------------- bilan (l'« erreur » finale annule tout)
   select count(*) filter (where ok), count(*) filter (where not ok) into nb_ok, nb_ko from rapport;
