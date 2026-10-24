@@ -11,8 +11,9 @@ Règles de travail de Pierre : tout reste gratuit ; jamais de clé ni de secret 
 |---|---|
 | 0 — Prérequis | Dépôt GitHub (public) et projet Supabase (Europe) créés. Git et Node.js installés sur le PC de Pierre, dépôt cloné et à jour. L'application GitHub « Claude » est installée : Claude peut pousser. |
 | 1.1 — Moteur de points + tests | **Fait** : 76 tests. |
-| 1.2 — Schéma Supabase, sécurité, comptes | **Écrit et testé en simulation** : `supabase/migrations/0001_schema.sql` + `supabase/comptes.sql`. **Pas encore exécuté sur le vrai projet Supabase de Pierre.** |
-| 1.3 — Tests de sécurité | **Fait en simulation** : 70 tests (`tests/securite/`). **À refaire sur le vrai projet** (voir « Prochaine étape »). |
+| 1.2 — Schéma Supabase, sécurité, comptes | **Migration 0001 installée sur le vrai projet** (11 tables RLS actif, 25 fonctions, 20 politiques ; vérifié le 24 oct.). `supabase/comptes.sql` : **à lancer après la création des 4 utilisateurs Auth** (Pierre doit les créer dans Authentication > Users). |
+| 1.3 — Tests de sécurité | **Fait** : 70 tests en simulation (`tests/securite/`) **et** `supabase/verification-securite.sql` joué sur le vrai projet le 24 oct. : 67 vérifications OK, 0 échec, tout annulé (aucune donnée résiduelle). À rejouer après chaque migration. |
+| 1.4 — Correction par l'administrateur (migration 0002) | **À faire** (décidé le 24 oct.) : l'admin peut réécrire le pari d'un vrai joueur ou saisir un pari manquant, même après le match et la révélation, avec mention « corrigé par l'administrateur » et journal réservé à l'admin. |
 | 2 à 6 | À faire (cahier des charges, section 15). |
 
 Total : 146 tests, tous verts (`npm install` puis `npm test`, environ 45 secondes).
@@ -76,8 +77,10 @@ Choix de conception faits par Claude (à signaler à Pierre s'ils le gênent) :
 
 ## Prochaine étape précise
 
-**A. Pierre exécute la migration et crée les comptes sur le vrai projet Supabase** (instructions détaillées données dans le chat) : SQL Editor → coller `0001_schema.sql` → Run ; Authentication → Users → Add user ×4 (cases « Auto Confirm User » cochées) ; SQL Editor → coller `comptes.sql` → Run → 4 lignes attendues.
+**A. Pierre crée les 4 utilisateurs** (Authentication > Users > Add user > Create new user, « Auto Confirm User » coché, mots de passe choisis par lui, jamais communiqués) ; ensuite Claude lance `comptes.sql` via le connecteur (4 lignes attendues). La migration 0001 est déjà installée.
 
-**B. Claude écrit `scripts/verifier-securite-reelle.mjs`** : vérification sur le vrai projet avec de vraies tentatives d'accès interdit (connexion en André, Paul, Jacques et Pierre ; création d'un tournoi et d'un match de vérification par l'administrateur ; paris ; tentative de lecture des paris des autres avant révélation ; tentative de lecture du résultat ; nettoyage final). L'adresse du projet et la clé « anon » (publique) se lisent dans des variables d'environnement ; les mots de passe se saisissent au clavier sans écho et ne sont jamais enregistrés ni envoyés dans le chat.
+**B. Fait** : vérification de sécurité sur le vrai projet (`supabase/verification-securite.sql`, 67 OK). Reste à examiner les avertissements du conseiller Supabase (fonctions SECURITY DEFINER appelables par `/rpc`, vue `matches_visibles` SECURITY DEFINER : voulus) et à décider si certaines fonctions d'aide doivent être retirées de l'API.
+
+**B2. Migration 0002 — correction par l'administrateur** : fonctions admin (écriture « à l'aveugle », ne renvoient pas le contenu des paris non révélés), drapeau `corrige_par_admin` visible avec le pari, journal réservé à l'admin, drapeau `modifie_manuellement` sur les matchs modifiés à la main. Deux écrans séparés (page joueur / page admin) à l'étape interface.
 
 **C. Étape 2 — synchronisation de l'API** (effort élevé) : tâche GitHub Actions, secrets saisis par Pierre dans les réglages du dépôt (Settings > Secrets and variables > Actions), nouvelles tentatives avec pause croissante, garde-fou de quota, régime 7 h–1 h, détection du début des matchs, anomalies (score 0-0 sans vainqueur, Walk Over).

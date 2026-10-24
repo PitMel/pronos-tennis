@@ -13,6 +13,7 @@ Plateforme gratuite de pronostics entre amis sur le simple messieurs ATP (14 tou
 | `tests/` | Tests du moteur (exemples de la section 13 du cahier des charges et toutes les règles des sections 4 à 8) |
 | `supabase/migrations/` | Schéma de la base, règles de sécurité et révélation des paris (SQL, à exécuter dans Supabase) |
 | `supabase/comptes.sql` | Création des profils (administrateur et faux comptes) après création des utilisateurs dans Supabase |
+| `supabase/verification-securite.sql` | Vérification de sécurité à lancer sur la VRAIE base (comptes fictifs, tentatives d'accès interdit, tout est annulé à la fin) |
 | `tests/securite/` | Tests de sécurité : rejouent la migration dans une base PostgreSQL embarquée et tentent des accès interdits |
 | `reference/` | Éléments de référence (maquette « Filet », catalogue des Masters 1000 de l'API) |
 
@@ -25,7 +26,7 @@ npm install
 npm test
 ```
 
-`npm install` (une seule fois) télécharge la base de test embarquée. `npm test` affiche une longue liste de tests ; le résultat est dans les dernières lignes : `# fail 0` attendu. Pour n'avoir que ces lignes (PowerShell) : `npm test 2>&1 | Select-String "^# (tests|pass|fail)"`.
+`npm install` (une seule fois) télécharge la base de test embarquée. `npm test` affiche une longue liste de tests ; le résultat est dans les dernières lignes : `tests 146`, `pass 146`, `fail 0` attendus (selon la version de Node, ces lignes sont précédées de `ℹ` ou de `#`). Pour n'afficher que ces lignes (PowerShell) : `npm test 2>&1 | Select-Object -Last 12`.
 
 ## Sécurité
 
