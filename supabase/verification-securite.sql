@@ -52,7 +52,7 @@ declare
   u_jacques uuid := 'aaaaaaaa-0000-4000-8000-000000000013';
   p1 bigint; p2 bigint; p3 bigint; p4 bigint;
   t_masters bigint; t_chelem bigint; t_avenir bigint;
-  m1 bigint; m2 bigint; m3 bigint; m4 bigint; m_gc bigint;
+  m1 bigint; m2 bigint; m3 bigint; m4 bigint; m_gc bigint; m5 bigint;
   nb_ok int; nb_ko int; echecs text;
 begin
   -- les vrais comptes éventuels sont mis de côté le temps de la vérification (tout est annulé à la fin)
@@ -168,6 +168,31 @@ begin
   perform pg_temp.v('pari tournoi caché tant que le groupe n''est pas complet', '0', pg_temp.comme(u_paul, 'authenticated', format('select 1 from public.tournament_bets where tournament_id = %s', t_masters)));
   perform pg_temp.v('vainqueur = finaliste refusé', 'ERR', pg_temp.comme(u_paul, 'authenticated', format('insert into public.tournament_bets (tournament_id, joueur_id, vainqueur_id, finaliste_id) values (%s, %L, %s, %s)', t_masters, u_paul, p3, p3)));
   perform pg_temp.v('pari tournoi refusé avant l''ouverture', 'ERR', pg_temp.comme(u_paul, 'authenticated', format('insert into public.tournament_bets (tournament_id, joueur_id, vainqueur_id, finaliste_id) values (%s, %L, %s, %s)', t_avenir, u_paul, p3, p4)));
+
+  -- ---------------------------------------------------------------- 12. correction par l'administrateur (migration 0002)
+  insert into public.matches (tournament_id, tour, p1_id, p2_id) values (t_masters, 'SF', p3, p4) returning id into m5;
+  perform pg_temp.v('Pierre parie (vrai groupe)', '1', pg_temp.comme(u_pierre, 'authenticated', format('insert into public.bets (match_id, joueur_id, choix, confiance) values (%s, %L, 1, 8)', m5, u_pierre)));
+  perform pg_temp.v('Marc parie (vrai groupe)', '1', pg_temp.comme(u_marc, 'authenticated', format('insert into public.bets (match_id, joueur_id, choix, confiance) values (%s, %L, 2, 7)', m5, u_marc)));
+  update public.matches set statut = 'termine', vainqueur = 1, sets_joues = 2, debut_detecte = now() where id = m5;
+  perform pg_temp.v('Léa n''a pas parié : résultat caché à Marc', '0', pg_temp.comme(u_marc, 'authenticated', format('select 1 from public.matches_visibles where id = %s and vainqueur is not null', m5)));
+  perform pg_temp.v('un visiteur n''appelle pas la correction', 'ERR', pg_temp.comme(null, 'anon', format('select public.admin_saisir_pari(%s::bigint, %L::uuid, 1::smallint, 8::smallint, null::smallint, null::text)', m5, u_lea)));
+  perform pg_temp.v('un joueur n''appelle pas la correction', 'ERR', pg_temp.comme(u_lea, 'authenticated', format('select public.admin_saisir_pari(%s::bigint, %L::uuid, 1::smallint, 8::smallint, null::smallint, null::text)', m5, u_lea)));
+  perform pg_temp.v('l''administrateur ne corrige pas son propre pari', 'ERR', pg_temp.comme(u_pierre, 'authenticated', format('select public.admin_saisir_pari(%s::bigint, %L::uuid, 2::smallint, 10::smallint, null::smallint, null::text)', m5, u_pierre)));
+  perform pg_temp.v('l''administrateur saisit le pari manquant de Léa après le match', '1', pg_temp.comme(u_pierre, 'authenticated', format('select public.admin_saisir_pari(%s::bigint, %L::uuid, 2::smallint, 9::smallint, null::smallint, %L::text)', m5, u_lea, 'verification')));
+  perform pg_temp.v('groupe complet : Marc voit les 3 paris', '3', pg_temp.comme(u_marc, 'authenticated', format('select 1 from public.bets where match_id = %s', m5)));
+  perform pg_temp.v('mention « corrigé par l''administrateur » sur le pari de Léa seulement', '1', pg_temp.comme(u_marc, 'authenticated', format('select 1 from public.bets where match_id = %s and corrige_par_admin', m5)));
+  perform pg_temp.v('résultat devenu visible pour Marc', '1', pg_temp.comme(u_marc, 'authenticated', format('select 1 from public.matches_visibles where id = %s and vainqueur is not null', m5)));
+  perform pg_temp.v('l''administrateur réécrit le pari révélé de Léa', '1', pg_temp.comme(u_pierre, 'authenticated', format('select public.admin_saisir_pari(%s::bigint, %L::uuid, 1::smallint, 6::smallint, null::smallint, null::text)', m5, u_lea)));
+  perform pg_temp.v('Léa ne défait pas la correction', '0', pg_temp.comme(u_lea, 'authenticated', format('update public.bets set confiance = 10 where match_id = %s and joueur_id = %L', m5, u_lea)));
+  perform pg_temp.v('un joueur ne s''attribue pas la mention « corrigé »', 'ERR', pg_temp.comme(u_marc, 'authenticated', format('update public.bets set corrige_par_admin = true where match_id = %s and joueur_id = %L', m5, u_marc)));
+  perform pg_temp.v('le journal montre les 2 corrections à l''administrateur', '2', pg_temp.comme(u_pierre, 'authenticated', format('select 1 from public.corrections_admin_visibles where ref_id = %s and kind = %L and contenu_visible', m5, 'match')));
+  perform pg_temp.v('un joueur ne voit rien du journal', '0', pg_temp.comme(u_lea, 'authenticated', 'select 1 from public.corrections_admin_visibles'));
+  perform pg_temp.v('le journal brut est fermé à tous', 'ERR', pg_temp.comme(u_pierre, 'authenticated', 'select 1 from public.corrections_admin'));
+  perform pg_temp.v('le journal est fermé aux visiteurs', 'ERR', pg_temp.comme(null, 'anon', 'select 1 from public.corrections_admin_visibles'));
+  perform pg_temp.v('résultat modifié par l''administrateur : match marqué', '1', pg_temp.comme(u_pierre, 'authenticated', format('update public.matches set vainqueur = 2 where id = %s', m5)));
+  perform pg_temp.v('… et le marquage est bien posé', '1', (select count(*)::text from public.matches where id = m5 and modifie_manuellement));
+  perform pg_temp.v('droit d''exécution fermé à anon (correction)', 'false', (select has_function_privilege('anon', 'public.admin_saisir_pari(bigint, uuid, smallint, smallint, smallint, text)', 'execute')::text));
+  perform pg_temp.v('droit d''exécution fermé à anon (correction tournoi)', 'false', (select has_function_privilege('anon', 'public.admin_saisir_pari_tournoi(bigint, uuid, bigint, bigint, text)', 'execute')::text));
 
   -- ---------------------------------------------------------------- bilan (l'« erreur » finale annule tout)
   select count(*) filter (where ok), count(*) filter (where not ok) into nb_ok, nb_ko from rapport;
