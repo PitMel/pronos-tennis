@@ -54,7 +54,7 @@ test('3. un match va commencer : lecture du direct, passage « en cours » ; la 
 
 test('4. le match disparaît du direct : son détail est demandé et confirme la fin (vainqueur, sets joués)', async () => {
   w.live = [];
-  w.details.Q1 = termine({ id: 'Q1', round_code: 'QF', tournament_id: '1725', winner: 2, score: { sets: [1, 2], games: [[6, 3, 4], [2, 6, 6]] } });
+  w.details.Q1 = termine({ id: 'Q1', round_code: 'QF', tournament_id: '1725', winner: 2, score: { sets: [1, 2], games: [[6, 2], [3, 6], [4, 6]] } });
   w.reinitialiserAppels();
   const r = await passer();
   assert.equal(r.code, 0, r.texte);
@@ -181,7 +181,7 @@ test('14. mode diagnostic : quelques appels à l\'API seulement, structure affic
   assert.equal(r.code, 0, r.texte);
   assert.deepEqual(w.appelsBase, []);
   assert.equal(w.appelsApi.filter((c) => c === '/usage').length, 2, '/usage avant et après');
-  assert.equal(w.chemins().filter((c) => c.startsWith('/matches?tournament_id=')).length, 4);
+  assert.equal(w.chemins().filter((c) => c.startsWith('/matches?tournament_id=')).length, 5, '4 tournois à venir + 1 sans filtre de statut');
   assert.ok(w.chemins().includes('/matches/Q1'), 'détail d\'un match pour savoir s\'il coûte un appel');
   assert.match(r.texte, /\[avant\]/);
   assert.match(r.texte, /\[après\]/);

@@ -15,12 +15,12 @@ Règles de travail de Pierre : tout reste gratuit ; jamais de clé ni de secret 
 | 1.3 — Tests de sécurité | **Fait** : 70 tests de simulation (+ 19 pour la correction) et `supabase/verification-securite.sql` joué sur le vrai projet : **89 vérifications OK, 0 échec**, tout annulé (aucune donnée résiduelle). À rejouer après chaque migration. |
 | 1.4 — Correction par l'administrateur (migration 0002) | **Fait et installé sur le vrai projet** (0002 + 0003, voir section ci-dessous). 19 tests ; 25 failles volontaires introduites, 24 détectées, 1 redondance voulue. |
 | 2.1 — Synchronisation, côté base (migration 0004) | **Fait, installé et vérifié sur le vrai projet** : 21 tests, 21 failles volontaires détectées ; `supabase/verification-synchronisation.sql` : 27 vérifications OK. Tournois du Masters de Paris et des ATP Finals 2026 et leurs identifiants d'API saisis (`supabase/calendrier-2026.sql`). |
-| 2.2 — Synchronisation, programme Node (`src/sync/`) | **Écrit et testé en simulation** (46 tests, 17 failles volontaires détectées). **Jamais encore branché sur la vraie API** : le bac à sable de Claude n'y a pas accès ; le premier appel réel se fait chez GitHub (mode diagnostic, étape 2.3). |
+| 2.2 — Synchronisation, programme Node (`src/sync/`) | **Écrit et testé en simulation** (51 tests, 17 failles volontaires détectées). **Jamais encore branché sur la vraie API** : le bac à sable de Claude n'y a pas accès ; le premier appel réel se fait chez GitHub (mode diagnostic, étape 2.3). |
 | 2.3 — Workflow GitHub Actions + secrets + diagnostic | Workflow `.github/workflows/synchro.yml` **écrit et poussé** (cron 30 min seulement si la variable de dépôt `SYNCHRO_ACTIVE` vaut `true` ; lancement manuel avec modes diagnostic / simulation / normal). **En attente de Pierre** : saisir les 3 secrets, lancer le diagnostic, me donner le résultat (je peux lire les journaux avec `gh run view --log`). |
 | 2.4 — Clôture automatique d'un tournoi | À faire. |
 | 3 à 6 | À faire (cahier des charges, section 15). |
 
-Total : 232 tests, tous verts (`npm install` puis `npm test`, environ 1 minute).
+Total : 237 tests, tous verts (`npm install` puis `npm test`, environ 1 minute).
 
 ## Étape 1.1 — moteur de points (fait et testé)
 
@@ -73,7 +73,11 @@ Total : 232 tests, tous verts (`npm install` puis `npm test`, environ 1 minute).
 - `src/sync/normaliser.js` (API → charge utile ; filtres ATP, messieurs, simple, hors qualifications, tournois suivis, tours R16/QF/SF/F/RR ; on branche sur `outcome` : completed, retired → abandon, walkover → forfait, default → abandon + anomalie, abandoned/unresolved → aucun résultat + anomalie, cancelled → anomalie), `client-api.js` (nouvelles tentatives à pause croissante 2 s / 6 s / 15 s, 429 « jour » = arrêt, lecture tolérante de `/usage`), `planificateur.js` (fenêtre 7 h–1 h heure de Paris, budget = 100 − utilisé − réserve 10, affiches relues toutes les 3 h en tournoi et une fois par jour sinon, lecture du direct si un match est en cours ou commence dans moins de 30 min, détail d'un match disparu du direct), `synchro.js` (orchestration), `base.js` (Supabase par REST), `cli.js` (`node src/sync/cli.js`, options `--simulation` = n'écrit rien, `--diagnostic` = quelques appels à l'API pour en découvrir la forme réelle).
 - Secrets lus **uniquement** dans les variables d'environnement `LIVETENNIS_API_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` ; tout affichage est filtré pour ne jamais les contenir.
 - Faits sur l'API (documentation) : `/matches` accepte `tournament_id`, `status`, `limit` (≤ 200) ; `/usage` est gratuit (champs non documentés, lus de façon tolérante) ; les identifiants de tournoi de l'API sont stables d'une année à l'autre ; `winner` n'existe que pour un match terminé.
-- **Inconnues à lever par le mode diagnostic** : forme réelle de `/usage`, codes de tour réels (R16 en Grand Chelem ? poules des ATP Finals ?), identifiants des ATP Finals (2794/2795 supposés), le détail d'un match coûte-t-il un appel ?
+- **Diagnostic réel du 25 oct. 2026 (premier contact avec la vraie API, via GitHub Actions)** :
+  - `/usage` : `today: {calls, errors, remaining_day}`, `limits: {per_day: 100, per_minute: 30}`, `tier: free` ; **il ne compte pas dans le quota**. Le détail d'un match (`/matches/{id}`) **coûte 1 appel**, comme chaque liste. Le programme lit cette forme (testée).
+  - Un match : `id` numérique, `tournament_id` en texte, `players.p1/p2` (`id`, `name`, `country` en minuscules « ita », `ranking`), `round_code` (« F »…), `is_qualifying`, `score.sets` = `[sets p1, sets p2]` et **`score.games` = un couple `[jeux p1, jeux p2]` par set** (ex. `[[1,6],[6,6]]`). Mon hypothèse précédente (un tableau par joueur) était fausse : corrigée et testée.
+  - Les 4 identifiants Paris (1725, 1726) et ATP Finals (2794, 2795) répondent mais **ne renvoient aucun match « à venir » le 25 oct.** (tableau pas encore publié ?). À revérifier le 26 oct. avec le mode diagnostic (il fait maintenant aussi un appel sans filtre de statut pour découvrir d'autres statuts éventuels).
+  - Toujours inconnus : codes de tour réels en Grand Chelem (R16 ?) et pour les poules des ATP Finals (RR ?).
 
 ## Décisions prises (en plus du cahier des charges)
 

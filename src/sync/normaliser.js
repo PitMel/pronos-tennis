@@ -12,15 +12,15 @@ const entier = (x) => {
   return Number.isInteger(n) ? n : null;
 };
 
-/** Nombre de sets joués d'après les jeux par set (un set entamé compte), à défaut d'après le score en sets. */
+/**
+ * Nombre de sets joués d'après les jeux par set (un set entamé compte), à défaut d'après le score en sets.
+ * Forme réelle de l'API (constatée le 25 oct. 2026) : `games` = un couple [jeux du joueur 1, jeux du joueur 2] PAR SET,
+ * p. ex. [[1, 6], [6, 6]] = premier set 1-6, deuxième set en cours à 6-6 ; `sets` = [sets gagnés par p1, par p2].
+ */
 export function compterSets(score) {
   const jeux = score?.games;
-  if (Array.isArray(jeux) && jeux.length === 2 && Array.isArray(jeux[0]) && Array.isArray(jeux[1])) {
-    const n = Math.max(jeux[0].length, jeux[1].length);
-    let c = 0;
-    for (let i = 0; i < n; i += 1) {
-      if ((Number(jeux[0][i]) || 0) + (Number(jeux[1][i]) || 0) > 0) c += 1;
-    }
+  if (Array.isArray(jeux) && jeux.length > 0 && jeux.every((s) => Array.isArray(s) && s.length >= 2)) {
+    const c = jeux.filter((s) => (Number(s[0]) || 0) + (Number(s[1]) || 0) > 0).length;
     return c > 0 ? Math.min(c, 5) : null;
   }
   const s = score?.sets;

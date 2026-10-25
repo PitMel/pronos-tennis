@@ -22,7 +22,7 @@ export function masquer(texte, secrets) {
 export function epurer(valeur) {
   if (Array.isArray(valeur)) return valeur.map(epurer);
   if (valeur && typeof valeur === 'object') {
-    return Object.fromEntries(Object.entries(valeur).map(([k, v]) => [k, /key|token|secret|mail|owner|account|user|customer|org/i.test(k) ? '***' : epurer(v)]));
+    return Object.fromEntries(Object.entries(valeur).map(([k, v]) => [k, /key|token|secret|mail|owner|account|user|customer|org|principal/i.test(k) ? '***' : epurer(v)]));
   }
   if (typeof valeur === 'string' && /@|^(sk|pk|eyJ)/.test(valeur)) return '***';
   return valeur;
@@ -83,6 +83,16 @@ export async function diagnostic({ api, ecrire, tournois = TOURNOIS_DIAGNOSTIC }
     } catch (e) {
       ecrire(`tournoi ${id} — à venir : ÉCHEC ${e.message}`);
     }
+  }
+
+  // Sans filtre de statut : pour voir s'il existe d'autres statuts que « upcoming » / « live » / « completed ».
+  try {
+    const r = await api.get('/matches', { tournament_id: tournois[0], draw: 'singles', limit: 200 });
+    const l = Array.isArray(r.json?.data) ? r.json.data : [];
+    ecrire(`tournoi ${tournois[0]} — tous statuts : ${court(resumerMatchs(l), 1500)}`);
+    if (r.json?.meta) ecrire(`  meta : ${court(r.json.meta, 400)}`);
+  } catch (e) {
+    ecrire(`tournoi ${tournois[0]} — tous statuts : ÉCHEC ${e.message}`);
   }
 
   try {

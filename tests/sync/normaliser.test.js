@@ -6,13 +6,16 @@ import { matchApi, termine } from './fixtures.js';
 const suivis = new Set(['1725', '1726']);
 
 test('compterSets : sets joués d\'après les jeux, un set entamé compte, plafonné à 5', () => {
-  assert.equal(compterSets({ games: [[6, 3, 7], [4, 6, 5]] }), 3);
-  assert.equal(compterSets({ games: [[6, 6], [2, 4]] }), 2);
-  assert.equal(compterSets({ games: [[6, 3, 2], [4, 6, 0]] }), 3, 'troisième set entamé (abandon)');
-  assert.equal(compterSets({ games: [[6, 3, 0], [4, 6, 0]] }), 2, 'set à 0-0 non joué');
-  assert.equal(compterSets({ games: [[6, 3, 6, 4, 6, 1], [3, 6, 4, 6, 7, 1]] }), 5);
+  // forme réelle de l'API : un couple [jeux p1, jeux p2] par set
+  assert.equal(compterSets({ games: [[6, 4], [3, 6], [7, 5]] }), 3);
+  assert.equal(compterSets({ games: [[1, 6], [6, 6]], sets: [0, 1] }), 2, 'exemple réel : 2e set en cours à 6-6');
+  assert.equal(compterSets({ games: [[6, 0], [6, 0]] }), 2, 'deux sets blancs');
+  assert.equal(compterSets({ games: [[6, 3], [4, 6], [2, 0]] }), 3, 'troisième set entamé (abandon)');
+  assert.equal(compterSets({ games: [[6, 3], [4, 6], [0, 0]] }), 2, 'set à 0-0 non joué');
+  assert.equal(compterSets({ games: [[6, 3], [3, 6], [6, 4], [4, 6], [7, 5], [1, 0]] }), 5, 'plafonné à 5');
   assert.equal(compterSets({ sets: [2, 0] }), 2, 'à défaut : score en sets');
-  assert.equal(compterSets({ games: [[], []], sets: [0, 0] }), null);
+  assert.equal(compterSets({ games: [], sets: [1, 1] }), 2);
+  assert.equal(compterSets({ games: [[0, 0]], sets: [0, 0] }), null);
   assert.equal(compterSets(null), null);
   assert.equal(compterSets({}), null);
 });
@@ -54,7 +57,7 @@ test('normaliserMatch : match terminé complet', () => {
   assert.equal(r.match.sets_joues, 3);
   assert.equal(r.match.fin_match, 'normal');
   assert.equal(r.match.heure_prevue, '2026-10-30T14:00:00.000Z');
-  assert.deepEqual(r.match.score, { sets: [2, 1], games: [[6, 3, 7], [4, 6, 5]] });
+  assert.deepEqual(r.match.score, { sets: [2, 1], games: [[6, 4], [3, 6], [7, 5]] });
   assert.equal(r.match.p1.nom, 'Joueur 1a'.replace('1', String(r.match.p1.api_id.match(/\d+/)[0])));
   assert.equal(typeof r.match.p1.classement, 'number');
   assert.deepEqual(r.anomalies, []);

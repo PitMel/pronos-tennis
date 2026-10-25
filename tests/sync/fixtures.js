@@ -26,5 +26,5 @@ export function matchApi(o = {}) {
 
 export const termine = (o = {}) => matchApi({
   status: 'completed', outcome: 'completed', winner: 1,
-  score: { sets: [2, 1], games: [[6, 3, 7], [4, 6, 5]] }, ...o,
+  score: { sets: [2, 1], games: [[6, 4], [3, 6], [7, 5]] }, ...o,
 });
