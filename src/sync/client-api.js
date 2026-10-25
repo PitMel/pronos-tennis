@@ -150,7 +150,7 @@ export function interpreterUsage(json) {
     return (candidats.find((n) => dansLeJour(n.chemin)) ?? null)?.valeur ?? null;
   };
   sortie.utilise_jour = choisir(/^(used|count|requests|usage|calls)(_today|_day)?$|^(used|requests|calls)_/);
-  sortie.limite_jour = choisir(/^(limit|quota|max)(_per_day|_day)?$|^limit_/);
+  sortie.limite_jour = choisir(/^(limit|quota|max)(_per_day|_day)?$|^limit_|^per_day$/);
   sortie.restant_jour = choisir(/^(remaining|left)(_today|_day)?$|^remaining_/);
   if (sortie.restant_jour === null && sortie.utilise_jour !== null && sortie.limite_jour !== null) {
     sortie.restant_jour = Math.max(0, sortie.limite_jour - sortie.utilise_jour);

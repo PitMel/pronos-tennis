@@ -113,6 +113,7 @@ test('interpreterUsage : forme RÉELLE de /usage (constatée le 25 oct. 2026)', 
   const u = interpreterUsage(reel);
   assert.equal(u.utilise_jour, 6);
   assert.equal(u.restant_jour, 94);
+  assert.equal(u.limite_jour, 100, 'la limite du jour est lue dans limits.per_day (et non celle de la minute)');
   assert.equal(interpreterUsage({ ...reel, today: { calls: 0, errors: 0, remaining_day: 100 } }).utilise_jour, 0);
 });
 
