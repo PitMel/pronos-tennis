@@ -17,10 +17,10 @@ Règles de travail de Pierre : tout reste gratuit ; jamais de clé ni de secret 
 | 2.1 — Synchronisation, côté base (migration 0004) | **Fait, installé et vérifié sur le vrai projet** : 21 tests, 21 failles volontaires détectées ; `supabase/verification-synchronisation.sql` : 27 vérifications OK. Tournois du Masters de Paris et des ATP Finals 2026 et leurs identifiants d'API saisis (`supabase/calendrier-2026.sql`). |
 | 2.2 — Synchronisation, programme Node (`src/sync/`) | **Écrit et testé en simulation** (51 tests, 17 failles volontaires détectées). **Jamais encore branché sur la vraie API** : le bac à sable de Claude n'y a pas accès ; le premier appel réel se fait chez GitHub (mode diagnostic, étape 2.3). |
 | 2.3 — Workflow GitHub Actions + secrets + diagnostic | Workflow `.github/workflows/synchro.yml` **écrit et poussé** (cron 30 min seulement si la variable de dépôt `SYNCHRO_ACTIVE` vaut `true` ; lancement manuel avec modes diagnostic / simulation / normal). **En attente de Pierre** : saisir les 3 secrets, lancer le diagnostic, me donner le résultat (je peux lire les journaux avec `gh run view --log`). |
-| 2.4 — Clôture automatique d'un tournoi | À faire. |
+| 2.4 — Clôture automatique d'un tournoi (migration 0005, `src/sync/cloture.js`) | **Fait, installé et vérifié sur le vrai projet** (`supabase/verification-cloture.sql` : 20 vérifications OK, tout annulé). 12 tests SQL + 5 tests du calcul (valeurs calculées à la main) + 4 tests de bout en bout ; 27 failles volontaires introduites, toutes détectées (sauf 2 redondances voulues). |
 | 3 à 6 | À faire (cahier des charges, section 15). |
 
-Total : 237 tests, tous verts (`npm install` puis `npm test`, environ 1 minute).
+Total : 258 tests, tous verts (`npm install` puis `npm test`, environ 1 minute).
 
 ## Étape 1.1 — moteur de points (fait et testé)
 
@@ -79,6 +79,13 @@ Total : 237 tests, tous verts (`npm install` puis `npm test`, environ 1 minute).
   - Les 4 identifiants Paris (1725, 1726) et ATP Finals (2794, 2795) répondent mais **ne renvoient aucun match « à venir » le 25 oct.** (tableau pas encore publié ?). À revérifier le 26 oct. avec le mode diagnostic (il fait maintenant aussi un appel sans filtre de statut pour découvrir d'autres statuts éventuels).
   - Toujours inconnus : codes de tour réels en Grand Chelem (R16 ?) et pour les poules des ATP Finals (RR ?).
 
+## Étape 2.4 — clôture automatique (fait)
+
+- **Règle (Pierre, 25 oct. 2026)** : un tournoi est clôturé quand (1) sa finale est terminée avec un vainqueur, (2) pour chaque groupe (réel / test) qui a parié dans ce tournoi, tous les matchs ont reçu un pari de chaque joueur du groupe ou ont été neutralisés (= « paris révélés »). **Un groupe sans aucun pari est ignoré** (le groupe réel ne parie pas avant janvier 2027). Un joueur exclu du tournoi n'est pas attendu. Finale forfait/neutralisée sans vainqueur : pas de clôture automatique (l'administrateur la force).
+- **Fonctionnement** : à chaque passage de la tâche (même hors fenêtre horaire ou quota épuisé, car aucun appel API n'est nécessaire), `sync_cloture_candidats` → `sync_donnees_cloture` → calcul par le moteur JS (`calculerCloture`, points des matchs, pari tournoi, bonus 1er/2e, rangs) → `sync_cloturer_tournoi` (revérifie les conditions, exige exactement un résultat par joueur, archive dans `tournament_results`, fixe vainqueur et finaliste, révèle et fige les paris tournoi, passe en `clos`, en une transaction). Une clôture en échec fait échouer la tâche (code 1) et sera retentée.
+- **Réouverture** : si l'administrateur (connecté) fait passer un tournoi de `clos` à un autre état, `cloture_auto_desactivee` passe à vrai et la tâche ne le reclôture plus ; il le reclôturera lui-même (écran administrateur, étape 4 : recalcul avec le moteur dans le navigateur, écriture dans `tournament_results`). L'écran administrateur devra aussi pouvoir forcer une clôture.
+- À prévoir plus tard : si un joueur n'a pas de pari tournoi, il marque 0 pour cette partie (comportement du moteur) ; pas de notification de clôture (point ouvert n° 11).
+
 ## Décisions prises (en plus du cahier des charges)
 
 Par Pierre, 23 octobre 2026 :
@@ -108,6 +115,6 @@ Choix de conception faits par Claude (à signaler à Pierre s'ils le gênent) :
 
 **A. Pierre : désactiver les inscriptions libres** (Supabase > Authentication > Sign In / Providers, ou « Providers » > Email : désactiver « Allow new users to sign up »). Sans cela, quelqu'un qui connaîtrait l'adresse du projet et la clé publique pourrait créer un compte vide et lire les données de référence (prénoms, tournois). À confirmer par Pierre. Le conseiller Supabase signale aussi « Leaked password protection » (fonction payante probable : sans objet).
 
-**B. Étape 2.3 (en cours)** : le fichier `.github/workflows/synchro.yml` est en place. Pierre saisit 3 secrets (Settings > Secrets and variables > Actions) : `LIVETENNIS_API_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`. Premier lancement manuel en **diagnostic**, puis en **simulation**, puis création de la variable `SYNCHRO_ACTIVE` = `true` pour activer le cron. Ensuite 2.4 : clôture automatique du tournoi (calcul avec le moteur, archivage dans `tournament_results`, forcer/corriger/rouvrir par l'administrateur).
+**B. Étape 2.3 (secrets saisis, diagnostic réussi le 25 oct.)** — reste : relancer le diagnostic après le 2 nov. (début du Masters de Paris, date saisie dans la base : 2–8 nov. 2026, fin supposée), vérifier quel identifiant (1725 ou 1726) porte les matchs et les codes de tour réels, lancer une simulation, puis créer la variable `SYNCHRO_ACTIVE` = `true` pour activer le cron. Rappel de l'objectif initial de cette étape : : le fichier `.github/workflows/synchro.yml` est en place. Pierre saisit 3 secrets (Settings > Secrets and variables > Actions) : `LIVETENNIS_API_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`. Premier lancement manuel en **diagnostic**, puis en **simulation**, puis création de la variable `SYNCHRO_ACTIVE` = `true` pour activer le cron. Ensuite 2.4 : clôture automatique du tournoi (calcul avec le moteur, archivage dans `tournament_results`, forcer/corriger/rouvrir par l'administrateur).
 
 **C. Plus tard** : étape 3 (interface joueur, maquette « Filet »), étape 4 (interface administrateur séparée : neutraliser, forcer la clôture, modifier paris et résultats), puis étapes 5 et 6 du cahier des charges (section 15).

@@ -15,6 +15,7 @@ Plateforme gratuite de pronostics entre amis sur le simple messieurs ATP (14 tou
 | `supabase/migrations/0002_correction_admin.sql` | Correction par l'administrateur : paris réécrits ou saisis à la place d'un joueur, mention « corrigé », journal |
 | `supabase/migrations/0003_admin_corrige_son_pari.sql` | L'administrateur peut aussi corriger son propre pari (avec mention et journal) |
 | `supabase/migrations/0004_synchronisation.sql` | Fonctions de synchronisation de l'API (réservées à la tâche automatique) |
+| `supabase/migrations/0005_cloture_automatique.sql` | Clôture automatique d'un tournoi (conditions, données pour le moteur, archivage) |
 | `src/sync/` | Programme de synchronisation (`node src/sync/cli.js`, options `--simulation` et `--diagnostic`) |
 | `supabase/comptes.sql` | Création des profils (administrateur et faux comptes) après création des utilisateurs dans Supabase |
 | `supabase/verification-securite.sql` | Vérification de sécurité à lancer sur la VRAIE base (comptes fictifs, tentatives d'accès interdit, tout est annulé à la fin) |
