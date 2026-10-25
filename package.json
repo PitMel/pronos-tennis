@@ -5,7 +5,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test"
+    "test": "node --test",
+    "web": "node scripts/serveur-local.js",
+    "assembler": "node scripts/assembler-site.js"
   },
   "engines": {
     "node": ">=20"

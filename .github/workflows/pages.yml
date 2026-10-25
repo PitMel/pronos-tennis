@@ -1,0 +1,39 @@
+# Publie l'application (web/ + moteur de points) sur GitHub Pages à chaque changement sur main.
+# Réglage à faire une seule fois : Settings > Pages > Build and deployment > Source : « GitHub Actions ».
+name: Publication du site
+
+on:
+  push:
+    branches: [main]
+    paths: ['web/**', 'src/moteur/**', 'scripts/assembler-site.js', '.github/workflows/pages.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  publier:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deploiement.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+      - name: Assembler le site
+        run: node scripts/assembler-site.js
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: _site
+      - id: deploiement
+        uses: actions/deploy-pages@v4

@@ -13,3 +13,5 @@ node_modules/
 Thumbs.db
 .vscode/*
 !.vscode/settings.json
+# Site assemblé pour GitHub Pages (régénéré par npm run web)
+_site/
