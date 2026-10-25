@@ -18,6 +18,16 @@ export function masquer(texte, secrets) {
   return t;
 }
 
+/** Les journaux de GitHub Actions d'un dépôt public sont publics : on ne montre de /usage que des chiffres et du texte neutre. */
+export function epurer(valeur) {
+  if (Array.isArray(valeur)) return valeur.map(epurer);
+  if (valeur && typeof valeur === 'object') {
+    return Object.fromEntries(Object.entries(valeur).map(([k, v]) => [k, /key|token|secret|mail|owner|account|user|customer|org/i.test(k) ? '***' : epurer(v)]));
+  }
+  if (typeof valeur === 'string' && /@|^(sk|pk|eyJ)/.test(valeur)) return '***';
+  return valeur;
+}
+
 const court = (v, n = 1800) => {
   const t = typeof v === 'string' ? v : JSON.stringify(v, null, 1);
   return t.length > n ? `${t.slice(0, n)} … (tronqué)` : t;
@@ -52,7 +62,7 @@ export async function diagnostic({ api, ecrire, tournois = TOURNOIS_DIAGNOSTIC }
   const usage = async (titre) => {
     try {
       const r = await api.get('/usage');
-      ecrire(`${titre} /usage (HTTP ${r.status}) : ${court(r.json)}`);
+      ecrire(`${titre} /usage (HTTP ${r.status}) : ${court(epurer(r.json))}`);
     } catch (e) {
       ecrire(`${titre} /usage : ÉCHEC ${e.message}`);
     }

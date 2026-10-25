@@ -1,0 +1,52 @@
+# Synchronisation automatique avec la Live Tennis API.
+#  - Toutes les 30 minutes (heure UTC) SI la variable de dépôt SYNCHRO_ACTIVE vaut « true » (Settings > Secrets and variables > Actions > Variables).
+#  - À la demande (onglet Actions > « Synchronisation API » > Run workflow), avec le choix du mode :
+#      diagnostic : quelques appels à l'API pour en découvrir la forme réelle (aucune écriture dans la base)
+#      simulation : comme un vrai passage, mais n'écrit rien dans la base
+#      normal     : vrai passage
+# Secrets nécessaires (Settings > Secrets and variables > Actions > Secrets) :
+#   LIVETENNIS_API_KEY, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
+# Le programme (src/sync/) n'a aucune dépendance à installer ; les fenêtres horaires (7 h – 1 h, heure de Paris) sont gérées par le programme.
+name: Synchronisation API
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Mode'
+        type: choice
+        default: diagnostic
+        options: [diagnostic, simulation, normal]
+
+permissions:
+  contents: read
+
+# Jamais deux passages en même temps (un passage en retard attend le précédent).
+concurrency:
+  group: synchro-api
+  cancel-in-progress: false
+
+jobs:
+  synchro:
+    if: github.event_name == 'workflow_dispatch' || vars.SYNCHRO_ACTIVE == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Passage de synchronisation
+        env:
+          LIVETENNIS_API_KEY: ${{ secrets.LIVETENNIS_API_KEY }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          MODE: ${{ inputs.mode || 'normal' }}
+        run: |
+          case "$MODE" in
+            diagnostic) node src/sync/cli.js --diagnostic ;;
+            simulation) node src/sync/cli.js --simulation ;;
+            *)          node src/sync/cli.js ;;
+          esac

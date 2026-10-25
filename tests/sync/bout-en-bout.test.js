@@ -1,7 +1,7 @@
 // Le programme de synchronisation (cli.js) de bout en bout : fausse API + vraie base PostgreSQL embarquée (migrations réelles).
 import { test, before } from 'node:test';
 import assert from 'node:assert/strict';
-import { lancer, masquer } from '../../src/sync/cli.js';
+import { lancer, masquer, epurer } from '../../src/sync/cli.js';
 import { creerMonde, ENV, CLE_API, CLE_SUPABASE, PARAMETRES_TEST } from './monde.js';
 import { matchApi, termine } from './fixtures.js';
 
@@ -188,4 +188,53 @@ test('14. mode diagnostic : quelques appels à l\'API seulement, structure affic
   assert.match(r.texte, /round_code/);
   assert.match(r.texte, /"QF": 2/);
   assert.ok(!r.texte.includes(CLE_API));
+});
+
+test('15. le diagnostic n\'affiche de /usage ni clé, ni adresse e-mail, ni compte (journaux publics)', async () => {
+  w.usage = { plan: 'free', owner: 'p.mellot@free.fr', api_key: 'abcdef123456', day: { used: 3, limit: 100 }, contact: 'x@y.fr' };
+  w.reinitialiserAppels();
+  const r = await passer(['--diagnostic'], { LIVETENNIS_API_KEY: CLE_API });
+  assert.ok(!/free\.fr|abcdef123456|x@y/.test(r.texte));
+  assert.match(r.texte, /"used": 3/);
+  assert.deepEqual(epurer({ a: [{ email: 'q@q' }], jeton: 'eyJabc', n: 1, token_x: 5 }), { a: [{ email: '***' }], jeton: '***', n: 1, token_x: '***' });
+});
+
+const affichesRecentes = async () => {
+  await w.b.admin('delete from public.sync_log');
+  for (const id of ['1725', '1726', '2794']) {
+    await w.b.admin('insert into public.sync_log (endpoint, http_status, ok) values ($1, 200, true)', [`/matches?tournament_id=${id}&status=upcoming&draw=singles&limit=200`]);
+  }
+};
+
+test('16. un match en cours encore visible dans le direct : pas de demande de détail (économie d\'appels)', async () => {
+  await affichesRecentes();
+  await w.b.admin(`update public.matches set statut = 'a_venir', heure_prevue = now() + interval '5 hours' where api_id = 'Q2'`);
+  await w.b.admin(`update public.matches set statut = 'en_cours', heure_prevue = now() - interval '30 minutes' where api_id = 'Q3'`);
+  w.live = [Q('Q3', { status: 'live', scheduled_time: dans(-30) })];
+  w.reinitialiserAppels();
+  const r = await passer();
+  assert.equal(r.code, 0, r.texte);
+  assert.deepEqual(w.chemins().map((c) => c.split('&')[0]), ['/matches?status=live']);
+});
+
+test('17. /usage annonce le quota du jour épuisé : on s\'arrête sans appeler la suite', async () => {
+  await affichesRecentes();
+  w.pannes['/usage'] = { status: 429, json: { error: 'quota_exceeded', scope: 'day', resets_at: dans(60) } };
+  w.reinitialiserAppels();
+  const r = await passer();
+  delete w.pannes['/usage'];
+  assert.equal(r.code, 0, r.texte);
+  assert.deepEqual(w.chemins(), []);
+});
+
+test('18. /usage ne donne que le nombre utilisé : il est pris en compte pour le budget', async () => {
+  await affichesRecentes();
+  await w.b.admin(`update public.matches set statut = 'en_cours' where api_id = 'Q3'`);
+  w.usage = { day: { used: 95 } };
+  w.reinitialiserAppels();
+  const r = await passer();
+  w.usage = { day: { used: 0, limit: 100, remaining: 100 } };
+  assert.equal(r.code, 0, r.texte);
+  assert.deepEqual(w.chemins(), []);
+  assert.match(r.texte, /budget/);
 });
