@@ -1,6 +1,6 @@
 # ETAT.md — Pronos Tennis
 
-Dernière mise à jour : 24 octobre 2026 (session 1 : moteur de points, schéma, sécurité et correction par l'administrateur, installés et vérifiés sur le vrai projet).
+Dernière mise à jour : 25 octobre 2026 (session 2 : synchronisation de l'API — base SQL installée et vérifiée, programme Node écrit et testé ; workflow GitHub Actions à faire).
 
 **Pour reprendre dans une nouvelle conversation** : lire `CAHIER_DES_CHARGES.md` (les règles font foi), puis ce fichier, puis « Prochaine étape ».
 Règles de travail de Pierre : tout reste gratuit ; jamais de clé ni de secret dans le chat ni dans le code (dépôt public) ; effort élevé pour les fondations, moyen ensuite pour l'interface ; petites étapes avec un commit chacune ; aucune règle de points modifiée sans son accord ; rien ajouté hors cahier des charges sans lui en parler ; en cas d'ambiguïté, lui poser la question ; dire en quelques lignes ce qui va être fait avant de coder ; le guider pas à pas (Windows 11, PowerShell, VS Code, commandes exactes, où cliquer dans GitHub et Supabase).
@@ -14,9 +14,13 @@ Règles de travail de Pierre : tout reste gratuit ; jamais de clé ni de secret 
 | 1.2 — Schéma Supabase, sécurité, comptes | **Fait et installé sur le vrai projet** : migration 0001 (11 tables, RLS) ; 4 comptes Auth créés par Pierre ; profils créés (`supabase/comptes.sql`) : **Pierre** administrateur (groupe réel), **André, Paul, Jacques** faux comptes (groupe test). |
 | 1.3 — Tests de sécurité | **Fait** : 70 tests de simulation (+ 19 pour la correction) et `supabase/verification-securite.sql` joué sur le vrai projet : **89 vérifications OK, 0 échec**, tout annulé (aucune donnée résiduelle). À rejouer après chaque migration. |
 | 1.4 — Correction par l'administrateur (migration 0002) | **Fait et installé sur le vrai projet** (0002 + 0003, voir section ci-dessous). 19 tests ; 25 failles volontaires introduites, 24 détectées, 1 redondance voulue. |
-| 2 à 6 | À faire (cahier des charges, section 15). |
+| 2.1 — Synchronisation, côté base (migration 0004) | **Fait, installé et vérifié sur le vrai projet** : 21 tests, 21 failles volontaires détectées ; `supabase/verification-synchronisation.sql` : 27 vérifications OK. Tournois du Masters de Paris et des ATP Finals 2026 et leurs identifiants d'API saisis (`supabase/calendrier-2026.sql`). |
+| 2.2 — Synchronisation, programme Node (`src/sync/`) | **Écrit et testé en simulation** (46 tests, 17 failles volontaires détectées). **Jamais encore branché sur la vraie API** : le bac à sable de Claude n'y a pas accès ; le premier appel réel se fait chez GitHub (mode diagnostic, étape 2.3). |
+| 2.3 — Workflow GitHub Actions + secrets + diagnostic | À faire (Pierre saisit 3 secrets). |
+| 2.4 — Clôture automatique d'un tournoi | À faire. |
+| 3 à 6 | À faire (cahier des charges, section 15). |
 
-Total : 165 tests, tous verts (`npm install` puis `npm test`, environ 1 minute).
+Total : 232 tests, tous verts (`npm install` puis `npm test`, environ 1 minute).
 
 ## Étape 1.1 — moteur de points (fait et testé)
 
@@ -62,6 +66,15 @@ Total : 165 tests, tous verts (`npm install` puis `npm test`, environ 1 minute).
 - **Choix de conception (à signaler à Pierre)** : l'administrateur **peut corriger son propre pari** (décision de Pierre du 24 oct., migration 0003 ; la mention « corrigé par l'administrateur » reste visible de tous et le journal est tenu) ; pas de correction dans un tournoi clos (le rouvrir d'abord) ; une correction du pari tournoi peut désigner un joueur déjà éliminé (le joueur avait parié avant) — cette dérogation n'est active que dans la fonction et pour l'administrateur ; les confiance 6–10, choix 1/2 et sets en Grand Chelem restent contrôlés.
 - **Deux vues** (page joueur identique pour tous / page administrateur séparée) : à construire à l'étape interface ; la sécurité réelle est déjà dans la base.
 
+## Étape 2 — synchronisation de l'API (2.1 et 2.2 faits)
+
+**Principe** : toute la logique d'écriture est en SQL (fonctions réservées au rôle « service », testables) ; Node ne fait que parler à l'API, mettre en forme et appeler ces fonctions.
+- `supabase/migrations/0004_synchronisation.sql` : `sync_etat()` (état lu par la tâche), `sync_appliquer(charge)` (crée/met à jour joueurs et matchs, jamais de recul, respecte `modifie_manuellement`, renvoie `{crees, maj, ignores, anomalies}`), `sync_enregistrer_appel(...)` (journal `sync_log`, qui sert de compteur de quota), `sync_joueur`, `sync_tournoi_pour_api`, `sync_maj_etat_tournoi`. Aucune n'est appelable depuis le navigateur, même par l'administrateur.
+- `src/sync/normaliser.js` (API → charge utile ; filtres ATP, messieurs, simple, hors qualifications, tournois suivis, tours R16/QF/SF/F/RR ; on branche sur `outcome` : completed, retired → abandon, walkover → forfait, default → abandon + anomalie, abandoned/unresolved → aucun résultat + anomalie, cancelled → anomalie), `client-api.js` (nouvelles tentatives à pause croissante 2 s / 6 s / 15 s, 429 « jour » = arrêt, lecture tolérante de `/usage`), `planificateur.js` (fenêtre 7 h–1 h heure de Paris, budget = 100 − utilisé − réserve 10, affiches relues toutes les 3 h en tournoi et une fois par jour sinon, lecture du direct si un match est en cours ou commence dans moins de 30 min, détail d'un match disparu du direct), `synchro.js` (orchestration), `base.js` (Supabase par REST), `cli.js` (`node src/sync/cli.js`, options `--simulation` = n'écrit rien, `--diagnostic` = quelques appels à l'API pour en découvrir la forme réelle).
+- Secrets lus **uniquement** dans les variables d'environnement `LIVETENNIS_API_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` ; tout affichage est filtré pour ne jamais les contenir.
+- Faits sur l'API (documentation) : `/matches` accepte `tournament_id`, `status`, `limit` (≤ 200) ; `/usage` est gratuit (champs non documentés, lus de façon tolérante) ; les identifiants de tournoi de l'API sont stables d'une année à l'autre ; `winner` n'existe que pour un match terminé.
+- **Inconnues à lever par le mode diagnostic** : forme réelle de `/usage`, codes de tour réels (R16 en Grand Chelem ? poules des ATP Finals ?), identifiants des ATP Finals (2794/2795 supposés), le détail d'un match coûte-t-il un appel ?
+
 ## Décisions prises (en plus du cahier des charges)
 
 Par Pierre, 23 octobre 2026 :
@@ -91,6 +104,6 @@ Choix de conception faits par Claude (à signaler à Pierre s'ils le gênent) :
 
 **A. Pierre : désactiver les inscriptions libres** (Supabase > Authentication > Sign In / Providers, ou « Providers » > Email : désactiver « Allow new users to sign up »). Sans cela, quelqu'un qui connaîtrait l'adresse du projet et la clé publique pourrait créer un compte vide et lire les données de référence (prénoms, tournois). À confirmer par Pierre. Le conseiller Supabase signale aussi « Leaked password protection » (fonction payante probable : sans objet).
 
-**B. Étape 2 — synchronisation de l'API** (effort élevé) : tâche GitHub Actions, secrets saisis par Pierre dans les réglages du dépôt (Settings > Secrets and variables > Actions), nouvelles tentatives avec pause croissante, garde-fou de quota, régime 7 h–1 h, détection du début des matchs, anomalies (score 0-0 sans vainqueur, Walk Over), calcul de la clôture avec le moteur et archivage dans `tournament_results`.
+**B. Étape 2.3 (prochaine)** : fichier `.github/workflows/synchro.yml` (cron toutes les 30 min + lancement manuel avec choix du mode : normal, simulation, diagnostic). Pierre saisit 3 secrets (Settings > Secrets and variables > Actions) : `LIVETENNIS_API_KEY`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`. Premier lancement manuel en **diagnostic**, puis en **simulation**, puis activation du cron. Ensuite 2.4 : clôture automatique du tournoi (calcul avec le moteur, archivage dans `tournament_results`, forcer/corriger/rouvrir par l'administrateur).
 
 **C. Plus tard** : étape 3 (interface joueur, maquette « Filet »), étape 4 (interface administrateur séparée : neutraliser, forcer la clôture, modifier paris et résultats), puis étapes 5 et 6 du cahier des charges (section 15).
