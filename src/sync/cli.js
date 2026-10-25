@@ -8,6 +8,7 @@
 import { fileURLToPath } from 'node:url';
 import { creerBaseSupabase } from './base.js';
 import { creerClientApi } from './client-api.js';
+import { executerClotures } from './cloture.js';
 import { executerSynchro } from './synchro.js';
 
 const TOURNOIS_DIAGNOSTIC = ['1725', '1726', '2794', '2795']; // Masters de Paris (2 identifiants) et Masters de Turin (2 identifiants)
@@ -160,7 +161,9 @@ export async function lancer({ argv = [], env = {}, fetchImpl = globalThis.fetch
     ecrire(`Résultat : ${court({ ...resume, anomalies: resume.anomalies.length }, 800)}`);
     for (const a of resume.anomalies) ecrire(`  anomalie ${a.code} (match ${a.api_id}) : ${a.detail ?? ''}`);
     for (const e of resume.erreurs) ecrire(`  erreur ${e}`);
-    return 0;
+    // La clôture n'appelle pas l'API : elle a lieu à chaque passage, même hors fenêtre horaire ou quota épuisé.
+    const clotures = await executerClotures({ base, simulation, journal: ecrire });
+    return clotures.erreurs.length > 0 ? 1 : 0;
   } catch (e) {
     ecrire(`ERREUR : ${e.message}`);
     return 1;

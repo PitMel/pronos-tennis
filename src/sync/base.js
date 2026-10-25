@@ -31,6 +31,9 @@ export function creerBaseSupabase({ url, cle, fetchImpl = globalThis.fetch, dorm
 
   return {
     etat: () => rpc('sync_etat'),
+    clotureCandidats: () => rpc('sync_cloture_candidats'),
+    donneesCloture: (tournoi) => rpc('sync_donnees_cloture', { p_tournoi: tournoi }),
+    cloturer: (tournoi, resultats) => rpc('sync_cloturer_tournoi', { p_tournoi: tournoi, p_resultats: resultats }),
     appliquer: (payload) => rpc('sync_appliquer', { p_payload: payload }),
     enregistrerAppel: ({ endpoint = null, httpStatus = null, ok = true, quotaRestant = null, message = null, resetA = null }) =>
       rpc('sync_enregistrer_appel', {

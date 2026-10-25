@@ -29,6 +29,7 @@ export async function creerMonde() {
     live: [],
     details: {}, // { id: match API }
     pannes: {}, // { motif de chemin: {status, json} }
+    rpcEchec: {}, // { nom de fonction SQL: true } : la base refuse l'appel
     usage: { day: { used: 0, limit: 100, remaining: 100 } },
     chemins: () => monde.appelsApi.filter((c) => !c.startsWith('/usage')),
     reinitialiserAppels() {
@@ -54,10 +55,14 @@ export async function creerMonde() {
         monde.appelsBase.push({ fonction, apikey: opts.headers?.apikey, authorization: opts.headers?.Authorization });
         if (opts.headers?.apikey !== CLE_SUPABASE) return reponse(401, { message: 'Invalid API key' });
         const a = JSON.parse(opts.body);
+        if (monde.rpcEchec[fonction]) return reponse(400, { message: 'refusé par la base (test)' });
         try {
           let r;
           if (fonction === 'sync_etat') r = await b.comme(null, 'select public.sync_etat() as r', [], 'service_role');
           else if (fonction === 'sync_appliquer') r = await b.comme(null, 'select public.sync_appliquer($1::jsonb) as r', [JSON.stringify(a.p_payload)], 'service_role');
+          else if (fonction === 'sync_cloture_candidats') r = await b.comme(null, 'select public.sync_cloture_candidats() as r', [], 'service_role');
+          else if (fonction === 'sync_donnees_cloture') r = await b.comme(null, 'select public.sync_donnees_cloture($1::bigint) as r', [a.p_tournoi], 'service_role');
+          else if (fonction === 'sync_cloturer_tournoi') r = await b.comme(null, 'select public.sync_cloturer_tournoi($1::bigint, $2::jsonb) as r', [a.p_tournoi, JSON.stringify(a.p_resultats)], 'service_role');
           else if (fonction === 'sync_enregistrer_appel') {
             r = await b.comme(null, 'select public.sync_enregistrer_appel($1::text,$2::int,$3::boolean,$4::int,$5::text,$6::timestamptz) as r',
               [a.p_endpoint, a.p_http_status, a.p_ok, a.p_quota_restant, a.p_message, a.p_reset_a], 'service_role');

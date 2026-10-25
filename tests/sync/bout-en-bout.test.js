@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import { lancer, masquer, epurer } from '../../src/sync/cli.js';
 import { creerMonde, ENV, CLE_API, CLE_SUPABASE, PARAMETRES_TEST } from './monde.js';
 import { matchApi, termine } from './fixtures.js';
+import { ID, TESTS, TENNIS } from '../securite/base.js';
 
 let w;
 before(async () => { w = await creerMonde(); });
@@ -136,7 +137,7 @@ test('10. mode simulation : l\'API est interrogée mais RIEN n\'est écrit dans 
   assert.ok(w.chemins().length > 0);
   assert.equal(JSON.stringify(await matchsBase()), avant, 'aucun match créé');
   assert.deepEqual(await journal(), [], 'aucun appel journalisé');
-  assert.deepEqual(w.appelsBase.map((a) => a.fonction), ['sync_etat'], 'seule la lecture de l\'état est faite');
+  assert.deepEqual(w.appelsBase.map((a) => a.fonction), ['sync_etat', 'sync_cloture_candidats'], 'seules des lectures sont faites');
 });
 
 test('11. les secrets ne sont jamais affichés et sont envoyés dans les bons en-têtes', async () => {
@@ -237,4 +238,60 @@ test('18. /usage ne donne que le nombre utilisé : il est pris en compte pour le
   assert.equal(r.code, 0, r.texte);
   assert.deepEqual(w.chemins(), []);
   assert.match(r.texte, /budget/);
+});
+
+async function tournoiPret(nom) {
+  const t = (await w.b.admin("insert into public.tournaments (annee, nom, categorie, etat) values (2026, $1, 'masters_1000', 'en_cours') returning id", [nom])).rows[0].id;
+  const sf = await w.b.nouveauMatch({ tournoi: t, tour: 'SF', p1: TENNIS.alcaraz, p2: TENNIS.fritz });
+  const f = await w.b.nouveauMatch({ tournoi: t, tour: 'F', p1: TENNIS.alcaraz, p2: TENNIS.sinner });
+  for (const m of [sf, f]) for (const u of TESTS) await w.b.parier(u, m, 1, 8);
+  await w.b.terminer(sf, { vainqueur: 1, sets: 2 });
+  await w.b.terminer(f, { vainqueur: 1, sets: 2 });
+  return t;
+}
+const etatTournoi = async (t) => (await w.b.admin('select etat from public.tournaments where id = $1', [t])).rows[0].etat;
+const nbResultats = async (t) => (await w.b.admin('select count(*)::int n from public.tournament_results where tournament_id = $1', [t])).rows[0].n;
+
+test('19. simulation : la clôture est calculée mais rien n\'est enregistré', async () => {
+  const t = await tournoiPret('Clôture simulée');
+  const r = await passer(['--simulation']);
+  assert.equal(r.code, 0, r.texte);
+  assert.match(r.texte, /simulation : « Clôture simulée » serait clôturé/);
+  assert.equal(await etatTournoi(t), 'en_cours');
+  assert.equal(await nbResultats(t), 0);
+});
+
+test('20. passage normal : le tournoi dont la finale est terminée et tous les matchs complets est clôturé, avec ses points', async () => {
+  const t = (await w.b.admin("select id from public.tournaments where nom = 'Clôture simulée'")).rows[0].id;
+  const r = await passer();
+  assert.equal(r.code, 0, r.texte);
+  assert.match(r.texte, /tournoi « Clôture simulée » CLÔTURÉ \(3 résultat\(s\) archivés\)/);
+  assert.equal(await etatTournoi(t), 'clos');
+  const x = (await w.b.admin('select score_final, rang from public.tournament_results where tournament_id = $1 order by joueur_id', [t])).rows;
+  // trois joueurs identiques (SF et F à 8 de confiance, tous gagnants : 8×2 + 8×2 = 32), égalité à trois : bonus 12/3 = 4
+  assert.deepEqual(x.map((l) => [l.score_final, l.rang]), [['36', 1], ['36', 1], ['36', 1]]);
+  const r2 = await passer();
+  assert.doesNotMatch(r2.texte, /CLÔTURÉ/, 'déjà clos : plus rien à faire');
+});
+
+test('21. la clôture a lieu même quand l\'API n\'est pas appelée (hors fenêtre horaire)', async () => {
+  const t = await tournoiPret('Clôture de nuit');
+  const sortie = [];
+  const code = await lancer({ argv: [], env: ENV, fetchImpl: w.fetchImpl.bind(w), sortie: (x) => sortie.push(x), parametres: { heureDebut: 24, heureFin: 0 }, dormirImpl: async () => {} });
+  assert.equal(code, 0, sortie.join('\n'));
+  assert.match(sortie.join('\n'), /aucun appel entre/);
+  assert.equal(await etatTournoi(t), 'clos');
+});
+
+test('22. une clôture qui échoue fait échouer la tâche (code 1, visible dans GitHub) et sera retentée au passage suivant', async () => {
+  const t = await tournoiPret('Clôture en échec');
+  w.rpcEchec.sync_cloturer_tournoi = true;
+  let r = await passer();
+  assert.equal(r.code, 1, r.texte);
+  assert.match(r.texte, /ÉCHEC de la clôture de « Clôture en échec »/);
+  assert.equal(await etatTournoi(t), 'en_cours');
+  delete w.rpcEchec.sync_cloturer_tournoi;
+  r = await passer();
+  assert.equal(r.code, 0, r.texte);
+  assert.equal(await etatTournoi(t), 'clos');
 });
