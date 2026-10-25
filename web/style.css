@@ -54,7 +54,7 @@ body {
   box-shadow: 0 6px 24px rgba(31, 77, 67, .15);
 }
 .carte-connexion h1 { margin: 0 0 4px; font-size: 1.6rem; color: var(--vert-fonce); font-weight: 800; }
-.carte-connexion h1 span { color: var(--terrain); }
+.carte-connexion h1 span { color: var(--vert-fonce); }
 .carte-connexion p.sous-titre { margin: 0 0 20px; color: var(--gris); }
 
 label { display: block; font-weight: 600; margin: 14px 0 4px; }
@@ -95,3 +95,50 @@ button.discret:hover { background: rgba(255, 255, 255, .15); }
 }
 .carte h2 { margin: 0 0 6px; font-size: 1.1rem; color: var(--vert-fonce); }
 .carte p { margin: 0; color: var(--gris); }
+
+/* ---------- Jalon 3.2 : tournois et matchs ---------- */
+.bandeau h1 a { color: inherit; text-decoration: none; }
+.mention-test { font-size: .75rem; background: var(--balle); color: var(--vert-fonce); padding: 2px 8px; border-radius: 999px; font-weight: 600; }
+.chargement-court { color: var(--gris); text-align: center; margin: 40px 0; }
+
+.titre-annee { font-size: 1.3rem; color: var(--vert-fonce); margin: 24px 0 10px; }
+
+a.carte-tournoi { display: block; color: inherit; text-decoration: none; border-left: 6px solid var(--vert); position: relative; }
+a.carte-tournoi:hover { box-shadow: 0 4px 16px rgba(31, 77, 67, .18); }
+.carte-tournoi h3, .entete-tournoi h2 { margin: 4px 0; color: var(--vert-fonce); }
+.carte-tournoi p { margin: 2px 0; }
+.periode { font-weight: 600; color: var(--texte); }
+.categorie-grand_slam { border-left-color: var(--terrain); }
+.categorie-masters_1000 { border-left-color: var(--vert); }
+.categorie-atp_finals { border-left-color: #b8860b; }
+.entete-tournoi { border-left: 6px solid var(--vert); }
+
+.badge { display: inline-block; font-size: .75rem; font-weight: 600; padding: 2px 9px; border-radius: 999px; background: #e6ece9; color: var(--vert-fonce); margin: 2px 4px 2px 0; }
+.badge-categorie { background: var(--vert-fonce); color: #fff; }
+.badge-direct { background: #fde4e1; color: var(--erreur); }
+.badge-verrou { background: #fff1c9; color: #7a5a00; }
+.badge-revele { background: #dff3e4; color: #1b5e2e; }
+.etat-en_cours, .etat-pari_tournoi_ouvert { background: var(--balle); }
+.etat-clos { background: #d9dfdc; color: var(--gris); }
+.palmares { margin-top: 10px; color: var(--texte); }
+
+a.retour { display: inline-block; margin: 0 0 12px; color: var(--vert-fonce); font-weight: 600; text-decoration: none; }
+
+.tour { background: #fff; border-radius: var(--rayon); margin-bottom: 12px; box-shadow: 0 2px 10px rgba(31, 77, 67, .08); }
+.tour summary { cursor: pointer; padding: 14px 18px; font-weight: 800; color: var(--vert-fonce); display: flex; justify-content: space-between; gap: 10px; list-style-position: inside; }
+.tour summary .compte { font-weight: 400; color: var(--gris); font-size: .9rem; }
+.tour-termine summary { color: var(--gris); }
+.tour-a-venir { padding: 14px 18px; opacity: .55; background: #eceeed; box-shadow: none; }
+.tour-a-venir h3 { margin: 0; font-size: 1rem; color: var(--gris); }
+.tour-a-venir p { margin: 2px 0 0; color: var(--gris); }
+
+.matchs { display: grid; gap: 10px; padding: 0 12px 12px; grid-template-columns: 1fr; }
+@media (min-width: 720px) { .matchs { grid-template-columns: 1fr 1fr; } }
+.match { border: 1px solid #dde5e1; border-radius: 12px; padding: 10px 12px; background: #fbfcfb; }
+.match-entete { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
+.heure { font-size: .85rem; color: var(--gris); }
+.joueur-match { padding: 3px 0; }
+.joueur-match.gagnant { font-weight: 800; color: var(--vert-fonce); }
+.joueur-match .pays { font-size: .7rem; color: var(--gris); font-weight: 400; margin-left: 4px; }
+.coupe { color: var(--vert); }
+.score { margin-top: 6px; font-variant-numeric: tabular-nums; font-weight: 600; color: var(--terrain); }

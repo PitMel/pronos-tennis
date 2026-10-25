@@ -1,20 +1,21 @@
 // Pronos Tennis — point d'entrée de l'application (JavaScript natif, modules ES, sans compilation).
-// Jalon 3.1 : connexion, mémorisation de la session, déconnexion. Le contenu viendra aux jalons suivants.
+// Jalon 3.1 : connexion, session mémorisée, déconnexion.
+// Jalon 3.2 : liste des tournois et page tournoi en lecture (matchs groupés par tour).
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 import { SUPABASE_URL, SUPABASE_CLE_PUBLIABLE } from './config.js';
 import { emailTechnique, messageErreurConnexion } from './js/identifiants.js';
+import { echapper } from './js/outils.js';
+import { creerDonnees } from './js/donnees.js';
+import { htmlListeTournois, htmlPageTournoi, htmlErreur } from './js/vues.js';
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_CLE_PUBLIABLE, {
   // La session est mémorisée sur l'appareil (localStorage) et renouvelée toute seule.
   auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false },
 });
-
+const donnees = creerDonnees(supabase);
 const racine = document.getElementById('app');
 
-/** Échappe le texte venant de la base avant de l'insérer dans la page. */
-function echapper(texte) {
-  return String(texte ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-}
+let profilCourant = null;
 
 function pastille(profil) {
   const initiale = echapper((profil.prenom || '?').trim().charAt(0).toUpperCase());
@@ -24,6 +25,7 @@ function pastille(profil) {
 
 /* ---------- Écran de connexion ---------- */
 function afficherConnexion(message = '') {
+  profilCourant = null;
   racine.innerHTML = `
     <form class="carte-connexion" id="form-connexion" autocomplete="on">
       <h1>Pronos <span>Tennis</span></h1>
@@ -56,23 +58,54 @@ function afficherConnexion(message = '') {
   document.getElementById('nom').focus();
 }
 
-/* ---------- Écran d'accueil (provisoire) ---------- */
-async function afficherAccueil(profil) {
+/* ---------- Cadre de l'application connectée ---------- */
+function afficherCadre(profil) {
   racine.innerHTML = `
     <header class="bandeau">
-      <h1>Pronos <span>Tennis</span></h1>
+      <h1><a href="#/">Pronos <span>Tennis</span></a></h1>
+      ${profil.is_test ? '<span class="mention-test">Compte de test</span>' : ''}
       ${pastille(profil)}
       <button class="discret" id="deconnexion" type="button">Déconnexion</button>
     </header>
-    <section class="carte">
-      <h2>Bonjour ${echapper(profil.prenom)}</h2>
-      <p>Tu es connecté${profil.is_test ? ' (compte de test)' : ''}${profil.is_admin ? ', administrateur' : ''}. Les tournois et les paris arrivent aux prochains jalons.</p>
-    </section>`;
+    <main id="contenu"></main>`;
   document.getElementById('deconnexion').addEventListener('click', async () => {
     await supabase.auth.signOut();
+    window.location.hash = '';
     afficherConnexion();
   });
 }
+
+/* ---------- Routage par l'adresse (#/ ou #/tournoi/12) ---------- */
+function lireRoute() {
+  const m = /^#\/tournoi\/(\d+)$/.exec(window.location.hash);
+  return m ? { nom: 'tournoi', id: Number(m[1]) } : { nom: 'accueil' };
+}
+
+async function afficherRoute() {
+  if (!profilCourant) return;
+  const contenu = document.getElementById('contenu');
+  if (!contenu) return;
+  const route = lireRoute();
+  contenu.innerHTML = '<p class="chargement-court">Chargement…</p>';
+  try {
+    if (route.nom === 'tournoi') {
+      const tournoi = await donnees.tournoi(route.id);
+      if (!tournoi) { contenu.innerHTML = htmlErreur('Ce tournoi n’existe pas.'); return; }
+      const matchs = await donnees.matchs(route.id);
+      const joueurs = await donnees.joueurs([
+        ...matchs.flatMap((m) => [m.p1_id, m.p2_id]), tournoi.vainqueur_id, tournoi.finaliste_id,
+      ]);
+      contenu.innerHTML = htmlPageTournoi({ tournoi, matchs, joueurs });
+    } else {
+      contenu.innerHTML = htmlListeTournois(await donnees.tournois());
+    }
+    window.scrollTo(0, 0);
+  } catch {
+    contenu.innerHTML = htmlErreur('Impossible de charger les données. Vérifie ta connexion internet, puis réessaie.');
+  }
+}
+
+window.addEventListener('hashchange', afficherRoute);
 
 /* ---------- Démarrage ---------- */
 async function demarrer() {
@@ -95,7 +128,9 @@ async function demarrer() {
     afficherConnexion('Ce compte est désactivé : préviens Pierre.');
     return;
   }
-  await afficherAccueil(profil);
+  profilCourant = profil;
+  afficherCadre(profil);
+  await afficherRoute();
 }
 
 demarrer().catch(() => afficherConnexion('Connexion impossible : vérifie ta connexion internet.'));
