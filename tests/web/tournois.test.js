@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { echapper, formaterHeureParis, formaterPeriode } from '../../web/js/outils.js';
-import { ordreTours, grouperParTour, formaterScore, nomAvecClassement, grouperParAnnee } from '../../web/js/tournois.js';
+import { echapper, formaterHeureParis, formaterPeriode, anneeCourante } from '../../web/js/outils.js';
+import { ordreTours, grouperParTour, formaterScore, nomAvecClassement, grouperParAnnee, lieuEtSurface, etapesProgression, LIBELLES_TOURS } from '../../web/js/tournois.js';
 import { htmlListeTournois, htmlPageTournoi, htmlCarteMatch } from '../../web/js/vues.js';
 
 const m = (id, tour, extra = {}) => ({
@@ -94,7 +94,9 @@ test('vues : liste des tournois, échappement et lien', () => {
   assert.match(html, /Paris &lt;b&gt;/);
   assert.doesNotMatch(html, /<b>/);
   assert.match(html, /2 au 8 novembre 2026/);
-  assert.match(html, /\(en salle\)/);
+  assert.match(html, /Paris · dur · indoor/);
+  assert.doesNotMatch(html, /en salle/);
+  assert.match(html, /Saison 2026/);
   assert.match(htmlListeTournois([]), /Aucun tournoi/);
 });
 
@@ -125,4 +127,51 @@ test('vues : page tournoi (tour courant ouvert, tours futurs grisés, palmarès 
   assert.doesNotMatch(html, /Vainqueur :/);
   const clos = htmlPageTournoi({ tournoi: { ...tournoi, etat: 'clos', vainqueur_id: 1, finaliste_id: 2 }, matchs: [m(1, 'F', { statut: 'termine' })], joueurs });
   assert.match(clos, /Vainqueur : <strong>Alcaraz<\/strong> · finaliste : Fritz/);
+});
+
+test('anneeCourante : année civile à Paris', () => {
+  assert.equal(anneeCourante(new Date('2026-10-25T12:00:00Z')), 2026);
+  assert.equal(anneeCourante(new Date('2026-12-31T23:30:00Z')), 2027); // il est déjà 0 h 30 le 1er janvier à Paris
+});
+
+test('« indoor » et « Round Robin » remplacent « en salle » et « Poules »', () => {
+  assert.equal(lieuEtSurface({ ville: 'Turin', surface: 'dur', indoor: true }), 'Turin · dur · indoor');
+  assert.equal(lieuEtSurface({ ville: 'Madrid', surface: 'terre', indoor: false }), 'Madrid · terre battue');
+  assert.equal(lieuEtSurface({ ville: null, surface: null, indoor: false }), '');
+  assert.equal(LIBELLES_TOURS.RR, 'Round Robin');
+  const finals = { id: 2, annee: 2026, nom: 'Nitto ATP Finals', ville: 'Turin', surface: 'dur', indoor: true, categorie: 'atp_finals', date_debut: null, date_fin: null, etat: 'a_venir', vainqueur_id: null, finaliste_id: null };
+  const html = htmlPageTournoi({ tournoi: finals, matchs: [m(1, 'RR')], joueurs });
+  assert.match(html, /Round Robin/);
+  assert.doesNotMatch(html, /Poules/);
+  assert.match(html, /Turin · dur · indoor/);
+});
+
+test('etapesProgression : balle sur le tour en cours, coches sur les tours finis', () => {
+  const e = etapesProgression(grouperParTour([m(1, 'R16', { statut: 'termine' }), m(2, 'QF')], 'masters_1000'));
+  assert.deepEqual(e.map((x) => [x.tour, x.etat, x.balle]), [['R16', 'fait', false], ['QF', 'en-cours', true], ['SF', 'a-venir', false], ['F', 'a-venir', false]]);
+  assert.deepEqual(e.map((x) => x.libelle), ['Huitièmes', 'Quarts', 'Demies', 'Finale']);
+});
+
+test('etapesProgression : tournoi fini = tout « fait », balle sur la finale ; sans match = rien', () => {
+  const fini = etapesProgression(grouperParTour(['R16', 'QF', 'SF', 'F'].map((t, i) => m(i + 1, t, { statut: 'termine' })), 'masters_1000'));
+  assert.deepEqual(fini.map((x) => x.etat), ['fait', 'fait', 'fait', 'fait']);
+  assert.deepEqual(fini.map((x) => x.balle), [false, false, false, true]);
+  const vide = etapesProgression(grouperParTour([], 'masters_1000'));
+  assert.deepEqual(vide.map((x) => [x.etat, x.balle]), [['a-venir', false], ['a-venir', false], ['a-venir', false], ['a-venir', false]]);
+});
+
+test('vues : en-tête du tournoi (titre d\u2019abord, détails dessous, balle de tennis) et carte de la saison', () => {
+  const tournoi = { id: 1, annee: 2026, nom: 'Rolex Shanghai Masters', ville: 'Shanghai', surface: 'dur', indoor: false, categorie: 'masters_1000', date_debut: '2026-10-07', date_fin: '2026-10-18', etat: 'en_cours', vainqueur_id: null, finaliste_id: null };
+  const html = htmlPageTournoi({ tournoi, matchs: [m(1, 'R16', { statut: 'termine' }), m(2, 'QF')], joueurs });
+  assert.ok(html.indexOf('hero-titre') < html.indexOf('hero-details'));
+  assert.ok(html.indexOf('hero-details') < html.indexOf('class="etapes"'));
+  assert.match(html, /Masters 1000 · 7 au 18 octobre 2026 · Shanghai · dur/);
+  assert.match(html, /etape-balle/);
+  assert.match(html, /<svg[^>]*><circle[^>]*fill="#D8E64C"/);
+  const liste = htmlListeTournois([tournoi]);
+  // carte : titre et étiquette de catégorie sur la même ligne (étiquette à droite), puis dates, puis lieu et surface
+  const carte = liste.slice(liste.indexOf('carte-tournoi'));
+  assert.ok(carte.indexOf('<h3>') < carte.indexOf('badge-categorie'));
+  assert.ok(carte.indexOf('badge-categorie') < carte.indexOf('class="periode"'));
+  assert.ok(carte.indexOf('class="periode"') < carte.indexOf('class="lieu"'));
 });

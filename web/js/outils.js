@@ -43,3 +43,8 @@ export function formaterPeriode(debut, fin) {
   if (a.jour !== b.jour) return `${a.jour} au ${b.jour} ${b.mois} ${b.annee}`;
   return `${a.jour} ${a.mois} ${a.annee}`;
 }
+
+/** Année civile en cours à Paris (« Saison 2026 »). */
+export function anneeCourante(maintenant = new Date()) {
+  return Number(new Intl.DateTimeFormat('fr-FR', { timeZone: FUSEAU, year: 'numeric' }).format(maintenant));
+}

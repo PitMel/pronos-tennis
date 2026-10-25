@@ -50,12 +50,14 @@ body {
   margin: 12vh auto 0;
   background: #fff;
   border-radius: var(--rayon);
-  padding: 28px 24px;
+  overflow: hidden;
   box-shadow: 0 6px 24px rgba(31, 77, 67, .15);
 }
-.carte-connexion h1 { margin: 0 0 4px; font-size: 1.6rem; color: var(--vert-fonce); font-weight: 800; }
-.carte-connexion h1 span { color: var(--vert-fonce); }
-.carte-connexion p.sous-titre { margin: 0 0 20px; color: var(--gris); }
+.entete-connexion { background: var(--vert-fonce); color: #fff; padding: 26px 24px 22px; }
+.entete-connexion h1 { margin: 0 0 4px; font-size: 1.9rem; font-weight: 800; letter-spacing: -.02em; }
+.entete-connexion h1 span { color: var(--balle); }
+.entete-connexion p.sous-titre { margin: 0; color: #BFD2C9; }
+.corps-connexion { padding: 8px 24px 26px; }
 
 label { display: block; font-weight: 600; margin: 14px 0 4px; }
 input[type=text], input[type=password] {
@@ -105,13 +107,12 @@ button.discret:hover { background: rgba(255, 255, 255, .15); }
 
 a.carte-tournoi { display: block; color: inherit; text-decoration: none; border-left: 6px solid var(--vert); position: relative; }
 a.carte-tournoi:hover { box-shadow: 0 4px 16px rgba(31, 77, 67, .18); }
-.carte-tournoi h3, .entete-tournoi h2 { margin: 4px 0; color: var(--vert-fonce); }
+.carte-tournoi h3 { margin: 0; color: var(--vert-fonce); font-size: 1.15rem; }
 .carte-tournoi p { margin: 2px 0; }
 .periode { font-weight: 600; color: var(--texte); }
 .categorie-grand_slam { border-left-color: var(--terrain); }
 .categorie-masters_1000 { border-left-color: var(--vert); }
 .categorie-atp_finals { border-left-color: #b8860b; }
-.entete-tournoi { border-left: 6px solid var(--vert); }
 
 .badge { display: inline-block; font-size: .75rem; font-weight: 600; padding: 2px 9px; border-radius: 999px; background: #e6ece9; color: var(--vert-fonce); margin: 2px 4px 2px 0; }
 .badge-categorie { background: var(--vert-fonce); color: #fff; }
@@ -142,3 +143,41 @@ a.retour { display: inline-block; margin: 0 0 12px; color: var(--vert-fonce); fo
 .joueur-match .pays { font-size: .7rem; color: var(--gris); font-weight: 400; margin-left: 4px; }
 .coupe { color: var(--vert); }
 .score { margin-top: 6px; font-variant-numeric: tabular-nums; font-weight: 600; color: var(--terrain); }
+
+/* ---------- Saison : classement et cartes ---------- */
+.ligne-titre { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.ligne-titre .badge { flex-shrink: 0; margin: 0; }
+.carte-tournoi .periode { margin-top: 4px; }
+.carte-tournoi .lieu { color: var(--gris); }
+.carte-tournoi .badge-etat { margin-top: 8px; }
+.vide { color: var(--gris); }
+
+.carte-race h3 { margin: 0; font-size: 1.15rem; color: var(--vert-fonce); }
+.sous-race { font-size: .85rem; margin-bottom: 8px; }
+.liste-race { list-style: none; margin: 0; padding: 0; }
+.ligne-race { display: grid; grid-template-columns: 28px 30px 1fr auto; gap: 10px; align-items: center; padding: 7px 0; border-top: 1px solid #e6ece9; }
+.ligne-race:first-child { border-top: 0; }
+.rang { font-weight: 800; font-size: 1.2rem; text-align: center; color: var(--vert-fonce); }
+.nom-race { font-weight: 600; }
+.points-race { font-weight: 800; font-variant-numeric: tabular-nums; }
+.pastille-petite { width: 28px; height: 28px; font-size: .85rem; }
+
+/* ---------- En-tête d'un tournoi (maquette 1) ---------- */
+.hero { background: var(--vert-fonce); color: #fff; margin: -20px -16px 18px; padding: 16px 16px 20px; }
+.hero-titre { font-size: clamp(1.9rem, 6vw, 2.8rem); line-height: 1.05; letter-spacing: -.03em; font-weight: 800; margin: 10px 0 8px; color: #fff; }
+.hero-details { margin: 0 0 10px; color: #BFD2C9; }
+.hero .badge-etat { background: rgba(255, 255, 255, .15); color: #fff; margin-left: 0; }
+.hero .etat-en_cours, .hero .etat-pari_tournoi_ouvert { background: var(--balle); color: var(--vert-fonce); }
+.hero .palmares { color: #fff; margin: 10px 0 0; }
+a.retour-clair { color: #BFD2C9; margin: 0; }
+
+.etapes { display: flex; list-style: none; margin: 22px 0 0; padding: 0; position: relative; }
+.etapes::before { content: ""; position: absolute; left: 8%; right: 8%; top: 14px; height: 2px; background: #F4F7F2; opacity: .28; }
+.etape { flex: 1; text-align: center; position: relative; font-size: .8rem; color: #BFD2C9; }
+.etape i { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; margin: 0 auto; background: var(--vert-fonce); border: 2px solid rgba(244, 247, 242, .35); }
+.etape b { display: block; font-weight: 600; margin-top: 6px; }
+.etape-fait i { background: #F4F7F2; border-color: #F4F7F2; }
+.etape-fait b { color: #fff; }
+.etape-en-cours b, .etape-balle b { color: var(--balle); }
+.etape-balle i { background: transparent; border: 0; width: 34px; height: 34px; margin-top: -3px; }
+.etape-balle svg { width: 32px; height: 32px; }

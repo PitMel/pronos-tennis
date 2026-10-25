@@ -1,12 +1,13 @@
 // Pronos Tennis — point d'entrée de l'application (JavaScript natif, modules ES, sans compilation).
 // Jalon 3.1 : connexion, session mémorisée, déconnexion.
-// Jalon 3.2 : liste des tournois et page tournoi en lecture (matchs groupés par tour).
+// Jalon 3.2 : saison (classement Race + tournois) et page tournoi en lecture (matchs groupés par tour).
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 import { SUPABASE_URL, SUPABASE_CLE_PUBLIABLE } from './config.js';
 import { emailTechnique, messageErreurConnexion } from './js/identifiants.js';
-import { echapper } from './js/outils.js';
+import { echapper, anneeCourante } from './js/outils.js';
+import { construireRace } from './js/classement.js';
 import { creerDonnees } from './js/donnees.js';
-import { htmlListeTournois, htmlPageTournoi, htmlErreur } from './js/vues.js';
+import { htmlListeTournois, htmlPageTournoi, htmlErreur, htmlPastille } from './js/vues.js';
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_CLE_PUBLIABLE, {
   // La session est mémorisée sur l'appareil (localStorage) et renouvelée toute seule.
@@ -17,25 +18,23 @@ const racine = document.getElementById('app');
 
 let profilCourant = null;
 
-function pastille(profil) {
-  const initiale = echapper((profil.prenom || '?').trim().charAt(0).toUpperCase());
-  const couleur = /^#[0-9A-Fa-f]{6}$/.test(profil.couleur ?? '') ? profil.couleur : '#2F6CC2';
-  return `<span class="pastille" style="background:${couleur}" aria-hidden="true">${initiale}</span>`;
-}
-
 /* ---------- Écran de connexion ---------- */
 function afficherConnexion(message = '') {
   profilCourant = null;
   racine.innerHTML = `
     <form class="carte-connexion" id="form-connexion" autocomplete="on">
-      <h1>Pronos <span>Tennis</span></h1>
-      <p class="sous-titre">Connecte-toi pour parier.</p>
-      <label for="nom">Prénom</label>
-      <input id="nom" name="username" type="text" autocomplete="username" autocapitalize="words" required>
-      <label for="mdp">Mot de passe</label>
-      <input id="mdp" name="password" type="password" autocomplete="current-password" required>
-      <p class="erreur" id="erreur" role="alert">${echapper(message)}</p>
-      <button class="principal" type="submit">Se connecter</button>
+      <div class="entete-connexion">
+        <h1>Pronos <span>Tennis</span></h1>
+        <p class="sous-titre">Connecte-toi pour parier.</p>
+      </div>
+      <div class="corps-connexion">
+        <label for="nom">Prénom</label>
+        <input id="nom" name="username" type="text" autocomplete="username" autocapitalize="words" required>
+        <label for="mdp">Mot de passe</label>
+        <input id="mdp" name="password" type="password" autocomplete="current-password" required>
+        <p class="erreur" id="erreur" role="alert">${echapper(message)}</p>
+        <button class="principal" type="submit">Se connecter</button>
+      </div>
     </form>`;
 
   const form = document.getElementById('form-connexion');
@@ -64,7 +63,7 @@ function afficherCadre(profil) {
     <header class="bandeau">
       <h1><a href="#/">Pronos <span>Tennis</span></a></h1>
       ${profil.is_test ? '<span class="mention-test">Compte de test</span>' : ''}
-      ${pastille(profil)}
+      ${htmlPastille(profil)}
       <button class="discret" id="deconnexion" type="button">Déconnexion</button>
     </header>
     <main id="contenu"></main>`;
@@ -97,7 +96,12 @@ async function afficherRoute() {
       ]);
       contenu.innerHTML = htmlPageTournoi({ tournoi, matchs, joueurs });
     } else {
-      contenu.innerHTML = htmlListeTournois(await donnees.tournois());
+      const [tournois, resultats, profils, moteur] = await Promise.all([
+        donnees.tournois(), donnees.resultats(), donnees.profilsGroupe(profilCourant.is_test), import('./moteur/index.js'),
+      ]);
+      const annee = anneeCourante();
+      const race = construireRace({ moteur, annee, tournois, resultats, profils });
+      contenu.innerHTML = htmlListeTournois(tournois, { race, anneeCourante: annee });
     }
     window.scrollTo(0, 0);
   } catch {

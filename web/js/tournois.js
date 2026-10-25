@@ -13,7 +13,14 @@ export const LIBELLES_TOURS = {
   QF: 'Quarts de finale',
   SF: 'Demi-finales',
   F: 'Finale',
-  RR: 'Poules',
+  RR: 'Round Robin',
+};
+export const LIBELLES_COURTS = {
+  R16: 'Huitièmes',
+  QF: 'Quarts',
+  SF: 'Demies',
+  F: 'Finale',
+  RR: 'Round Robin',
 };
 
 /** Tours dans l'ordre d'affichage (cahier des charges, 12.2 : ATP Finals = poules, demi-finales, finale). */
@@ -91,4 +98,31 @@ export function grouperParAnnee(tournois) {
         return dx === dy ? x.nom.localeCompare(y.nom, 'fr') : dx.localeCompare(dy);
       }),
     }));
+}
+
+/** « Paris · dur · indoor » (ville, surface, puis « indoor » si le tournoi se joue en salle). */
+export function lieuEtSurface(t) {
+  return [t.ville, t.surface ? SURFACES[t.surface] : null, t.indoor ? 'indoor' : null].filter(Boolean).join(' · ');
+}
+
+/**
+ * Barre de progression des tours (en-tête de la page tournoi, maquette 1).
+ * Chaque étape : { tour, libelle, etat: 'fait' | 'en-cours' | 'a-venir', balle }.
+ * La balle de tennis marque le tour en cours ; tournoi entièrement joué : tout est « fait » et la balle est sur la finale.
+ */
+export function etapesProgression(sections) {
+  const aDesMatchs = sections.some((s) => !s.aVenir);
+  const fini = aDesMatchs && !sections.some((s) => s.courant) && sections.filter((s) => !s.aVenir).every((s) => s.termine)
+    && sections[sections.length - 1].termine;
+  return sections.map((s, i) => {
+    let etat = 'a-venir';
+    if (s.courant) etat = 'en-cours';
+    else if (s.termine) etat = 'fait';
+    return {
+      tour: s.tour,
+      libelle: LIBELLES_COURTS[s.tour],
+      etat,
+      balle: s.courant || (fini && i === sections.length - 1),
+    };
+  });
 }

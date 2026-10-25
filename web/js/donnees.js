@@ -27,6 +27,16 @@ export function creerDonnees(supabase) {
         .eq('tournament_id', tournoiId));
     },
 
+    /** Les parieurs du groupe (réel ou test) de la personne connectée, actifs seulement. */
+    profilsGroupe(isTest) {
+      return lire(supabase.from('profiles').select('id, prenom, couleur').eq('is_test', isTest).eq('actif', true).order('prenom'));
+    },
+
+    /** Archives de clôture (scores finaux figés), pour la Race. */
+    resultats() {
+      return lire(supabase.from('tournament_results').select('tournament_id, joueur_id, score_final'));
+    },
+
     /** Joueurs de tennis demandés, sous forme de Map id → joueur. */
     async joueurs(ids) {
       const uniques = [...new Set(ids.filter((i) => i !== null && i !== undefined))];
