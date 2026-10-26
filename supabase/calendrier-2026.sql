@@ -23,3 +23,7 @@ on conflict do nothing;
 select t.nom, t.categorie, t.etat, array_agg(a.api_id order by a.api_id) as identifiants_api
 from public.tournaments t join public.tournament_api_ids a on a.tournament_id = t.id
 group by t.id, t.nom, t.categorie, t.etat order by t.nom;
+
+-- Dates des ATP Finals confirmées par Pierre le 26 oct. 2026 : 15 au 22 novembre 2026 (elles servent à la fenêtre de synchronisation).
+update public.tournaments set date_debut = '2026-11-15', date_fin = '2026-11-22'
+where annee = 2026 and nom = 'Nitto ATP Finals' and categorie = 'atp_finals';

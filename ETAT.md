@@ -119,7 +119,7 @@ Choix de conception de l'étape 3.3 (à signaler à Pierre) : la maquette 1 n'es
 
 ## Points ouverts
 
-- **Dates des ATP Finals 2026 : à confirmer par Pierre.** Pierre a indiqué « 9 au 13 décembre 2026 » ; la source officielle de promotion de Turin (turismotorino.org) donne **15 au 22 novembre 2026**. Dates **non saisies** en attendant (elles servent à la synchronisation).
+- Dates des ATP Finals 2026 : **réglé le 26 oct.** Pierre confirme **15 au 22 novembre 2026** ; saisies dans la vraie base (tournoi n° 12) et dans `supabase/calendrier-2026.sql`.
 - Section 14 du cahier des charges : n° 2 (codes de tours : R16 = 4ᵉ tour du Grand Chelem ? poules des ATP Finals ?), n° 3 et 4 (quota API et compteur d'usage), n° 5 (abandons dans l'API), n° 8 (photos), n° 9 à 11 (robustesse, notifications), n° 12 (JavaScript natif pour le moteur ; interface à confirmer en début d'étape 3).
 - n° 1 résolu : `reference/api/masters_1000.json` montre que les 9 Masters existent si on fusionne les filtres `category = masters_1000` et `tier = atp_1000` ; chacun a deux identifiants ; le Canada apparaît sous Toronto et Montréal (d'où `tournament_api_ids`).
 - **Extension d'e-mail technique** : `@pronos.invalid` n'a pas été vérifiée avec Supabase. Si l'écran « Add user » la refuse, utiliser une autre adresse (par ex. `andre@example.com`) à l'identique dans l'écran et dans `comptes.sql`.
