@@ -1,13 +1,16 @@
 // Pronos Tennis — point d'entrée de l'application (JavaScript natif, modules ES, sans compilation).
 // Jalon 3.1 : connexion, session mémorisée, déconnexion.
-// Jalon 3.2 : saison (classement Race + tournois) et page tournoi en lecture (matchs groupés par tour).
+// Jalon 3.2 : saison (classement Race + tournois) et page tournoi (matchs groupés par tour).
+// Jalon 3.3 : cartes « Filet » et saisie des paris de match.
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 import { SUPABASE_URL, SUPABASE_CLE_PUBLIABLE } from './config.js';
 import { emailTechnique, messageErreurConnexion } from './js/identifiants.js';
 import { echapper, anneeCourante } from './js/outils.js';
 import { construireRace } from './js/classement.js';
 import { creerDonnees } from './js/donnees.js';
-import { htmlListeTournois, htmlPageTournoi, htmlErreur, htmlPastille } from './js/vues.js';
+import { htmlListeTournois, htmlPageTournoi, htmlErreur, htmlPastille, htmlCarteMatch } from './js/vues.js';
+import { ordonnerProfils, regrouperParis, regrouperQui, pariAEnregistrer, messageErreurPari } from './js/paris.js';
+import { brancherParis } from './js/paris-ui.js';
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_CLE_PUBLIABLE, {
   // La session est mémorisée sur l'appareil (localStorage) et renouvelée toute seule.
@@ -67,11 +70,85 @@ function afficherCadre(profil) {
       <button class="discret" id="deconnexion" type="button">Déconnexion</button>
     </header>
     <main id="contenu"></main>`;
+  brancherParis(document.getElementById('contenu'), {
+    etat: etatParis,
+    contexte: contexteCartes,
+    matchParId: (id) => page?.matchs.find((m) => m.id === id),
+    rafraichirCarte,
+    valider: validerPari,
+  });
   document.getElementById('deconnexion').addEventListener('click', async () => {
     await supabase.auth.signOut();
     window.location.hash = '';
     afficherConnexion();
   });
+}
+
+/* ---------- Page tournoi : données, état de la saisie et rendu ---------- */
+// État de la saisie (brouillons, cartes en modification…) : partagé avec le contexte de rendu, il survit aux rafraîchissements.
+const etatParis = { brouillons: new Map(), edition: new Set(), enCours: new Set(), messages: new Map() };
+let page = null; // { tournoi, matchs, joueurs, ctx }
+
+async function chargerPageTournoi(id) {
+  const tournoi = await donnees.tournoi(id);
+  if (!tournoi) return null;
+  const matchs = await donnees.matchs(id);
+  const [joueurs, profils, lignes, moteur] = await Promise.all([
+    donnees.joueurs([...matchs.flatMap((m) => [m.p1_id, m.p2_id]), tournoi.vainqueur_id, tournoi.finaliste_id]),
+    donnees.profilsGroupe(profilCourant.is_test),
+    donnees.parisDesMatchs(matchs.map((m) => m.id)),
+    import('./moteur/index.js'),
+  ]);
+  // « qui a parié » : seulement pour les matchs encore ouverts aux paris
+  const qui = new Map();
+  await Promise.all(matchs
+    .filter((m) => m.statut === 'a_venir' && !m.neutralise && !m.verrouille)
+    .map(async (m) => { qui.set(m.id, regrouperQui(await donnees.quiAParie(m.id))); }));
+  return {
+    tournoi,
+    matchs,
+    joueurs,
+    ctx: { moi: profilCourant.id, profils: ordonnerProfils(profils, profilCourant.id), moteur, paris: regrouperParis(lignes), qui, ...etatParis },
+  };
+}
+
+function contexteCartes() {
+  return page ? { ...page.ctx, joueurs: page.joueurs, categorie: page.tournoi.categorie } : null;
+}
+
+function rafraichirCarte(id) {
+  const contenu = document.getElementById('contenu');
+  const match = page?.matchs.find((m) => m.id === id);
+  const element = contenu?.querySelector(`article.match[data-match="${id}"]`);
+  if (!match || !element) return;
+  element.outerHTML = htmlCarteMatch(match, contexteCartes());
+}
+
+async function validerPari(id) {
+  const match = page?.matchs.find((m) => m.id === id);
+  const brouillon = etatParis.brouillons.get(id);
+  if (!match || !brouillon || etatParis.enCours.has(id)) return;
+  const pari = pariAEnregistrer(brouillon, page.tournoi.categorie);
+  const erreurs = page.ctx.moteur.validerPari(pari, page.tournoi.categorie);
+  if (erreurs.length) { etatParis.messages.set(id, erreurs[0]); rafraichirCarte(id); return; }
+  etatParis.messages.delete(id);
+  etatParis.enCours.add(id);
+  rafraichirCarte(id);
+  try {
+    await donnees.enregistrerPari({ matchId: id, moi: profilCourant.id, pari, existe: page.ctx.paris.get(id)?.has(profilCourant.id) ?? false });
+    etatParis.brouillons.delete(id);
+    etatParis.edition.delete(id);
+  } catch (erreur) {
+    etatParis.messages.set(id, messageErreurPari(erreur));
+  }
+  etatParis.enCours.delete(id);
+  // Recharge la page : mon pari a pu révéler ceux des autres (tout le monde a parié) ou verrouiller le match.
+  try {
+    await afficherRoute({ silencieux: true });
+  } catch {
+    etatParis.messages.set(id, 'Pari enregistré, mais l’écran n’a pas pu être actualisé : recharge la page.');
+    rafraichirCarte(id);
+  }
 }
 
 /* ---------- Routage par l'adresse (#/ ou #/tournoi/12) ---------- */
@@ -80,22 +157,24 @@ function lireRoute() {
   return m ? { nom: 'tournoi', id: Number(m[1]) } : { nom: 'accueil' };
 }
 
-async function afficherRoute() {
+async function afficherRoute({ silencieux = false } = {}) {
   if (!profilCourant) return;
   const contenu = document.getElementById('contenu');
   if (!contenu) return;
   const route = lireRoute();
-  contenu.innerHTML = '<p class="chargement-court">Chargement…</p>';
+  // un rafraîchissement silencieux garde l'état des sections et la position de défilement
+  const ouverts = silencieux ? [...contenu.querySelectorAll('details.tour')].map((d) => d.open) : [];
+  const defilement = window.scrollY;
+  if (!silencieux) contenu.innerHTML = '<p class="chargement-court">Chargement…</p>';
   try {
     if (route.nom === 'tournoi') {
-      const tournoi = await donnees.tournoi(route.id);
-      if (!tournoi) { contenu.innerHTML = htmlErreur('Ce tournoi n’existe pas.'); return; }
-      const matchs = await donnees.matchs(route.id);
-      const joueurs = await donnees.joueurs([
-        ...matchs.flatMap((m) => [m.p1_id, m.p2_id]), tournoi.vainqueur_id, tournoi.finaliste_id,
-      ]);
-      contenu.innerHTML = htmlPageTournoi({ tournoi, matchs, joueurs });
+      const donneesPage = await chargerPageTournoi(route.id);
+      if (!donneesPage) { page = null; contenu.innerHTML = htmlErreur('Ce tournoi n’existe pas.'); return; }
+      page = donneesPage;
+      contenu.innerHTML = htmlPageTournoi(page);
+      contenu.querySelectorAll('details.tour').forEach((d, i) => { if (i < ouverts.length) d.open = ouverts[i]; });
     } else {
+      page = null;
       const [tournois, resultats, profils, moteur] = await Promise.all([
         donnees.tournois(), donnees.resultats(), donnees.profilsGroupe(profilCourant.is_test), import('./moteur/index.js'),
       ]);
@@ -103,13 +182,15 @@ async function afficherRoute() {
       const race = construireRace({ moteur, annee, tournois, resultats, profils });
       contenu.innerHTML = htmlListeTournois(tournois, { race, anneeCourante: annee });
     }
-    window.scrollTo(0, 0);
-  } catch {
+    window.scrollTo(0, silencieux ? defilement : 0);
+  } catch (erreur) {
+    if (silencieux) throw erreur;
+    page = null;
     contenu.innerHTML = htmlErreur('Impossible de charger les données. Vérifie ta connexion internet, puis réessaie.');
   }
 }
 
-window.addEventListener('hashchange', afficherRoute);
+window.addEventListener('hashchange', () => afficherRoute());
 
 /* ---------- Démarrage ---------- */
 async function demarrer() {

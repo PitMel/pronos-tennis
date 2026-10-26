@@ -1,8 +1,11 @@
 // Construction du HTML des écrans (fonctions pures : données → texte HTML). Tout texte vient échappé.
-import { echapper, formaterHeureParis, formaterPeriode } from './outils.js';
+import { echapper, formaterPeriode } from './outils.js';
 import {
-  CATEGORIES, ETATS, grouperParTour, grouperParAnnee, formaterScore, nomAvecClassement, lieuEtSurface, etapesProgression,
+  CATEGORIES, ETATS, grouperParTour, grouperParAnnee, lieuEtSurface, etapesProgression,
 } from './tournois.js';
+import { htmlCarteMatch, htmlBaremeTour, bilanDuTour } from './cartes.js';
+
+export { htmlCarteMatch };
 
 /** Pastille ronde avec l'initiale du prénom, dans la couleur du joueur. */
 export function htmlPastille(profil, classe = 'pastille') {
@@ -70,34 +73,6 @@ export function htmlListeTournois(tournois, { race = null, anneeCourante = null 
 }
 
 /* ---------- Page d'un tournoi ---------- */
-function htmlJoueurMatch(joueur, numero, match) {
-  const gagnant = match.resultat_visible && match.vainqueur === numero;
-  const pays = joueur?.pays ? ` <span class="pays">${echapper(String(joueur.pays).toUpperCase())}</span>` : '';
-  return `<div class="joueur-match${gagnant ? ' gagnant' : ''}">${echapper(nomAvecClassement(joueur))}${pays}${gagnant ? ' <span class="coupe" title="Vainqueur">✓</span>' : ''}</div>`;
-}
-
-export function htmlCarteMatch(match, joueurs) {
-  const p1 = joueurs.get(match.p1_id);
-  const p2 = joueurs.get(match.p2_id);
-  const badges = [];
-  if (match.neutralise) badges.push('<span class="badge badge-neutre">Neutralisé</span>');
-  else if (match.statut === 'en_cours') badges.push('<span class="badge badge-direct">En cours</span>');
-  else if (match.statut === 'termine' && !match.resultat_visible) badges.push('<span class="badge badge-neutre">Terminé · résultat masqué</span>');
-  if (!match.neutralise && match.statut !== 'termine' && match.verrouille) badges.push('<span class="badge badge-verrou">Paris verrouillés</span>');
-  if (match.paris_reveles && !match.neutralise) badges.push('<span class="badge badge-revele">Paris révélés</span>');
-  const score = match.resultat_visible ? formaterScore(match.score, match.fin_match) : '';
-  return `
-    <article class="match" data-match="${echapper(match.id)}">
-      <div class="match-entete">
-        <span class="heure">${echapper(formaterHeureParis(match.heure_prevue) || 'Horaire à venir')}</span>
-        <span class="badges">${badges.join('')}</span>
-      </div>
-      ${htmlJoueurMatch(p1, 1, match)}
-      ${htmlJoueurMatch(p2, 2, match)}
-      ${score ? `<div class="score">${echapper(score)}</div>` : ''}
-    </article>`;
-}
-
 function htmlProgression(sections) {
   const etapes = etapesProgression(sections);
   return `
@@ -110,12 +85,30 @@ function htmlProgression(sections) {
     </ol>`;
 }
 
-export function htmlPageTournoi({ tournoi, matchs, joueurs }) {
+export function htmlPageTournoi({ tournoi, matchs, joueurs, ctx = {} }) {
+  const contexte = { ...ctx, joueurs, categorie: tournoi.categorie };
   const sections = grouperParTour(matchs, tournoi.categorie);
   const vainqueur = tournoi.etat === 'clos' && tournoi.vainqueur_id ? joueurs.get(tournoi.vainqueur_id) : null;
   const finaliste = tournoi.etat === 'clos' && tournoi.finaliste_id ? joueurs.get(tournoi.finaliste_id) : null;
   const details = [CATEGORIES[tournoi.categorie] ?? tournoi.categorie, formaterPeriode(tournoi.date_debut, tournoi.date_fin), lieuEtSurface(tournoi)]
     .filter(Boolean).join(' · ');
+
+  const htmlSection = (s) => {
+    if (s.aVenir) return `<div class="tour tour-a-venir"><h3>${echapper(s.libelle)}</h3><p>Affiches à venir</p></div>`;
+    const bilan = s.termine ? bilanDuTour(s.matchs, contexte) : null;
+    const moi = contexte.moi;
+    const monBilan = bilan && moi && bilan.has(moi)
+      ? ` · toi <b class="${bilan.get(moi).comparer(contexte.moteur.ZERO) < 0 ? 'neg' : 'pos'}">${echapper(contexte.moteur.formaterPoints(bilan.get(moi), { signe: true }))}</b>` : '';
+    const bilanComplet = bilan
+      ? `<p class="bilan">Bilan du tour : ${(contexte.profils ?? []).filter((p) => bilan.has(p.id)).map((p) => `${echapper(p.prenom)} <b class="${bilan.get(p.id).comparer(contexte.moteur.ZERO) < 0 ? 'neg' : 'pos'}">${echapper(contexte.moteur.formaterPoints(bilan.get(p.id), { signe: true }))}</b>`).join(' · ')}</p>` : '';
+    return `<details class="tour${s.termine ? ' tour-termine' : ''}"${s.courant ? ' open' : ''}>
+           <summary><span>${echapper(s.libelle)}</span><span class="compte">${s.matchs.length} match${s.matchs.length > 1 ? 's' : ''}${s.termine ? ' · terminé' : ''}${monBilan}</span></summary>
+           ${bilanComplet}
+           ${htmlBaremeTour(tournoi.categorie, s.tour, contexte.moteur)}
+           <div class="matchs">${s.matchs.map((m) => htmlCarteMatch(m, contexte)).join('')}</div>
+         </details>`;
+  };
+
   return `
     <section class="hero categorie-${echapper(tournoi.categorie)}">
       <a class="retour retour-clair" href="#/">← Saison ${echapper(tournoi.annee)}</a>
@@ -125,12 +118,7 @@ export function htmlPageTournoi({ tournoi, matchs, joueurs }) {
       ${vainqueur ? `<p class="palmares">Vainqueur : <strong>${echapper(vainqueur.nom)}</strong>${finaliste ? ` · finaliste : ${echapper(finaliste.nom)}` : ''}</p>` : ''}
       ${htmlProgression(sections)}
     </section>
-    ${sections.map((s) => s.aVenir
-      ? `<div class="tour tour-a-venir"><h3>${echapper(s.libelle)}</h3><p>Affiches à venir</p></div>`
-      : `<details class="tour${s.termine ? ' tour-termine' : ''}"${s.courant ? ' open' : ''}>
-           <summary><span>${echapper(s.libelle)}</span><span class="compte">${s.matchs.length} match${s.matchs.length > 1 ? 's' : ''}${s.termine ? ' · terminé' : ''}</span></summary>
-           <div class="matchs">${s.matchs.map((m) => htmlCarteMatch(m, joueurs)).join('')}</div>
-         </details>`).join('')}`;
+    ${sections.map(htmlSection).join('')}`;
 }
 
 export function htmlErreur(message) {

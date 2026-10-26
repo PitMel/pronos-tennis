@@ -35,7 +35,9 @@ body {
   align-items: center;
   gap: 12px;
 }
-.bandeau h1 { font-size: 1.15rem; margin: 0; font-weight: 800; flex: 1; }
+.bandeau h1 { font-size: 1.15rem; margin: 0; font-weight: 800; flex: 1; white-space: nowrap; }
+.bandeau { gap: 8px 10px; }
+.mention-test { white-space: nowrap; }
 .bandeau h1 span { color: var(--balle); }
 
 .pastille {
@@ -135,14 +137,6 @@ a.retour { display: inline-block; margin: 0 0 12px; color: var(--vert-fonce); fo
 
 .matchs { display: grid; gap: 10px; padding: 0 12px 12px; grid-template-columns: 1fr; }
 @media (min-width: 720px) { .matchs { grid-template-columns: 1fr 1fr; } }
-.match { border: 1px solid #dde5e1; border-radius: 12px; padding: 10px 12px; background: #fbfcfb; }
-.match-entete { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
-.heure { font-size: .85rem; color: var(--gris); }
-.joueur-match { padding: 3px 0; }
-.joueur-match.gagnant { font-weight: 800; color: var(--vert-fonce); }
-.joueur-match .pays { font-size: .7rem; color: var(--gris); font-weight: 400; margin-left: 4px; }
-.coupe { color: var(--vert); }
-.score { margin-top: 6px; font-variant-numeric: tabular-nums; font-weight: 600; color: var(--terrain); }
 
 /* ---------- Saison : classement et cartes ---------- */
 .ligne-titre { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
@@ -181,3 +175,84 @@ a.retour-clair { color: #BFD2C9; margin: 0; }
 .etape-en-cours b, .etape-balle b { color: var(--balle); }
 .etape-balle i { background: transparent; border: 0; width: 34px; height: 34px; margin-top: -3px; }
 .etape-balle svg { width: 32px; height: 32px; }
+
+/* ---------- Jalon 3.3 : cartes « Filet » (maquette 1) ---------- */
+.pos { color: #1B7F44; }
+.neg { color: #D13B28; }
+.matchs { gap: 14px; padding: 0 12px 14px; }
+
+.match { background: var(--vert); color: #EAF2EC; border-radius: 22px; padding: 12px 10px 10px; border: 1px solid rgba(244, 247, 242, .10); }
+.ch { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; padding: 0 4px 8px; }
+.ch time { font-weight: 700; font-size: .95rem; color: #fff; }
+.chip { font-size: .78rem; font-weight: 700; padding: 3px 10px; border-radius: 99px; display: inline-flex; align-items: center; gap: 6px; }
+.chip.fin { background: #F4F7F2; color: #0F2A26; }
+.chip.live { background: #FFE3DC; color: #B3261E; }
+.chip.live::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: #E5483A; box-shadow: 0 0 0 3px rgba(229, 72, 58, .25); }
+.chip.wait { background: var(--terrain); color: #fff; }
+.chip.open { background: var(--balle); color: #10303A; }
+
+.terrain { display: grid; grid-template-columns: minmax(96px, 36%) 1fr; gap: 6px; align-items: stretch; }
+.terrain svg.filet { display: block; width: 100%; height: auto; }
+svg.filet[data-edition="1"] { cursor: pointer; }
+.tableau-score { display: flex; flex-direction: column; justify-content: center; }
+.ligne-joueur { display: flex; justify-content: space-between; align-items: center; gap: 6px; padding: 5px 2px; }
+.identite { display: flex; flex-direction: column; min-width: 0; }
+.nom-joueur { font-weight: 800; font-size: 1rem; line-height: 1.1; color: #fff; overflow-wrap: anywhere; }
+.rang-joueur { font-size: .72rem; color: #BFD2C9; }
+.sets { display: flex; gap: 7px; font-variant-numeric: tabular-nums; }
+.sets b { font-weight: 800; font-size: 1.05rem; color: #fff; min-width: .8em; text-align: center; }
+.ligne-joueur.gagnant .nom-joueur::after { content: " ✓"; color: var(--balle); }
+.ligne-joueur.perdant .nom-joueur, .ligne-joueur.perdant .sets b { color: #9FB7AE; font-weight: 700; }
+.filet-ligne { height: 2px; background: rgba(244, 247, 242, .55); border-radius: 2px; margin: 2px 0; }
+
+.under { background: #F4F7F2; color: #0F2A26; border-radius: 16px; padding: 12px 12px 13px; margin-top: 10px; }
+.under .t { font-weight: 700; font-size: 1rem; letter-spacing: -.01em; }
+.under .t small { font-weight: 500; color: #5E726C; font-size: .8rem; margin-left: 4px; }
+.four { display: grid; grid-template-columns: repeat(var(--n, 4), 1fr); gap: 6px; margin-top: 10px; }
+.four > div { text-align: center; padding: 6px 2px 7px; border-radius: 12px; background: #E5ECE5; min-width: 0; }
+.four .isme { background: #fff; box-shadow: inset 0 0 0 2px #0F2A26; }
+.four u { display: block; text-decoration: none; font-size: .78rem; font-weight: 700; overflow: hidden; text-overflow: ellipsis; }
+.four s { display: block; text-decoration: none; font-size: .74rem; color: #5E726C; margin: 1px 0 3px; }
+.four strong { display: block; font-size: 1.15rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+.scn { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: .85rem; }
+.scn th { font-weight: 700; font-size: .78rem; color: #5E726C; padding: 3px 0; text-align: center; }
+.scn td { padding: 7px 0; text-align: center; font-weight: 800; font-size: 1rem; border-top: 1px solid #D5DED6; font-variant-numeric: tabular-nums; }
+.scn td:first-child { text-align: left; font-weight: 600; font-size: .85rem; color: #0F2A26; }
+.mine { display: flex; gap: 8px; margin-top: 9px; flex-wrap: wrap; }
+.pill { border-radius: 99px; padding: 4px 11px; font-weight: 800; font-size: .9rem; background: #E5ECE5; }
+.pill.pos { background: #D7F0DF; color: #14562F; }
+.pill.neg { background: #FBE0DA; color: #B3261E; }
+.btn { display: block; width: 100%; text-align: center; font: inherit; font-weight: 800; font-size: 1rem; border-radius: 14px; padding: 12px; margin-top: 12px; }
+.btn.main { background: var(--balle); color: #10303A; border: 0; }
+.btn.main:hover { background: #cddb3e; }
+.btn.main:disabled { background: #dde3b5; color: #6b7a52; cursor: default; }
+.btn.alt { background: transparent; color: #0F2A26; border: 2px solid #0F2A26; }
+.btn.alt:hover { background: #E5ECE5; }
+.small { font-size: .78rem; color: #5E726C; margin-top: 9px; line-height: 1.4; }
+.under .erreur { margin: 10px 0 0; min-height: 0; }
+.choix-sets { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-weight: 600; font-size: .9rem; }
+.btn-sets { width: 38px; height: 38px; padding: 0; border-radius: 50%; background: #E5ECE5; color: #0F2A26; font-weight: 800; border: 2px solid transparent; }
+.btn-sets:hover { background: #d6e0d6; }
+.btn-sets.choisi { background: var(--balle); border-color: #0F2A26; }
+
+.bareme { background: #1A453C; color: #fff; border-radius: 18px; padding: 13px 12px; margin: 0 12px 14px; }
+.bareme h4 { margin: 0; font-size: 1rem; }
+.bareme p { margin: 2px 0 10px; font-size: .78rem; color: #BFD2C9; }
+.grid5 { display: grid; grid-template-columns: 62px repeat(5, 1fr); gap: 4px; align-items: center; text-align: center; }
+.grid5 .rl { text-align: left; font-size: .78rem; color: #BFD2C9; }
+.grid5 .c { background: var(--balle); color: #10303A; border-radius: 50%; width: 26px; height: 26px; display: grid; place-items: center; font-weight: 800; margin: 0 auto; font-size: .85rem; }
+.grid5 .v { font-weight: 700; font-size: .85rem; font-variant-numeric: tabular-nums; padding: 3px 0; }
+.grid5 .g { color: #8EF0B3; }
+.grid5 .l { color: #FFB8A8; }
+.grid5 .l.ok { color: #F4F7F2; }
+.bilan { margin: 0 12px 12px; padding: 8px 12px; background: #eef3ef; border-radius: 12px; font-size: .85rem; color: var(--texte); }
+.tour summary .compte b.pos, .tour summary .compte b.neg { font-weight: 800; }
+
+/* Petits écrans : le bandeau (titre, mention test, pastille, déconnexion) tient sur une seule ligne */
+@media (max-width: 430px) {
+  .bandeau { gap: 6px 8px; padding-left: 12px; padding-right: 12px; }
+  .bandeau h1 { font-size: 1rem; }
+  .bandeau .mention-test { font-size: .66rem; padding: 2px 6px; }
+  .bandeau .discret { padding: 6px 8px; font-size: .78rem; }
+  .bandeau .pastille { width: 30px; height: 30px; }
+}

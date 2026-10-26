@@ -63,13 +63,16 @@ export function grouperParTour(matchs, categorie) {
   return sections;
 }
 
-/** Score vu du côté du joueur 1 : « 7-6 6-4 » ; mention d'abandon ou de forfait. Chaîne vide si rien à montrer. */
-export function formaterScore(score, finMatch) {
+/**
+ * Score vu du côté du joueur 1 (par défaut) ou du joueur 2 (perspective = 2) : « 7-6 6-4 » ;
+ * mention d'abandon ou de forfait. Chaîne vide si rien à montrer.
+ */
+export function formaterScore(score, finMatch, perspective = 1) {
   if (finMatch === 'forfait') return 'Forfait';
   const jeux = Array.isArray(score?.games) ? score.games : [];
   const texte = jeux
     .filter((s) => Array.isArray(s) && s.length === 2 && s.every((n) => Number.isFinite(n)))
-    .map(([a, b]) => `${a}-${b}`)
+    .map(([a, b]) => (perspective === 2 ? `${b}-${a}` : `${a}-${b}`))
     .join(' ');
   if (finMatch === 'abandon') return texte ? `${texte} (abandon)` : 'Abandon';
   return texte;

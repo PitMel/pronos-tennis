@@ -37,6 +37,38 @@ export function creerDonnees(supabase) {
       return lire(supabase.from('tournament_results').select('tournament_id, joueur_id, score_final'));
     },
 
+    /** Paris que la base me laisse lire : les miens, et ceux des autres une fois révélés (règles RLS). */
+    parisDesMatchs(ids) {
+      if (ids.length === 0) return Promise.resolve([]);
+      return lire(supabase.from('bets')
+        .select('match_id, joueur_id, choix, confiance, sets, corrige_par_admin, corrige_le').in('match_id', ids));
+    },
+
+    /** Qui a parié sur ce match (sans voir quoi), pour mon groupe. */
+    quiAParie(matchId) {
+      return lire(supabase.rpc('qui_a_parie', { p_match: matchId }));
+    },
+
+    /**
+     * Enregistre mon pari : insertion d'un premier pari, mise à jour d'un pari existant.
+     * (Pas d'« upsert » : la base n'autorise la mise à jour que de choix, confiance et sets.)
+     * @returns {'cree'|'remplace'}
+     */
+    async enregistrerPari({ matchId, moi, pari, existe }) {
+      const valeurs = { choix: pari.choix, confiance: pari.confiance, sets: pari.sets ?? null };
+      const mettreAJour = async () => {
+        const { data, error } = await supabase.from('bets').update(valeurs).eq('match_id', matchId).eq('joueur_id', moi).select('id');
+        if (error) throw error;
+        if (!data || data.length === 0) throw Object.assign(new Error('Pari fermé'), { code: 'PARI_FERME' });
+        return 'remplace';
+      };
+      if (existe) return mettreAJour();
+      const { error } = await supabase.from('bets').insert({ match_id: matchId, ...valeurs });
+      if (!error) return 'cree';
+      if (error.code === '23505') return mettreAJour(); // déjà un pari (posé depuis un autre appareil) : on le remplace
+      throw error;
+    },
+
     /** Joueurs de tennis demandés, sous forme de Map id → joueur. */
     async joueurs(ids) {
       const uniques = [...new Set(ids.filter((i) => i !== null && i !== undefined))];

@@ -101,21 +101,26 @@ test('vues : liste des tournois, échappement et lien', () => {
 });
 
 test('vues : le résultat reste masqué tant que resultat_visible est faux', () => {
-  const masque = htmlCarteMatch(m(1, 'QF', { statut: 'termine', vainqueur: 1, score: { games: [[6, 4]] } }), joueurs);
+  const masque = htmlCarteMatch(m(1, 'QF', { statut: 'termine', vainqueur: 1, score: { games: [[6, 4]] } }), { joueurs });
   assert.doesNotMatch(masque, /6-4/);
   assert.doesNotMatch(masque, /gagnant/);
-  assert.match(masque, /résultat masqué/);
-  const visible = htmlCarteMatch(m(1, 'QF', { statut: 'termine', resultat_visible: true, paris_reveles: true, vainqueur: 2, score: { games: [[7, 6], [6, 4]] }, fin_match: 'normal' }), joueurs);
-  assert.match(visible, /7-6 6-4/);
-  assert.match(visible, /joueur-match gagnant">Fritz/);
-  assert.match(visible, /Paris révélés/);
+  assert.match(masque, /résultat masqué/i);
+  const visible = htmlCarteMatch(m(1, 'QF', { statut: 'termine', resultat_visible: true, paris_reveles: true, vainqueur: 2, score: { games: [[7, 6], [6, 4]] }, fin_match: 'normal' }), { joueurs });
+  assert.match(visible, /Fritz bat Alcaraz <small>6-7 4-6<\/small>/); // score vu du côté du vainqueur
+  assert.match(visible, /ligne-joueur gagnant"><span class="identite"><span class="nom-joueur">Fritz/);
+  assert.match(visible, /Terminé/);
+});
+
+test('formaterScore : perspective du joueur 2', () => {
+  assert.equal(formaterScore({ games: [[7, 6], [6, 4]] }, 'normal', 2), '6-7 4-6');
+  assert.equal(formaterScore({ games: [[6, 3], [2, 1]] }, 'abandon', 2), '3-6 1-2 (abandon)');
 });
 
 test('vues : badges de statut', () => {
-  assert.match(htmlCarteMatch(m(1, 'QF', { neutralise: true, paris_reveles: true }), joueurs), /Neutralisé/);
-  assert.match(htmlCarteMatch(m(1, 'QF', { statut: 'en_cours', verrouille: true }), joueurs), /En cours[\s\S]*Paris verrouillés/);
-  assert.match(htmlCarteMatch(m(1, 'QF', { heure_prevue: '2026-11-02T13:30:00Z' }), joueurs), /14h30/);
-  assert.match(htmlCarteMatch(m(1, 'QF'), joueurs), /Horaire à venir/);
+  assert.match(htmlCarteMatch(m(1, 'QF', { neutralise: true, paris_reveles: true }), { joueurs }), /Neutralisé/);
+  assert.match(htmlCarteMatch(m(1, 'QF', { statut: 'en_cours', verrouille: true }), { joueurs }), /En cours[\s\S]*Match en cours/);
+  assert.match(htmlCarteMatch(m(1, 'QF', { heure_prevue: '2026-11-02T13:30:00Z' }), { joueurs }), /14h30/);
+  assert.match(htmlCarteMatch(m(1, 'QF'), { joueurs }), /Horaire à venir/);
 });
 
 test('vues : page tournoi (tour courant ouvert, tours futurs grisés, palmarès si clos)', () => {
