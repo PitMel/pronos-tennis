@@ -4,8 +4,9 @@ import {
   CATEGORIES, ETATS, grouperParTour, grouperParAnnee, lieuEtSurface, etapesProgression,
 } from './tournois.js';
 import { htmlCarteMatch, htmlBaremeTour, bilanDuTour } from './cartes.js';
+import { htmlCartePariTournoi, htmlPagePariTournoi } from './pari-tournoi.js';
 
-export { htmlCarteMatch };
+export { htmlCarteMatch, htmlPagePariTournoi };
 
 /** Pastille ronde avec l'initiale du prénom, dans la couleur du joueur. */
 export function htmlPastille(profil, classe = 'pastille') {
@@ -118,6 +119,7 @@ export function htmlPageTournoi({ tournoi, matchs, joueurs, ctx = {} }) {
       ${vainqueur ? `<p class="palmares">Vainqueur : <strong>${echapper(vainqueur.nom)}</strong>${finaliste ? ` · finaliste : ${echapper(finaliste.nom)}` : ''}</p>` : ''}
       ${htmlProgression(sections)}
     </section>
+    ${ctx.pariTournoi !== undefined ? htmlCartePariTournoi(tournoi, { monPari: ctx.pariTournoi, joueurs }) : ''}
     ${sections.map(htmlSection).join('')}`;
 }
 

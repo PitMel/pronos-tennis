@@ -69,6 +69,33 @@ export function creerDonnees(supabase) {
       throw error;
     },
 
+    /** Paris tournoi que la base me laisse lire : le mien, et ceux des autres une fois révélés. */
+    parisTournoi(tournoiId) {
+      return lire(supabase.from('tournament_bets')
+        .select('tournament_id, joueur_id, vainqueur_id, finaliste_id, corrige_par_admin, corrige_le').eq('tournament_id', tournoiId));
+    },
+
+    /** Qui a parié sur le tournoi (sans voir quoi), pour mon groupe. */
+    quiAParieTournoi(tournoiId) {
+      return lire(supabase.rpc('qui_a_parie_tournoi', { p_tournoi: tournoiId }));
+    },
+
+    /** Enregistre mon pari tournoi (insertion, ou mise à jour s'il existe déjà). Mêmes règles que pour un pari de match. */
+    async enregistrerPariTournoi({ tournoiId, moi, vainqueurId, finalisteId, existe }) {
+      const valeurs = { vainqueur_id: vainqueurId, finaliste_id: finalisteId };
+      const mettreAJour = async () => {
+        const { data, error } = await supabase.from('tournament_bets').update(valeurs).eq('tournament_id', tournoiId).eq('joueur_id', moi).select('id');
+        if (error) throw error;
+        if (!data || data.length === 0) throw Object.assign(new Error('Pari fermé'), { code: 'PARI_FERME' });
+        return 'remplace';
+      };
+      if (existe) return mettreAJour();
+      const { error } = await supabase.from('tournament_bets').insert({ tournament_id: tournoiId, ...valeurs });
+      if (!error) return 'cree';
+      if (error.code === '23505') return mettreAJour();
+      throw error;
+    },
+
     /** Joueurs de tennis demandés, sous forme de Map id → joueur. */
     async joueurs(ids) {
       const uniques = [...new Set(ids.filter((i) => i !== null && i !== undefined))];
