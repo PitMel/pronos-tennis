@@ -280,6 +280,43 @@ svg.filet[data-edition="1"] { cursor: pointer; }
 .choix-tous td.vide { color: var(--gris); font-style: italic; }
 .choix-tous s.barre { text-decoration: line-through; color: var(--erreur); }
 
+/* ---------- Classement du tournoi et page Race (3.5) ---------- */
+.trophee { flex: none; vertical-align: middle; }
+.palmares-groupe { display: flex; align-items: center; gap: 6px; margin: 8px 0 0; color: var(--texte); font-size: .95rem; }
+.scores-groupe { margin: 2px 0 0; font-size: .82rem; color: var(--gris); }
+.scores-groupe b { color: var(--texte); font-variant-numeric: tabular-nums; }
+.scores-groupe b.neg { color: var(--erreur); }
+.carte-classement h3, .carte-detail-race h3 { margin: 0 0 8px; font-size: 1.1rem; color: var(--vert-fonce); }
+.classement-tournoi, .detail-race { width: 100%; border-collapse: collapse; font-size: .92rem; font-variant-numeric: tabular-nums; }
+.classement-tournoi th, .classement-tournoi td, .detail-race th, .detail-race td { padding: 7px 4px; border-top: 1px solid #E3E9E3; text-align: right; }
+.classement-tournoi thead th, .detail-race thead th { border-top: 0; font-size: .72rem; font-weight: 700; color: var(--gris); vertical-align: bottom; }
+.classement-tournoi td.rang { width: 26px; text-align: center; font-size: 1.05rem; }
+.classement-tournoi tbody th { text-align: left; font-weight: 700; }
+.classement-tournoi tbody th span, .detail-race thead th span { margin-left: 6px; }
+.classement-tournoi tbody th { display: table-cell; white-space: nowrap; }
+.classement-tournoi td.final { font-weight: 800; font-size: 1rem; }
+.classement-tournoi td.pos, .detail-race td.gagnant { color: #14562F; font-weight: 800; }
+.classement-tournoi td.neg, .detail-race td.neg { color: var(--erreur); }
+.classement-tournoi tr.isme, .ligne-race.isme { background: #F6FAD7; }
+.detail-race thead th { text-align: right; }
+.detail-race thead th:first-child { width: 36%; }
+.detail-race tbody th, .detail-race tfoot th { text-align: left; font-weight: 700; }
+.detail-race tbody th small { display: block; color: var(--gris); font-weight: 400; font-size: .72rem; margin-left: 28px; }
+.detail-race .nom-tournoi { display: flex; align-items: center; gap: 6px; }
+.detail-race td { font-weight: 600; }
+.detail-race tfoot th, .detail-race tfoot td { border-top: 2px solid var(--vert-fonce); font-weight: 800; }
+.lien-detail { display: block; margin-top: 8px; text-align: right; font-weight: 700; color: var(--vert-fonce); text-decoration: none; }
+.lien-archive { margin: 0 0 10px; }
+.lien-archive a { font-weight: 700; color: var(--vert-fonce); }
+.tableau-defilant { overflow-x: auto; }
+@media (max-width: 430px) {
+  .classement-tournoi th, .classement-tournoi td { padding: 7px 3px; font-size: .86rem; }
+  .classement-tournoi tbody .pastille { display: none; }
+  .classement-tournoi tbody th span { margin-left: 0; }
+  .classement-tournoi thead th { font-size: .68rem; }
+}
+.hero-race .hero-titre { font-size: clamp(1.8rem, 6vw, 2.6rem); }
+
 /* Petits écrans : le bandeau (titre, mention test, pastille, déconnexion) tient sur une seule ligne */
 @media (max-width: 430px) {
   .bandeau { gap: 6px 8px; padding-left: 12px; padding-right: 12px; }

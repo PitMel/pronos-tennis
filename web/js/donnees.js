@@ -34,7 +34,7 @@ export function creerDonnees(supabase) {
 
     /** Archives de clôture (scores finaux figés), pour la Race. */
     resultats() {
-      return lire(supabase.from('tournament_results').select('tournament_id, joueur_id, score_final'));
+      return lire(supabase.from('tournament_results').select('tournament_id, joueur_id, points_matchs, points_pari_tournoi, bonus_classement, score_final, rang'));
     },
 
     /** Paris que la base me laisse lire : les miens, et ceux des autres une fois révélés (règles RLS). */
