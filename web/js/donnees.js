@@ -32,6 +32,12 @@ export function creerDonnees(supabase) {
       return lire(supabase.from('profiles').select('id, prenom, couleur').eq('is_test', isTest).eq('actif', true).order('prenom'));
     },
 
+    /** Journal de la synchronisation (lecture réservée à l'administrateur : la base renvoie rien aux autres). */
+    journalSynchro(limite = 60) {
+      return lire(supabase.from('sync_log')
+        .select('id, date_appel, endpoint, http_status, ok, quota_restant, message, reset_a').order('id', { ascending: false }).limit(limite));
+    },
+
     /** Archives de clôture (scores finaux figés), pour la Race. */
     resultats() {
       return lire(supabase.from('tournament_results').select('tournament_id, joueur_id, points_matchs, points_pari_tournoi, bonus_classement, score_final, rang'));

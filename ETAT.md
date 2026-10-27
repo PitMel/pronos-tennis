@@ -28,9 +28,11 @@ Règles de travail de Pierre : tout reste gratuit ; jamais de clé ni de secret 
 | 3.7 — Page d'accueil et pastille « à parier » | **Écrit et testé le 27 oct. 2026** (340 tests). `#/` = accueil (tournois en cours ou ouverts au pari tournoi, sinon le prochain à venir daté ; « N paris de match à poser » et « Pari tournoi à poser » en liens directs, ou « Tu es à jour » ; Race de l'année). La liste de la saison passe en `#/saison`. Menu « Accueil / Saison / Règles ». Pastille « N à parier » sur les tours repliés de la page tournoi (matchs ouverts, sans pari de moi, dont je ne suis pas exclu). Fichiers : `web/js/accueil.js`, `matchsAParier` dans `web/js/cartes.js`. Coût : un appel `qui_a_parie` par match ouvert sans pari de moi (à regrouper plus tard si lent). |
 
 Décisions du 25 oct. 2026 (Pierre) : **JavaScript natif** (point ouvert n° 12 tranché) ; **pas de tournoi de démonstration fictif** : Pierre testera avec les vrais matchs du Masters de Paris (à partir du 2 nov.).
-| 4 à 6 | À faire (cahier des charges, section 15). |
+| 4.1 — Administration : menu et état de la synchronisation | **Écrit et testé le 27 oct. 2026** (345 tests). Menu « Admin » visible seulement pour `is_admin` ; page `#/admin` (un non-administrateur voit « Accès réservé », et la base refuse de toute façon) : dernier appel, appels du jour UTC sur 100, appels et échecs sur 24 h, alertes (journal vide, dernier appel en échec, silence de plus de 48 h), 15 derniers appels. Fichier : `web/js/admin.js`. **À savoir** : la colonne `quota_restant` du journal n'est jamais remplie par `src/sync/cli.js` (le planificateur compte les lignes du jour) ; la page affiche donc des appels comptés, pas le quota annoncé par l'API. En régime quotidien, un seul passage par jour (dernier : 26 oct. 15 h 27 UTC). |
+| 4.2 à 4.6 — Administration : calendrier, matchs, clôture (migration 0006), paris et exclusions, comptes | À faire (plan annoncé à Pierre le 27 oct.). Limites : création de compte et mot de passe impossibles depuis le navigateur (clé secrète Supabase) → script local ou écran Supabase ; « jouer à la place d'un faux compte » = se connecter directement (déjà possible), bascule intégrée à trancher. |
+| 5 à 6 | À faire (cahier des charges, section 15). |
 
-Total : 340 tests, tous verts (`npm install` puis `npm test`, environ 1 minute).
+Total : 345 tests, tous verts (`npm install` puis `npm test`, environ 1 minute).
 
 ## Étape 1.1 — moteur de points (fait et testé)
 

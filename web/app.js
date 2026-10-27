@@ -5,6 +5,7 @@
 // Jalon 3.4 : pari tournoi (vainqueur + finaliste), page séparée #/tournoi/ID/pari.
 // Jalon 3.5 : classement du tournoi en trois temps, page Race (#/race/ANNEE).
 // Jalon 3.6 : page des règles (#/regles).
+// Étape 4 : administration (#/admin…), réservée au compte administrateur.
 // Jalon 3.7 : page d'accueil (#/) et pastille des paris restants ; la liste de la saison passe en #/saison.
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 import { SUPABASE_URL, SUPABASE_CLE_PUBLIABLE } from './config.js';
@@ -18,6 +19,7 @@ import { brancherParis } from './js/paris-ui.js';
 import { htmlPageRegles } from './js/regles.js';
 import { tournoisPourAccueil, statutPariTournoi, htmlAccueil } from './js/accueil.js';
 import { matchsAParier } from './js/cartes.js';
+import { htmlAdminAccueil, htmlAccesRefuse } from './js/admin.js';
 import { regrouperParisTournoi, choisir, brouillonDepuisPariTournoi, messageErreurPariTournoi } from './js/pari-tournoi.js';
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_CLE_PUBLIABLE, {
@@ -81,6 +83,7 @@ function afficherCadre(profil) {
       <a href="#/" data-menu="accueil">Accueil</a>
       <a href="#/saison" data-menu="saison">Saison</a>
       <a href="#/regles" data-menu="regles">Règles</a>
+      ${profil.is_admin ? '<a href="#/admin" data-menu="admin">Admin</a>' : ''}
     </nav>
     <main id="contenu"></main>`;
   document.getElementById('contenu').addEventListener('click', gererClicPariTournoi);
@@ -284,6 +287,7 @@ async function chargerBlocAccueil(tournoi) {
 function lireRoute() {
   if (window.location.hash === '#/regles') return { nom: 'regles' };
   if (window.location.hash === '#/saison') return { nom: 'saison' };
+  if (window.location.hash === '#/admin') return { nom: 'admin' };
   const race = /^#\/race\/(\d{4})$/.exec(window.location.hash);
   if (race) return { nom: 'race', annee: Number(race[1]) };
   const m = /^#\/tournoi\/(\d+)(\/pari)?$/.exec(window.location.hash);
@@ -302,10 +306,14 @@ async function afficherRoute({ silencieux = false } = {}) {
   if (!silencieux) contenu.innerHTML = '<p class="chargement-court">Chargement…</p>';
   try {
     document.querySelectorAll('nav.menu a').forEach((a) => {
-      const actif = route.nom === 'accueil' ? 'accueil' : route.nom === 'regles' ? 'regles' : 'saison';
+      const actif = route.nom === 'accueil' ? 'accueil' : route.nom === 'regles' ? 'regles' : route.nom === 'admin' ? 'admin' : 'saison';
       if (a.dataset.menu === actif) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
     });
-    if (route.nom === 'regles') {
+    if (route.nom === 'admin') {
+      page = null;
+      pagePT = null;
+      contenu.innerHTML = profilCourant.is_admin ? htmlAdminAccueil({ synchro: await donnees.journalSynchro() }) : htmlAccesRefuse();
+    } else if (route.nom === 'regles') {
       page = null;
       pagePT = null;
       contenu.innerHTML = htmlPageRegles({ moteur: await import('./moteur/index.js') });

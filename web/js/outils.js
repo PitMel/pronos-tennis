@@ -53,3 +53,16 @@ export function anneeCourante(maintenant = new Date()) {
 export function dateDuJour(maintenant = new Date()) {
   return new Intl.DateTimeFormat('en-CA', { timeZone: FUSEAU, year: 'numeric', month: '2-digit', day: '2-digit' }).format(maintenant);
 }
+
+/** « il y a 5 min », « il y a 3 h 20 », « il y a 2 j » ; vide si la date est inconnue. */
+export function depuisDuree(iso, maintenant = new Date()) {
+  if (!iso) return '';
+  const t = new Date(iso).getTime();
+  if (Number.isNaN(t)) return '';
+  const minutes = Math.max(0, Math.round((maintenant.getTime() - t) / 60000));
+  if (minutes < 1) return 'à l’instant';
+  if (minutes < 60) return `il y a ${minutes} min`;
+  const heures = Math.floor(minutes / 60);
+  if (heures < 24) return `il y a ${heures} h${minutes % 60 ? ` ${String(minutes % 60).padStart(2, '0')}` : ''}`;
+  return `il y a ${Math.floor(heures / 24)} j`;
+}
