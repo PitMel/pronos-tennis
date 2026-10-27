@@ -20,6 +20,7 @@ import { htmlPageRegles } from './js/regles.js';
 import { tournoisPourAccueil, statutPariTournoi, htmlAccueil } from './js/accueil.js';
 import { matchsAParier } from './js/cartes.js';
 import { htmlAdminAccueil, htmlAccesRefuse } from './js/admin.js';
+import { validerTournoi, tournoiPourBase, messageErreurAdmin, htmlCalendrierAdmin, htmlFormulaireTournoi } from './js/admin-calendrier.js';
 import { regrouperParisTournoi, choisir, brouillonDepuisPariTournoi, messageErreurPariTournoi } from './js/pari-tournoi.js';
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_CLE_PUBLIABLE, {
@@ -87,6 +88,8 @@ function afficherCadre(profil) {
     </nav>
     <main id="contenu"></main>`;
   document.getElementById('contenu').addEventListener('click', gererClicPariTournoi);
+  document.getElementById('contenu').addEventListener('click', gererClicAdmin);
+  document.getElementById('contenu').addEventListener('submit', gererSoumissionAdmin);
   brancherParis(document.getElementById('contenu'), {
     etat: etatParis,
     contexte: contexteCartes,
@@ -283,11 +286,68 @@ async function chargerBlocAccueil(tournoi) {
   return { tournoi, nbAParier, pariTournoi: statutPariTournoi(tournoi, { monPari, qui: regrouperQui(quiTournoi), moi }) };
 }
 
+/* ---------- Administration : formulaires et boutons ---------- */
+let flashAdmin = '';
+let pageAdmin = null; // { tournoi, idsApi } de la page « tournoi » de l'administration
+const prendreFlash = () => { const m = flashAdmin; flashAdmin = ''; return m; };
+
+function redessinerFormulaireTournoi(options) {
+  const contenu = document.getElementById('contenu');
+  if (!pageAdmin || !contenu) return;
+  const defilement = window.scrollY;
+  contenu.innerHTML = htmlFormulaireTournoi({ ...pageAdmin, anneeParDefaut: anneeCourante(), ...options });
+  window.scrollTo(0, defilement);
+}
+
+async function gererSoumissionAdmin(e) {
+  const form = e.target.closest?.('form[data-admin]');
+  if (!form || !profilCourant?.is_admin) return;
+  e.preventDefault();
+  if (form.dataset.admin === 'tournoi') {
+    const brut = Object.fromEntries(new FormData(form));
+    brut.indoor = form.elements.indoor.checked;
+    const erreurs = validerTournoi(brut);
+    if (erreurs.length) { redessinerFormulaireTournoi({ valeurs: brut, erreurs }); return; }
+    try {
+      const id = form.dataset.id === 'nouveau' ? null : Number(form.dataset.id);
+      await donnees.enregistrerTournoi({ id, valeurs: tournoiPourBase(brut) });
+      flashAdmin = id === null ? 'Tournoi créé.' : 'Tournoi enregistré.';
+      window.location.hash = '#/admin/calendrier';
+    } catch (erreur) {
+      redessinerFormulaireTournoi({ valeurs: brut, erreurs: [messageErreurAdmin(erreur)] });
+    }
+  } else if (form.dataset.admin === 'api-ajouter') {
+    const apiId = String(new FormData(form).get('api_id') ?? '').trim();
+    if (!/^[A-Za-z0-9_-]{1,40}$/.test(apiId)) { redessinerFormulaireTournoi({ erreurApi: 'Identifiant invalide (lettres, chiffres, tirets).' }); return; }
+    try {
+      await donnees.ajouterIdApi(Number(form.dataset.tournoi), apiId);
+      flashAdmin = 'Identifiant ajouté.';
+    } catch (erreur) { redessinerFormulaireTournoi({ erreurApi: messageErreurAdmin(erreur) }); return; }
+    await afficherRoute({ silencieux: true }).catch(() => {});
+  }
+}
+
+async function gererClicAdmin(e) {
+  const bouton = e.target.closest?.('button[data-action^="ad-"]');
+  if (!bouton || !profilCourant?.is_admin) return;
+  if (bouton.dataset.action === 'ad-retirer-api') {
+    if (!window.confirm('Retirer cet identifiant ? Sans autre identifiant, la synchronisation ne suivra plus ce tournoi.')) return;
+    try {
+      await donnees.retirerIdApi(Number(bouton.dataset.tournoi), bouton.dataset.api);
+      flashAdmin = 'Identifiant retiré.';
+    } catch (erreur) { redessinerFormulaireTournoi({ erreurApi: messageErreurAdmin(erreur) }); return; }
+    await afficherRoute({ silencieux: true }).catch(() => {});
+  }
+}
+
 /* ---------- Routage par l'adresse (#/ accueil, #/saison, #/tournoi/12, #/tournoi/12/pari, #/race/2026 ou #/regles) ---------- */
 function lireRoute() {
   if (window.location.hash === '#/regles') return { nom: 'regles' };
   if (window.location.hash === '#/saison') return { nom: 'saison' };
   if (window.location.hash === '#/admin') return { nom: 'admin' };
+  if (window.location.hash === '#/admin/calendrier') return { nom: 'admin-calendrier' };
+  const adminTournoi = /^#\/admin\/tournoi\/(\d+|nouveau)$/.exec(window.location.hash);
+  if (adminTournoi) return { nom: 'admin-tournoi', id: adminTournoi[1] === 'nouveau' ? null : Number(adminTournoi[1]) };
   const race = /^#\/race\/(\d{4})$/.exec(window.location.hash);
   if (race) return { nom: 'race', annee: Number(race[1]) };
   const m = /^#\/tournoi\/(\d+)(\/pari)?$/.exec(window.location.hash);
@@ -306,13 +366,22 @@ async function afficherRoute({ silencieux = false } = {}) {
   if (!silencieux) contenu.innerHTML = '<p class="chargement-court">Chargement…</p>';
   try {
     document.querySelectorAll('nav.menu a').forEach((a) => {
-      const actif = route.nom === 'accueil' ? 'accueil' : route.nom === 'regles' ? 'regles' : route.nom === 'admin' ? 'admin' : 'saison';
+      const actif = route.nom === 'accueil' ? 'accueil' : route.nom === 'regles' ? 'regles' : route.nom.startsWith('admin') ? 'admin' : 'saison';
       if (a.dataset.menu === actif) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
     });
-    if (route.nom === 'admin') {
+    if (route.nom.startsWith('admin')) {
       page = null;
       pagePT = null;
-      contenu.innerHTML = profilCourant.is_admin ? htmlAdminAccueil({ synchro: await donnees.journalSynchro() }) : htmlAccesRefuse();
+      pageAdmin = null;
+      if (!profilCourant.is_admin) contenu.innerHTML = htmlAccesRefuse();
+      else if (route.nom === 'admin-calendrier') {
+        contenu.innerHTML = htmlCalendrierAdmin({ tournois: await donnees.tournois(), message: prendreFlash() });
+      } else if (route.nom === 'admin-tournoi') {
+        const tournoi = route.id === null ? null : await donnees.tournoi(route.id);
+        if (route.id !== null && !tournoi) { contenu.innerHTML = htmlErreur('Ce tournoi n’existe pas.'); return; }
+        pageAdmin = { tournoi, idsApi: tournoi ? await donnees.idsApi(tournoi.id) : [] };
+        contenu.innerHTML = htmlFormulaireTournoi({ ...pageAdmin, anneeParDefaut: anneeCourante(), message: prendreFlash() });
+      } else contenu.innerHTML = htmlAdminAccueil({ synchro: await donnees.journalSynchro() });
     } else if (route.nom === 'regles') {
       page = null;
       pagePT = null;

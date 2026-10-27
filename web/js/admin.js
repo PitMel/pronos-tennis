@@ -91,5 +91,11 @@ function htmlSynchro(resume, maintenant) {
 export function htmlAdminAccueil({ synchro = [], maintenant = new Date() } = {}) {
   return `
     ${htmlEnteteAdmin('Administration', { retour: { href: '#/', texte: 'Accueil' }, details: 'Réservée à l’administrateur. Chaque action est contrôlée par la base de données.' })}
+    <section class="carte carte-admin">
+      <h3>Gérer</h3>
+      <ul class="liste-admin">
+        <li><a class="ligne-admin" href="#/admin/calendrier"><span><b>Calendrier des tournois</b><small>Dates, lieu, surface, catégorie, identifiants de l’API</small></span><i aria-hidden="true">›</i></a></li>
+      </ul>
+    </section>
     ${htmlSynchro(resumerSynchro(synchro, maintenant), maintenant)}`;
 }

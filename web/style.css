@@ -367,6 +367,35 @@ svg.filet[data-edition="1"] { cursor: pointer; }
 .appel .detail b { display: block; font-weight: 600; word-break: break-word; }
 .appel .detail small { color: var(--gris); }
 
+.liste-admin { list-style: none; margin: 0; padding: 0; }
+.ligne-admin { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 11px 0; border-top: 1px solid #E3E9E3; color: var(--texte); text-decoration: none; }
+.liste-admin li:first-child .ligne-admin { border-top: 0; }
+.ligne-admin b { display: block; color: var(--vert-fonce); }
+.ligne-admin small { display: block; color: var(--gris); font-size: .8rem; }
+.ligne-admin i { font-style: normal; font-size: 1.5rem; color: var(--vert-fonce); }
+.etiquettes { display: flex; flex-direction: column; gap: 3px; align-items: flex-end; flex: none; }
+.etiquettes em { font-style: normal; font-size: .7rem; font-weight: 700; padding: 2px 8px; border-radius: 99px; background: #E5ECE5; color: var(--vert-fonce); white-space: nowrap; }
+.etiquettes em.etat-en_cours, .etiquettes em.etat-pari_tournoi_ouvert { background: var(--balle); }
+.btn-lien { text-decoration: none; margin: 0 0 14px; }
+.succes { margin: 0 0 12px; padding: 9px 12px; border-radius: 12px; background: #D7F0DF; color: #14562F; font-weight: 600; }
+.formulaire-admin .champ { margin: 0 0 12px; }
+.formulaire-admin label { display: block; font-weight: 700; font-size: .85rem; margin-bottom: 4px; color: var(--vert-fonce); }
+.formulaire-admin input[type="text"], .formulaire-admin input[type="number"], .formulaire-admin input[type="date"], .formulaire-admin select, .ajout-api input { width: 100%; font: inherit; padding: 10px 12px; border: 2px solid #D5DED6; border-radius: 12px; background: #fff; color: var(--texte); }
+.formulaire-admin .case label { display: flex; align-items: center; gap: 8px; margin-top: 26px; font-weight: 600; color: var(--texte); }
+.formulaire-admin .deux { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
+.formulaire-admin input, .formulaire-admin select { min-width: 0; box-sizing: border-box; }
+.formulaire-admin input[type="date"] { padding-inline: 8px; font-size: .92rem; }
+.formulaire-admin .erreur { margin: 8px 0 0; min-height: 0; }
+.liste-ids { list-style: none; margin: 0 0 10px; padding: 0; }
+.liste-ids li { display: flex; justify-content: space-between; align-items: center; padding: 7px 0; border-top: 1px solid #E3E9E3; }
+.liste-ids li:first-child { border-top: 0; }
+.btn-petit, button.btn-petit { font: inherit; font-weight: 700; font-size: .82rem; padding: 8px 14px; border-radius: 99px; background: #E5ECE5; color: #0F2A26; border: 1px solid #C9D6CA; cursor: pointer; white-space: nowrap; }
+.btn-petit.principal, button.btn-petit.principal { background: var(--balle); border-color: transparent; }
+.ajout-api { display: flex; gap: 8px; align-items: center; margin-top: 8px; }
+.ajout-api input { flex: 1 1 auto; width: auto; min-width: 0; box-sizing: border-box; }
+.ajout-api .btn-petit, .liste-ids .btn-petit { width: auto; flex: none; }
+.carte-admin .vide { font-size: .9rem; margin: 6px 0; }
+
 /* Petits écrans : le bandeau (titre, mention test, pastille, déconnexion) tient sur une seule ligne */
 @media (max-width: 430px) {
   .bandeau { gap: 6px 8px; padding-left: 12px; padding-right: 12px; }

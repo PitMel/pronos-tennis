@@ -38,6 +38,36 @@ export function creerDonnees(supabase) {
         .select('id, date_appel, endpoint, http_status, ok, quota_restant, message, reset_a').order('id', { ascending: false }).limit(limite));
     },
 
+    /** Identifiants de l'API rattachés à un tournoi (lecture ouverte, écriture administrateur). */
+    async idsApi(tournoiId) {
+      const lignes = await lire(supabase.from('tournament_api_ids').select('api_id').eq('tournament_id', tournoiId));
+      return lignes.map((l) => l.api_id).sort();
+    },
+
+    /** Administrateur : crée ou modifie une fiche de tournoi. Renvoie son identifiant. */
+    async enregistrerTournoi({ id = null, valeurs }) {
+      if (id === null) {
+        const { data, error } = await supabase.from('tournaments').insert(valeurs).select('id');
+        if (error) throw error;
+        return data?.[0]?.id ?? null;
+      }
+      const { data, error } = await supabase.from('tournaments').update(valeurs).eq('id', id).select('id');
+      if (error) throw error;
+      if (!data || data.length === 0) throw Object.assign(new Error('Modification refusée'), { code: '42501' });
+      return id;
+    },
+
+    async ajouterIdApi(tournoiId, apiId) {
+      const { error } = await supabase.from('tournament_api_ids').insert({ api_id: apiId, tournament_id: tournoiId });
+      if (error) throw error;
+    },
+
+    async retirerIdApi(tournoiId, apiId) {
+      const { data, error } = await supabase.from('tournament_api_ids').delete().eq('api_id', apiId).eq('tournament_id', tournoiId).select('api_id');
+      if (error) throw error;
+      if (!data || data.length === 0) throw Object.assign(new Error('Suppression refusée'), { code: '42501' });
+    },
+
     /** Archives de clôture (scores finaux figés), pour la Race. */
     resultats() {
       return lire(supabase.from('tournament_results').select('tournament_id, joueur_id, points_matchs, points_pari_tournoi, bonus_classement, score_final, rang'));

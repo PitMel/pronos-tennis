@@ -29,10 +29,11 @@ Règles de travail de Pierre : tout reste gratuit ; jamais de clé ni de secret 
 
 Décisions du 25 oct. 2026 (Pierre) : **JavaScript natif** (point ouvert n° 12 tranché) ; **pas de tournoi de démonstration fictif** : Pierre testera avec les vrais matchs du Masters de Paris (à partir du 2 nov.).
 | 4.1 — Administration : menu et état de la synchronisation | **Écrit et testé le 27 oct. 2026** (345 tests). Menu « Admin » visible seulement pour `is_admin` ; page `#/admin` (un non-administrateur voit « Accès réservé », et la base refuse de toute façon) : dernier appel, appels du jour UTC sur 100, appels et échecs sur 24 h, alertes (journal vide, dernier appel en échec, silence de plus de 48 h), 15 derniers appels. Fichier : `web/js/admin.js`. **À savoir** : la colonne `quota_restant` du journal n'est jamais remplie par `src/sync/cli.js` (le planificateur compte les lignes du jour) ; la page affiche donc des appels comptés, pas le quota annoncé par l'API. En régime quotidien, un seul passage par jour (dernier : 26 oct. 15 h 27 UTC). |
-| 4.2 à 4.6 — Administration : calendrier, matchs, clôture (migration 0006), paris et exclusions, comptes | À faire (plan annoncé à Pierre le 27 oct.). Limites : création de compte et mot de passe impossibles depuis le navigateur (clé secrète Supabase) → script local ou écran Supabase ; « jouer à la place d'un faux compte » = se connecter directement (déjà possible), bascule intégrée à trancher. |
+| 4.2 — Administration : calendrier | **Écrit et testé le 27 oct. 2026** (360 tests ; parcours vérifié dans le navigateur en 390 px et bureau). `#/admin/calendrier` (tournois par saison), `#/admin/tournoi/nouveau` et `#/admin/tournoi/ID` : nom, année, catégorie, ville, surface, indoor, dates ; ajout et retrait des identifiants de l'API (confirmation avant retrait). Validation côté page, doublons et refus de la base traduits en français. L'état du tournoi n'est pas modifiable ici (synchronisation, puis clôture en 4.4). Fichiers : `web/js/admin-calendrier.js`, `web/js/donnees.js`. |
+| 4.3 à 4.6 — Administration : matchs, clôture (migration 0006), paris et exclusions, comptes | À faire (plan annoncé à Pierre le 27 oct.). Limites : création de compte et mot de passe impossibles depuis le navigateur (clé secrète Supabase) → script local ou écran Supabase ; « jouer à la place d'un faux compte » = se connecter directement (déjà possible), bascule intégrée à trancher. |
 | 5 à 6 | À faire (cahier des charges, section 15). |
 
-Total : 345 tests, tous verts (`npm install` puis `npm test`, environ 1 minute).
+Total : 360 tests, tous verts (`npm install` puis `npm test`, environ 1 minute).
 
 ## Étape 1.1 — moteur de points (fait et testé)
 
