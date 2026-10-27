@@ -42,7 +42,7 @@ export function htmlPageRegles({ moteur }) {
 
   return `
     <section class="hero hero-regles">
-      <a class="retour retour-clair" href="#/">← Tournois</a>
+      <a class="retour retour-clair" href="#/saison">← Saison</a>
       <h2 class="hero-titre">Règles</h2>
       <p class="hero-details">Comment on parie, comment on compte les points, et ce qui reste caché jusqu’au bon moment.</p>
     </section>

@@ -48,3 +48,8 @@ export function formaterPeriode(debut, fin) {
 export function anneeCourante(maintenant = new Date()) {
   return Number(new Intl.DateTimeFormat('fr-FR', { timeZone: FUSEAU, year: 'numeric' }).format(maintenant));
 }
+
+/** Date du jour à Paris, au format AAAA-MM-JJ (comparable aux dates de tournoi de la base). */
+export function dateDuJour(maintenant = new Date()) {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: FUSEAU, year: 'numeric', month: '2-digit', day: '2-digit' }).format(maintenant);
+}

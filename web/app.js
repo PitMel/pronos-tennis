@@ -5,16 +5,19 @@
 // Jalon 3.4 : pari tournoi (vainqueur + finaliste), page séparée #/tournoi/ID/pari.
 // Jalon 3.5 : classement du tournoi en trois temps, page Race (#/race/ANNEE).
 // Jalon 3.6 : page des règles (#/regles).
+// Jalon 3.7 : page d'accueil (#/) et pastille des paris restants ; la liste de la saison passe en #/saison.
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 import { SUPABASE_URL, SUPABASE_CLE_PUBLIABLE } from './config.js';
 import { emailTechnique, messageErreurConnexion } from './js/identifiants.js';
-import { echapper, anneeCourante } from './js/outils.js';
+import { echapper, anneeCourante, dateDuJour } from './js/outils.js';
 import { construireRace, classementTournoi, detailRace } from './js/classement.js';
 import { creerDonnees } from './js/donnees.js';
 import { htmlListeTournois, htmlPageTournoi, htmlErreur, htmlPastille, htmlCarteMatch, htmlPagePariTournoi, htmlPageRace } from './js/vues.js';
 import { ordonnerProfils, regrouperParis, regrouperQui, pariAEnregistrer, messageErreurPari } from './js/paris.js';
 import { brancherParis } from './js/paris-ui.js';
 import { htmlPageRegles } from './js/regles.js';
+import { tournoisPourAccueil, statutPariTournoi, htmlAccueil } from './js/accueil.js';
+import { matchsAParier } from './js/cartes.js';
 import { regrouperParisTournoi, choisir, brouillonDepuisPariTournoi, messageErreurPariTournoi } from './js/pari-tournoi.js';
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_CLE_PUBLIABLE, {
@@ -75,7 +78,8 @@ function afficherCadre(profil) {
       <button class="discret" id="deconnexion" type="button">Déconnexion</button>
     </header>
     <nav class="menu" aria-label="Navigation">
-      <a href="#/" data-menu="accueil">Tournois</a>
+      <a href="#/" data-menu="accueil">Accueil</a>
+      <a href="#/saison" data-menu="saison">Saison</a>
       <a href="#/regles" data-menu="regles">Règles</a>
     </nav>
     <main id="contenu"></main>`;
@@ -260,9 +264,26 @@ function gererClicPariTournoi(e) {
   }
 }
 
-/* ---------- Routage par l'adresse (#/, #/tournoi/12, #/tournoi/12/pari, #/race/2026 ou #/regles) ---------- */
+/* ---------- Accueil : ce qu'il reste à parier sur un tournoi ---------- */
+async function chargerBlocAccueil(tournoi) {
+  const moi = profilCourant.id;
+  const [matchs, lignesTournoi, quiTournoi] = await Promise.all([
+    donnees.matchs(tournoi.id), donnees.parisTournoi(tournoi.id), donnees.quiAParieTournoi(tournoi.id),
+  ]);
+  const paris = regrouperParis(await donnees.parisDesMatchs(matchs.map((m) => m.id)));
+  // « qui a parié » seulement pour les matchs ouverts où je n'ai pas encore parié (pour écarter ceux dont je suis exclu)
+  const candidats = [...matchsAParier(matchs, { moi, paris })];
+  const qui = new Map();
+  await Promise.all(candidats.map(async (id) => { qui.set(id, regrouperQui(await donnees.quiAParie(id))); }));
+  const nbAParier = matchsAParier(matchs, { moi, paris, qui }).size;
+  const monPari = regrouperParisTournoi(lignesTournoi).get(moi) ?? null;
+  return { tournoi, nbAParier, pariTournoi: statutPariTournoi(tournoi, { monPari, qui: regrouperQui(quiTournoi), moi }) };
+}
+
+/* ---------- Routage par l'adresse (#/ accueil, #/saison, #/tournoi/12, #/tournoi/12/pari, #/race/2026 ou #/regles) ---------- */
 function lireRoute() {
   if (window.location.hash === '#/regles') return { nom: 'regles' };
+  if (window.location.hash === '#/saison') return { nom: 'saison' };
   const race = /^#\/race\/(\d{4})$/.exec(window.location.hash);
   if (race) return { nom: 'race', annee: Number(race[1]) };
   const m = /^#\/tournoi\/(\d+)(\/pari)?$/.exec(window.location.hash);
@@ -281,7 +302,8 @@ async function afficherRoute({ silencieux = false } = {}) {
   if (!silencieux) contenu.innerHTML = '<p class="chargement-court">Chargement…</p>';
   try {
     document.querySelectorAll('nav.menu a').forEach((a) => {
-      if (a.dataset.menu === (route.nom === 'regles' ? 'regles' : 'accueil')) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
+      const actif = route.nom === 'accueil' ? 'accueil' : route.nom === 'regles' ? 'regles' : 'saison';
+      if (a.dataset.menu === actif) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
     });
     if (route.nom === 'regles') {
       page = null;
@@ -307,7 +329,7 @@ async function afficherRoute({ silencieux = false } = {}) {
       page = donneesPage;
       contenu.innerHTML = htmlPageTournoi(page);
       contenu.querySelectorAll('details.tour').forEach((d, i) => { if (i < ouverts.length) d.open = ouverts[i]; });
-    } else {
+    } else if (route.nom === 'saison') {
       page = null;
       pagePT = null;
       const [tournois, resultats, profils, moteur] = await Promise.all([
@@ -321,6 +343,17 @@ async function afficherRoute({ silencieux = false } = {}) {
         if (c.cloture) classements.set(t.id, c);
       }
       contenu.innerHTML = htmlListeTournois(tournois, { race, anneeCourante: annee, classements });
+    } else {
+      page = null;
+      pagePT = null;
+      const [tournois, resultats, profils, moteur] = await Promise.all([
+        donnees.tournois(), donnees.resultats(), donnees.profilsGroupe(profilCourant.is_test), import('./moteur/index.js'),
+      ]);
+      const annee = anneeCourante();
+      const race = construireRace({ moteur, annee, tournois, resultats, profils });
+      const { encours, prochain } = tournoisPourAccueil(tournois, dateDuJour());
+      const blocs = await Promise.all(encours.map((t) => chargerBlocAccueil(t)));
+      contenu.innerHTML = htmlAccueil({ profil: profilCourant, race, blocs, prochain });
     }
     window.scrollTo(0, silencieux ? defilement : 0);
   } catch (erreur) {

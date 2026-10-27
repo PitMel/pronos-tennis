@@ -330,3 +330,21 @@ export function bilanDuTour(matchs, ctx) {
   }
   return compte ? total : null;
 }
+
+/**
+ * Matchs sur lesquels la personne connectée peut encore parier et n'a pas parié (pastille « à parier », page d'accueil).
+ * Exclus : matchs commencés, verrouillés ou neutralisés, ceux où elle a déjà parié, ceux dont l'administrateur l'a exclue.
+ * @returns {Set<number>} identifiants de match
+ */
+export function matchsAParier(matchs, { moi, paris, qui } = {}) {
+  const ids = new Set();
+  if (!moi) return ids;
+  for (const m of matchs) {
+    if (m.neutralise || m.statut !== 'a_venir' || m.verrouille) continue;
+    if (paris?.get(m.id)?.has(moi)) continue;
+    const q = qui?.get(m.id);
+    if (q && !q.has(moi)) continue;
+    ids.add(m.id);
+  }
+  return ids;
+}

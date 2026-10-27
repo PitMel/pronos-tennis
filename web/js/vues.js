@@ -3,7 +3,7 @@ import { echapper, formaterPeriode } from './outils.js';
 import {
   CATEGORIES, ETATS, grouperParTour, grouperParAnnee, lieuEtSurface, etapesProgression,
 } from './tournois.js';
-import { htmlCarteMatch, htmlBaremeTour, bilanDuTour } from './cartes.js';
+import { htmlCarteMatch, htmlBaremeTour, bilanDuTour, matchsAParier } from './cartes.js';
 import { htmlCartePariTournoi, htmlPagePariTournoi } from './pari-tournoi.js';
 
 export { htmlCarteMatch, htmlPagePariTournoi };
@@ -137,7 +137,7 @@ export function htmlPageRace(detail, { moi = null } = {}) {
   const total = detail.colonnes.map((c) => `<td>${echapper(c.points)}</td>`).join('');
   return `
     <section class="hero hero-race">
-      <a class="retour retour-clair" href="#/">← Saison ${echapper(detail.annee)}</a>
+      <a class="retour retour-clair" href="#/saison">← Saison ${echapper(detail.annee)}</a>
       <h2 class="hero-titre">Race ${echapper(detail.annee)}</h2>
       <p class="hero-details">${detail.tournoisClos === 0 ? 'Aucun tournoi terminé pour l’instant.' : `Somme des scores finaux de ${detail.tournoisClos} tournoi${detail.tournoisClos > 1 ? 's' : ''} terminé${detail.tournoisClos > 1 ? 's' : ''}.`}</p>
     </section>
@@ -169,6 +169,7 @@ function htmlProgression(sections) {
 
 export function htmlPageTournoi({ tournoi, matchs, joueurs, ctx = {} }) {
   const contexte = { ...ctx, joueurs, categorie: tournoi.categorie };
+  const aParier = matchsAParier(matchs, contexte);
   const sections = grouperParTour(matchs, tournoi.categorie);
   const vainqueur = tournoi.etat === 'clos' && tournoi.vainqueur_id ? joueurs.get(tournoi.vainqueur_id) : null;
   const finaliste = tournoi.etat === 'clos' && tournoi.finaliste_id ? joueurs.get(tournoi.finaliste_id) : null;
@@ -183,8 +184,10 @@ export function htmlPageTournoi({ tournoi, matchs, joueurs, ctx = {} }) {
       ? ` · toi <b class="${bilan.get(moi).comparer(contexte.moteur.ZERO) < 0 ? 'neg' : 'pos'}">${echapper(contexte.moteur.formaterPoints(bilan.get(moi), { signe: true }))}</b>` : '';
     const bilanComplet = bilan
       ? `<p class="bilan">Bilan du tour : ${(contexte.profils ?? []).filter((p) => bilan.has(p.id)).map((p) => `${echapper(p.prenom)} <b class="${bilan.get(p.id).comparer(contexte.moteur.ZERO) < 0 ? 'neg' : 'pos'}">${echapper(contexte.moteur.formaterPoints(bilan.get(p.id), { signe: true }))}</b>`).join(' · ')}</p>` : '';
+    const restants = s.matchs.filter((m) => aParier.has(m.id)).length;
+    const pastille = restants > 0 ? `<span class="reste" title="Paris restant à faire">${restants} à parier</span>` : '';
     return `<details class="tour${s.termine ? ' tour-termine' : ''}"${s.courant ? ' open' : ''}>
-           <summary><span>${echapper(s.libelle)}</span><span class="compte">${s.matchs.length} match${s.matchs.length > 1 ? 's' : ''}${s.termine ? ' · terminé' : ''}${monBilan}</span></summary>
+           <summary><span>${echapper(s.libelle)}${pastille}</span><span class="compte">${s.matchs.length} match${s.matchs.length > 1 ? 's' : ''}${s.termine ? ' · terminé' : ''}${monBilan}</span></summary>
            ${bilanComplet}
            ${htmlBaremeTour(tournoi.categorie, s.tour, contexte.moteur)}
            <div class="matchs">${s.matchs.map((m) => htmlCarteMatch(m, contexte)).join('')}</div>
@@ -193,7 +196,7 @@ export function htmlPageTournoi({ tournoi, matchs, joueurs, ctx = {} }) {
 
   return `
     <section class="hero categorie-${echapper(tournoi.categorie)}">
-      <a class="retour retour-clair" href="#/">← Saison ${echapper(tournoi.annee)}</a>
+      <a class="retour retour-clair" href="#/saison">← Saison ${echapper(tournoi.annee)}</a>
       <h2 class="hero-titre">${echapper(tournoi.nom)}</h2>
       <p class="hero-details">${echapper(details)}</p>
       <span class="badge badge-etat etat-${echapper(tournoi.etat)}">${echapper(ETATS[tournoi.etat] ?? tournoi.etat)}</span>
