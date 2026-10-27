@@ -52,6 +52,38 @@ export function creerDonnees(supabase) {
       return lire(supabase.rpc('admin_rouvrir_tournoi', { p_tournoi: tournoiId }));
     },
 
+    /** Administrateur : saisit ou remplace le pari d'un joueur sur un match (marqué « corrigé », inscrit au journal). Renvoie 'cree' ou 'remplace'. */
+    corrigerPari({ matchId, joueurId, choix, confiance, sets = null, motif = null }) {
+      return lire(supabase.rpc('admin_saisir_pari', { p_match: matchId, p_joueur: joueurId, p_choix: choix, p_confiance: confiance, p_sets: sets, p_motif: motif }));
+    },
+
+    /** Administrateur : idem pour le pari tournoi. */
+    corrigerPariTournoi({ tournoiId, joueurId, vainqueurId, finalisteId, motif = null }) {
+      return lire(supabase.rpc('admin_saisir_pari_tournoi', { p_tournoi: tournoiId, p_joueur: joueurId, p_vainqueur: vainqueurId, p_finaliste: finalisteId, p_motif: motif }));
+    },
+
+    /** Exclusions d'un tournoi (lecture ouverte, écriture administrateur). */
+    exclusions(tournoiId) {
+      return lire(supabase.from('exclusions').select('id, joueur_id, tournament_id, match_id').eq('tournament_id', tournoiId));
+    },
+
+    async ajouterExclusion({ joueurId, tournoiId, matchId = null }) {
+      const { error } = await supabase.from('exclusions').insert({ joueur_id: joueurId, tournament_id: tournoiId, match_id: matchId });
+      if (error) throw error;
+    },
+
+    async retirerExclusion(id) {
+      const { data, error } = await supabase.from('exclusions').delete().eq('id', id).select('id');
+      if (error) throw error;
+      if (!data || data.length === 0) throw Object.assign(new Error('Suppression refusée'), { code: '42501' });
+    },
+
+    /** Journal des corrections (vue réservée à l'administrateur ; contenu masqué tant que les paris d'un vrai joueur ne sont pas révélés). */
+    journalCorrections(limite = 200) {
+      return lire(supabase.from('corrections_admin_visibles')
+        .select('id, cree_le, joueur_id, kind, ref_id, motif, contenu_visible, avant, apres').order('id', { ascending: false }).limit(limite));
+    },
+
     /** Journal de la synchronisation (lecture réservée à l'administrateur : la base renvoie rien aux autres). */
     journalSynchro(limite = 60) {
       return lire(supabase.from('sync_log')

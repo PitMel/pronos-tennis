@@ -21,6 +21,7 @@ import { tournoisPourAccueil, statutPariTournoi, htmlAccueil } from './js/accuei
 import { matchsAParier } from './js/cartes.js';
 import { htmlAdminAccueil, htmlAccesRefuse } from './js/admin.js';
 import { validerTournoi, tournoiPourBase, messageErreurAdmin, htmlCalendrierAdmin, htmlFormulaireTournoi } from './js/admin-calendrier.js';
+import { htmlParisAdmin, validerCorrectionPari, pariPourBase, validerCorrectionPariTournoi, messageErreurParisAdmin } from './js/admin-paris.js';
 import { htmlClotureAdmin, apercuCloture, messageErreurCloture } from './js/admin-cloture.js';
 import { validerMatch, matchPourBase, messageErreurMatch, htmlMatchsAdmin, htmlFormulaireMatch } from './js/admin-matchs.js';
 import { regrouperParisTournoi, choisir, brouillonDepuisPariTournoi, messageErreurPariTournoi } from './js/pari-tournoi.js';
@@ -293,6 +294,7 @@ async function chargerBlocAccueil(tournoi) {
 let flashAdmin = '';
 let pageAdmin = null; // { tournoi, idsApi } de la page « tournoi » de l'administration
 let pageAdminMatch = null; // { tournoi, match, joueurs, nbParis } de la page « match » de l'administration
+let pageParis = null; // { moteur, tournoi, matchs, joueurs, profils, paris, parisT, exclusions, journal, selection } de la page « paris et exclusions »
 let pageCloture = null; // { moteur, tournoi, donnees, profils, joueurs, archive } de la page « clôture »
 const prendreFlash = () => { const m = flashAdmin; flashAdmin = ''; return m; };
 
@@ -312,6 +314,65 @@ function redessinerFormulaireMatch(options) {
   window.scrollTo(0, defilement);
 }
 
+// La sélection (joueur, match) survit à un rafraîchissement de la même page, pas à un changement de tournoi.
+let selectionParis = { tournoiId: null, match: {}, tournoi: {} };
+function pageParisSelection(tournoiId) {
+  if (selectionParis.tournoiId !== tournoiId) selectionParis = { tournoiId, match: {}, tournoi: {} };
+  return selectionParis;
+}
+
+function redessinerParis(options = {}) {
+  const contenu = document.getElementById('contenu');
+  if (!pageParis || !contenu) return;
+  const defilement = window.scrollY;
+  contenu.innerHTML = htmlParisAdmin({ ...pageParis, ...options });
+  window.scrollTo(0, defilement);
+}
+
+function gererChangementParis(select) {
+  if (!pageParis) return;
+  const lire = (nom) => document.querySelector(`select[name="${nom}"]`)?.value || null;
+  if (select.dataset.adminParis === 'match') pageParis.selection.match = { joueurId: lire('joueur'), matchId: lire('match') };
+  else pageParis.selection.tournoi = { joueurId: document.getElementById('pt-joueur')?.value || null };
+  redessinerParis({ selection: pageParis.selection });
+}
+
+async function gererSoumissionParis(form) {
+  const brut = Object.fromEntries(new FormData(form));
+  const tournoiId = Number(form.dataset.tournoi);
+  const nom = (id) => pageParis.profils.get(id)?.prenom ?? 'ce joueur';
+  try {
+    if (form.dataset.admin === 'pari-match') {
+      const erreurs = validerCorrectionPari(brut, { moteur: pageParis.moteur, categorie: pageParis.tournoi.categorie });
+      const selection = { ...pageParis.selection, match: { joueurId: brut.joueur || null, matchId: brut.match || null } };
+      if (erreurs.length) { redessinerParis({ selection, valeurs: { match: brut }, erreurs: { match: erreurs } }); return; }
+      if (!window.confirm(`Enregistrer ce pari à la place de ${nom(brut.joueur)} ? Il sera marqué « corrigé par l’administrateur » et inscrit au journal.`)) return;
+      const p = pariPourBase(brut, pageParis.tournoi.categorie);
+      const r = await donnees.corrigerPari({ matchId: Number(brut.match), joueurId: brut.joueur, choix: p.choix, confiance: p.confiance, sets: p.sets, motif: p.motif });
+      flashAdmin = r === 'cree' ? `Pari enregistré pour ${nom(brut.joueur)}.` : `Pari de ${nom(brut.joueur)} remplacé.`;
+      Object.assign(pageParis.selection, { match: selection.match, tournoi: selection.tournoi });
+    } else if (form.dataset.admin === 'pari-tournoi') {
+      const erreurs = validerCorrectionPariTournoi(brut, { moteur: pageParis.moteur });
+      const selection = { ...pageParis.selection, tournoi: { joueurId: brut.joueur || null } };
+      if (erreurs.length) { redessinerParis({ selection, valeurs: { tournoi: brut }, erreurs: { tournoi: erreurs } }); return; }
+      if (!window.confirm(`Enregistrer ce pari tournoi à la place de ${nom(brut.joueur)} ? Il sera marqué « corrigé par l’administrateur » et inscrit au journal.`)) return;
+      const r = await donnees.corrigerPariTournoi({ tournoiId, joueurId: brut.joueur, vainqueurId: Number(brut.vainqueur), finalisteId: Number(brut.finaliste), motif: String(brut.motif ?? '').trim() || null });
+      flashAdmin = r === 'cree' ? `Pari tournoi enregistré pour ${nom(brut.joueur)}.` : `Pari tournoi de ${nom(brut.joueur)} remplacé.`;
+      Object.assign(pageParis.selection, { match: selection.match, tournoi: selection.tournoi });
+    } else {
+      if (!brut.joueur) { redessinerParis({ erreurs: { exclusion: 'Choisis le joueur à exclure.' } }); return; }
+      try {
+        await donnees.ajouterExclusion({ joueurId: brut.joueur, tournoiId, matchId: brut.portee ? Number(brut.portee) : null });
+      } catch (e) { redessinerParis({ erreurs: { exclusion: messageErreurParisAdmin(e) } }); return; }
+      flashAdmin = `${nom(brut.joueur)} est exclu${brut.portee ? ' de ce match' : ' du tournoi'}.`;
+    }
+    await afficherRoute({ silencieux: true });
+  } catch (e) {
+    const cle = form.dataset.admin === 'pari-match' ? 'match' : form.dataset.admin === 'pari-tournoi' ? 'tournoi' : 'exclusion';
+    redessinerParis({ valeurs: { [cle]: brut }, erreurs: { [cle]: cle === 'exclusion' ? messageErreurParisAdmin(e) : [messageErreurParisAdmin(e)] } });
+  }
+}
+
 function redessinerCloture(options = {}) {
   const contenu = document.getElementById('contenu');
   if (!pageCloture || !contenu) return;
@@ -327,7 +388,10 @@ function choixCloture() {
 }
 
 function gererChangementAdmin(e) {
-  if (!e.target.closest?.('select[data-admin-cloture]') || !profilCourant?.is_admin || !pageCloture) return;
+  if (!profilCourant?.is_admin) return;
+  const choixParis = e.target.closest?.('select[data-admin-paris]');
+  if (choixParis) { gererChangementParis(choixParis); return; }
+  if (!e.target.closest?.('select[data-admin-cloture]') || !pageCloture) return;
   redessinerCloture({ imposes: choixCloture() });
 }
 
@@ -363,6 +427,7 @@ async function gererSoumissionAdmin(e) {
   const form = e.target.closest?.('form[data-admin]');
   if (!form || !profilCourant?.is_admin) return;
   e.preventDefault();
+  if (['pari-match', 'pari-tournoi', 'exclusion'].includes(form.dataset.admin)) { await gererSoumissionParis(form); return; }
   if (form.dataset.admin === 'tournoi') {
     const brut = Object.fromEntries(new FormData(form));
     brut.indoor = form.elements.indoor.checked;
@@ -404,6 +469,15 @@ async function gererSoumissionAdmin(e) {
 async function gererClicAdmin(e) {
   const bouton = e.target.closest?.('button[data-action^="ad-"]');
   if (!bouton || !profilCourant?.is_admin) return;
+  if (bouton.dataset.action === 'ad-retirer-exclusion') {
+    if (!window.confirm('Retirer cette exclusion ? Le joueur compte de nouveau dans ce tournoi.')) return;
+    try {
+      await donnees.retirerExclusion(Number(bouton.dataset.id));
+      flashAdmin = 'Exclusion retirée.';
+      await afficherRoute({ silencieux: true });
+    } catch (erreur) { redessinerParis({ erreurs: { exclusion: messageErreurParisAdmin(erreur) } }); }
+    return;
+  }
   if (bouton.dataset.action === 'ad-cloturer' || bouton.dataset.action === 'ad-rouvrir') { await gererClotureAdmin(bouton); return; }
   if (bouton.dataset.action === 'ad-supprimer-match') {
     const nb = Number(bouton.dataset.nbParis) || 0;
@@ -434,6 +508,8 @@ function lireRoute() {
   if (window.location.hash === '#/admin/calendrier') return { nom: 'admin-calendrier' };
   const adminMatchs = /^#\/admin\/tournoi\/(\d+)\/matchs$/.exec(window.location.hash);
   if (adminMatchs) return { nom: 'admin-matchs', id: Number(adminMatchs[1]) };
+  const adminParis = /^#\/admin\/tournoi\/(\d+)\/paris$/.exec(window.location.hash);
+  if (adminParis) return { nom: 'admin-paris', id: Number(adminParis[1]) };
   const adminCloture = /^#\/admin\/tournoi\/(\d+)\/cloture$/.exec(window.location.hash);
   if (adminCloture) return { nom: 'admin-cloture', id: Number(adminCloture[1]) };
   const adminMatchNeuf = /^#\/admin\/tournoi\/(\d+)\/match\/nouveau$/.exec(window.location.hash);
@@ -469,9 +545,23 @@ async function afficherRoute({ silencieux = false } = {}) {
       pageAdmin = null;
       pageAdminMatch = null;
       pageCloture = null;
+      pageParis = null;
       if (!profilCourant.is_admin) contenu.innerHTML = htmlAccesRefuse();
       else if (route.nom === 'admin-calendrier') {
         contenu.innerHTML = htmlCalendrierAdmin({ tournois: await donnees.tournois(), message: prendreFlash() });
+      } else if (route.nom === 'admin-paris') {
+        const tournoi = await donnees.tournoi(route.id);
+        if (!tournoi) { contenu.innerHTML = htmlErreur('Ce tournoi n’existe pas.'); return; }
+        const matchs = await donnees.matchsAdmin(tournoi.id);
+        const [profilsListe, joueurs, paris, parisT, exclusions, journalComplet, moteur] = await Promise.all([
+          donnees.profilsTous(), donnees.joueurs(matchs.flatMap((m) => [m.p1_id, m.p2_id])), donnees.parisDesMatchs(matchs.map((m) => m.id)),
+          donnees.parisTournoi(tournoi.id), donnees.exclusions(tournoi.id), donnees.journalCorrections(), import('./moteur/index.js'),
+        ]);
+        const idsMatchs = new Set(matchs.map((m) => m.id));
+        const journal = journalComplet.filter((c) => (c.kind === 'tournoi' ? c.ref_id === tournoi.id : idsMatchs.has(c.ref_id)));
+        const selection = pageParisSelection(tournoi.id);
+        pageParis = { moteur, tournoi, matchs, joueurs, profils: new Map(profilsListe.map((p) => [p.id, p])), paris, parisT, exclusions, journal, selection };
+        contenu.innerHTML = htmlParisAdmin({ ...pageParis, message: prendreFlash() });
       } else if (route.nom === 'admin-cloture') {
         const tournoi = await donnees.tournoi(route.id);
         if (!tournoi) { contenu.innerHTML = htmlErreur('Ce tournoi n’existe pas.'); return; }
