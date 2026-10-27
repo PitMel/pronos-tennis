@@ -4,6 +4,7 @@
 // Jalon 3.3 : cartes « Filet » et saisie des paris de match.
 // Jalon 3.4 : pari tournoi (vainqueur + finaliste), page séparée #/tournoi/ID/pari.
 // Jalon 3.5 : classement du tournoi en trois temps, page Race (#/race/ANNEE).
+// Jalon 3.6 : page des règles (#/regles).
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 import { SUPABASE_URL, SUPABASE_CLE_PUBLIABLE } from './config.js';
 import { emailTechnique, messageErreurConnexion } from './js/identifiants.js';
@@ -13,6 +14,7 @@ import { creerDonnees } from './js/donnees.js';
 import { htmlListeTournois, htmlPageTournoi, htmlErreur, htmlPastille, htmlCarteMatch, htmlPagePariTournoi, htmlPageRace } from './js/vues.js';
 import { ordonnerProfils, regrouperParis, regrouperQui, pariAEnregistrer, messageErreurPari } from './js/paris.js';
 import { brancherParis } from './js/paris-ui.js';
+import { htmlPageRegles } from './js/regles.js';
 import { regrouperParisTournoi, choisir, brouillonDepuisPariTournoi, messageErreurPariTournoi } from './js/pari-tournoi.js';
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_CLE_PUBLIABLE, {
@@ -72,6 +74,10 @@ function afficherCadre(profil) {
       ${htmlPastille(profil)}
       <button class="discret" id="deconnexion" type="button">Déconnexion</button>
     </header>
+    <nav class="menu" aria-label="Navigation">
+      <a href="#/" data-menu="accueil">Tournois</a>
+      <a href="#/regles" data-menu="regles">Règles</a>
+    </nav>
     <main id="contenu"></main>`;
   document.getElementById('contenu').addEventListener('click', gererClicPariTournoi);
   brancherParis(document.getElementById('contenu'), {
@@ -254,8 +260,9 @@ function gererClicPariTournoi(e) {
   }
 }
 
-/* ---------- Routage par l'adresse (#/, #/tournoi/12, #/tournoi/12/pari ou #/race/2026) ---------- */
+/* ---------- Routage par l'adresse (#/, #/tournoi/12, #/tournoi/12/pari, #/race/2026 ou #/regles) ---------- */
 function lireRoute() {
+  if (window.location.hash === '#/regles') return { nom: 'regles' };
   const race = /^#\/race\/(\d{4})$/.exec(window.location.hash);
   if (race) return { nom: 'race', annee: Number(race[1]) };
   const m = /^#\/tournoi\/(\d+)(\/pari)?$/.exec(window.location.hash);
@@ -273,7 +280,14 @@ async function afficherRoute({ silencieux = false } = {}) {
   const defilement = window.scrollY;
   if (!silencieux) contenu.innerHTML = '<p class="chargement-court">Chargement…</p>';
   try {
-    if (route.nom === 'pari-tournoi') {
+    document.querySelectorAll('nav.menu a').forEach((a) => {
+      if (a.dataset.menu === (route.nom === 'regles' ? 'regles' : 'accueil')) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
+    });
+    if (route.nom === 'regles') {
+      page = null;
+      pagePT = null;
+      contenu.innerHTML = htmlPageRegles({ moteur: await import('./moteur/index.js') });
+    } else if (route.nom === 'pari-tournoi') {
       page = null;
       const donneesPage = await chargerPagePariTournoi(route.id);
       if (!donneesPage) { pagePT = null; contenu.innerHTML = htmlErreur('Ce tournoi n’existe pas.'); return; }
