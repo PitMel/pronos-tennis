@@ -32,6 +32,26 @@ export function creerDonnees(supabase) {
       return lire(supabase.from('profiles').select('id, prenom, couleur').eq('is_test', isTest).eq('actif', true).order('prenom'));
     },
 
+    /** Tous les profils (lecture ouverte) : l'administration voit les deux groupes, actifs ou non. */
+    profilsTous() {
+      return lire(supabase.from('profiles').select('id, prenom, couleur, is_test, actif').order('prenom'));
+    },
+
+    /** Administrateur : données de clôture d'un tournoi (même si les conditions automatiques ne sont pas remplies). */
+    donneesCloture(tournoiId) {
+      return lire(supabase.rpc('admin_donnees_cloture', { p_tournoi: tournoiId }));
+    },
+
+    /** Administrateur : clôture (même forcée) ou correction d'une clôture. Le calcul vient du moteur, la base le contrôle. */
+    cloturerTournoi({ tournoiId, resultats, vainqueurId, finalisteId }) {
+      return lire(supabase.rpc('admin_cloturer_tournoi', { p_tournoi: tournoiId, p_resultats: resultats, p_vainqueur: vainqueurId, p_finaliste: finalisteId }));
+    },
+
+    /** Administrateur : rouvre un tournoi clos (archive effacée). */
+    rouvrirTournoi(tournoiId) {
+      return lire(supabase.rpc('admin_rouvrir_tournoi', { p_tournoi: tournoiId }));
+    },
+
     /** Journal de la synchronisation (lecture réservée à l'administrateur : la base renvoie rien aux autres). */
     journalSynchro(limite = 60) {
       return lire(supabase.from('sync_log')

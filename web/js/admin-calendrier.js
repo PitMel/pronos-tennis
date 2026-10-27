@@ -129,5 +129,6 @@ export function htmlFormulaireTournoi({ tournoi = null, idsApi = [], valeurs = n
     <section class="carte carte-admin">${formulaire}</section>
     ${api}
     ${nouveau ? '' : `<a class="btn btn-lien" href="#/admin/tournoi/${encodeURIComponent(tournoi.id)}/matchs">Gérer les matchs de ce tournoi ›</a>`}
+    ${nouveau ? '' : `<a class="btn btn-lien" href="#/admin/tournoi/${encodeURIComponent(tournoi.id)}/cloture">Clôture et scores finaux ›</a>`}
     ${nouveau ? '' : `<p class="lien-archive"><a href="#/tournoi/${encodeURIComponent(tournoi.id)}">Voir la page du tournoi côté joueurs ›</a></p>`}`;
 }

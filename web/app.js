@@ -21,6 +21,7 @@ import { tournoisPourAccueil, statutPariTournoi, htmlAccueil } from './js/accuei
 import { matchsAParier } from './js/cartes.js';
 import { htmlAdminAccueil, htmlAccesRefuse } from './js/admin.js';
 import { validerTournoi, tournoiPourBase, messageErreurAdmin, htmlCalendrierAdmin, htmlFormulaireTournoi } from './js/admin-calendrier.js';
+import { htmlClotureAdmin, apercuCloture, messageErreurCloture } from './js/admin-cloture.js';
 import { validerMatch, matchPourBase, messageErreurMatch, htmlMatchsAdmin, htmlFormulaireMatch } from './js/admin-matchs.js';
 import { regrouperParisTournoi, choisir, brouillonDepuisPariTournoi, messageErreurPariTournoi } from './js/pari-tournoi.js';
 
@@ -91,6 +92,7 @@ function afficherCadre(profil) {
   document.getElementById('contenu').addEventListener('click', gererClicPariTournoi);
   document.getElementById('contenu').addEventListener('click', gererClicAdmin);
   document.getElementById('contenu').addEventListener('submit', gererSoumissionAdmin);
+  document.getElementById('contenu').addEventListener('change', gererChangementAdmin);
   brancherParis(document.getElementById('contenu'), {
     etat: etatParis,
     contexte: contexteCartes,
@@ -291,6 +293,7 @@ async function chargerBlocAccueil(tournoi) {
 let flashAdmin = '';
 let pageAdmin = null; // { tournoi, idsApi } de la page « tournoi » de l'administration
 let pageAdminMatch = null; // { tournoi, match, joueurs, nbParis } de la page « match » de l'administration
+let pageCloture = null; // { moteur, tournoi, donnees, profils, joueurs, archive } de la page « clôture »
 const prendreFlash = () => { const m = flashAdmin; flashAdmin = ''; return m; };
 
 function redessinerFormulaireTournoi(options) {
@@ -307,6 +310,53 @@ function redessinerFormulaireMatch(options) {
   const defilement = window.scrollY;
   contenu.innerHTML = htmlFormulaireMatch({ ...pageAdminMatch, ...options });
   window.scrollTo(0, defilement);
+}
+
+function redessinerCloture(options = {}) {
+  const contenu = document.getElementById('contenu');
+  if (!pageCloture || !contenu) return;
+  const defilement = window.scrollY;
+  contenu.innerHTML = htmlClotureAdmin({ ...pageCloture, ...options });
+  window.scrollTo(0, defilement);
+}
+
+/** Vainqueur et finaliste choisis dans les listes de la page « clôture ». */
+function choixCloture() {
+  const lire = (nom) => { const v = document.querySelector(`select[name="${nom}"]`)?.value; return v ? Number(v) : null; };
+  return { vainqueurId: lire('vainqueurId'), finalisteId: lire('finalisteId') };
+}
+
+function gererChangementAdmin(e) {
+  if (!e.target.closest?.('select[data-admin-cloture]') || !profilCourant?.is_admin || !pageCloture) return;
+  redessinerCloture({ imposes: choixCloture() });
+}
+
+async function gererClotureAdmin(bouton) {
+  const tournoiId = Number(bouton.dataset.tournoi);
+  if (bouton.dataset.action === 'ad-rouvrir') {
+    if (!window.confirm('Rouvrir ce tournoi ? Son archive de scores sera effacée et il repassera « en cours ». Tu devras le clôturer toi-même ensuite.')) return;
+    try {
+      await donnees.rouvrirTournoi(tournoiId);
+      flashAdmin = 'Tournoi rouvert : l’archive a été effacée.';
+      await afficherRoute({ silencieux: true });
+    } catch (erreur) { redessinerCloture({ erreurs: [messageErreurCloture(erreur)] }); }
+    return;
+  }
+  const imposes = choixCloture();
+  const { calcul, erreur } = apercuCloture({ moteur: pageCloture.moteur, donnees: pageCloture.donnees, imposes });
+  if (erreur) { redessinerCloture({ imposes, erreurs: [erreur] }); return; }
+  const clos = pageCloture.donnees.etat === 'clos';
+  const question = clos
+    ? 'Remplacer l’archive des scores finaux par ce nouveau calcul ?'
+    : bouton.dataset.force
+      ? 'Clôturer ce tournoi alors que la clôture automatique n’aurait pas eu lieu ? Les scores seront figés et les paris restants révélés.'
+      : 'Clôturer ce tournoi ? Les scores seront figés et les paris restants révélés.';
+  if (!window.confirm(question)) return;
+  try {
+    await donnees.cloturerTournoi({ tournoiId, resultats: calcul.resultats, vainqueurId: Number(calcul.vainqueur_id), finalisteId: Number(calcul.finaliste_id) });
+    flashAdmin = clos ? 'Clôture corrigée : archive mise à jour.' : 'Tournoi clôturé.';
+    await afficherRoute({ silencieux: true });
+  } catch (e) { redessinerCloture({ imposes, erreurs: [messageErreurCloture(e)] }); }
 }
 
 async function gererSoumissionAdmin(e) {
@@ -354,6 +404,7 @@ async function gererSoumissionAdmin(e) {
 async function gererClicAdmin(e) {
   const bouton = e.target.closest?.('button[data-action^="ad-"]');
   if (!bouton || !profilCourant?.is_admin) return;
+  if (bouton.dataset.action === 'ad-cloturer' || bouton.dataset.action === 'ad-rouvrir') { await gererClotureAdmin(bouton); return; }
   if (bouton.dataset.action === 'ad-supprimer-match') {
     const nb = Number(bouton.dataset.nbParis) || 0;
     const question = nb ? `Supprimer ce match ? Les ${nb} pari${nb > 1 ? 's' : ''} sur ce match seront effacés. Cette action est définitive.` : 'Supprimer ce match ? Cette action est définitive.';
@@ -383,6 +434,8 @@ function lireRoute() {
   if (window.location.hash === '#/admin/calendrier') return { nom: 'admin-calendrier' };
   const adminMatchs = /^#\/admin\/tournoi\/(\d+)\/matchs$/.exec(window.location.hash);
   if (adminMatchs) return { nom: 'admin-matchs', id: Number(adminMatchs[1]) };
+  const adminCloture = /^#\/admin\/tournoi\/(\d+)\/cloture$/.exec(window.location.hash);
+  if (adminCloture) return { nom: 'admin-cloture', id: Number(adminCloture[1]) };
   const adminMatchNeuf = /^#\/admin\/tournoi\/(\d+)\/match\/nouveau$/.exec(window.location.hash);
   if (adminMatchNeuf) return { nom: 'admin-match', id: null, tournoiId: Number(adminMatchNeuf[1]) };
   const adminMatch = /^#\/admin\/match\/(\d+)$/.exec(window.location.hash);
@@ -415,9 +468,19 @@ async function afficherRoute({ silencieux = false } = {}) {
       pagePT = null;
       pageAdmin = null;
       pageAdminMatch = null;
+      pageCloture = null;
       if (!profilCourant.is_admin) contenu.innerHTML = htmlAccesRefuse();
       else if (route.nom === 'admin-calendrier') {
         contenu.innerHTML = htmlCalendrierAdmin({ tournois: await donnees.tournois(), message: prendreFlash() });
+      } else if (route.nom === 'admin-cloture') {
+        const tournoi = await donnees.tournoi(route.id);
+        if (!tournoi) { contenu.innerHTML = htmlErreur('Ce tournoi n’existe pas.'); return; }
+        const [donneesCloture, profilsListe, matchs, resultats, moteur] = await Promise.all([
+          donnees.donneesCloture(tournoi.id), donnees.profilsTous(), donnees.matchsAdmin(tournoi.id), donnees.resultats(), import('./moteur/index.js'),
+        ]);
+        const joueurs = await donnees.joueurs([...matchs.flatMap((m) => [m.p1_id, m.p2_id]), tournoi.vainqueur_id, tournoi.finaliste_id]);
+        pageCloture = { moteur, tournoi, donnees: donneesCloture, profils: new Map(profilsListe.map((p) => [p.id, p])), joueurs, archive: resultats.filter((r) => r.tournament_id === tournoi.id) };
+        contenu.innerHTML = htmlClotureAdmin({ ...pageCloture, message: prendreFlash() });
       } else if (route.nom === 'admin-matchs') {
         const tournoi = await donnees.tournoi(route.id);
         if (!tournoi) { contenu.innerHTML = htmlErreur('Ce tournoi n’existe pas.'); return; }

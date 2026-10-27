@@ -17,3 +17,4 @@ export {
   calculerTournoi,
   calculerRace,
 } from './moteur.js';
+export { calculerCloture } from './cloture.js';

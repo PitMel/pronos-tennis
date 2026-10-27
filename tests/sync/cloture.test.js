@@ -98,3 +98,15 @@ test('executerClotures : en simulation, calcule mais n\'enregistre rien', async 
   assert.deepEqual(base.appels.cloturer, []);
   assert.deepEqual(r.clotures, []);
 });
+
+test('calculerCloture : vainqueur et finaliste imposés par l’administrateur, y compris sans finale jouée', () => {
+  const d = donnees();
+  const sansFinale = { ...d, resultat: null };
+  assert.throws(() => calculerCloture(sansFinale), /requis/);
+  const r = calculerCloture(sansFinale, { vainqueurId: 11, finalisteId: 10 });
+  assert.deepEqual([r.vainqueur_id, r.finaliste_id], [11, 10]);
+  // résultat imposé inverse de celui de la finale : le pari de A (10 vainqueur, 11 finaliste) perd le bonus vainqueur
+  assert.equal(par(r)[A].points_pari_tournoi, '8');
+  assert.equal(par(r)[B].points_pari_tournoi, '12');
+  assert.throws(() => calculerCloture(d, { vainqueurId: 10, finalisteId: 10 }), /différents/);
+});
