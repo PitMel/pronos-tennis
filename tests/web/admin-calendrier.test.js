@@ -82,6 +82,7 @@ test('htmlFormulaireTournoi : modification = valeurs, identifiants, avertissemen
   assert.match(h, /data-api="111" data-tournoi="2"/);
   assert.match(h, /data-api="222"/);
   assert.match(h, /scores sont figés/);
+  assert.match(h, /href="#\/admin\/tournoi\/2\/matchs"/);
   assert.match(htmlFormulaireTournoi({ tournoi: tournois[0] }), /Aucun identifiant/);
   assert.match(htmlFormulaireTournoi({ tournoi: tournois[0] }), /change le barème/);
 });

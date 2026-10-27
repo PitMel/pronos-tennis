@@ -66,3 +66,34 @@ export function depuisDuree(iso, maintenant = new Date()) {
   if (heures < 24) return `il y a ${heures} h${minutes % 60 ? ` ${String(minutes % 60).padStart(2, '0')}` : ''}`;
   return `il y a ${Math.floor(heures / 24)} j`;
 }
+
+/** Heure de Paris d'un instant ISO → valeur d'un champ « datetime-local » (« 2026-11-02T14:30 ») ; vide si inconnue. */
+export function heureParisVersChamp(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  const p = Object.fromEntries(
+    new Intl.DateTimeFormat('en-CA', { timeZone: FUSEAU, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
+      .formatToParts(d).map((x) => [x.type, x.value]),
+  );
+  return `${p.year}-${p.month}-${p.day}T${p.hour}:${p.minute}`;
+}
+
+/** Valeur d'un champ « datetime-local » (heure de Paris) → instant ISO UTC ; null si vide ou invalide. */
+export function champVersHeureParis(texte) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(String(texte ?? '').trim());
+  if (!m) return null;
+  const [a, mo, j, h, mi] = m.slice(1).map(Number);
+  const voulu = Date.UTC(a, mo - 1, j, h, mi);
+  // on cherche l'instant UTC dont l'heure de Paris est celle demandée (deux passes pour franchir un changement d'heure)
+  let instant = voulu;
+  for (let i = 0; i < 2; i += 1) {
+    const lu = heureParisVersChamp(new Date(instant).toISOString());
+    const l = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(lu);
+    if (!l) return null;
+    const [la, lmo, lj, lh, lmi] = l.slice(1).map(Number);
+    instant += voulu - Date.UTC(la, lmo - 1, lj, lh, lmi);
+  }
+  const final = new Date(instant);
+  return heureParisVersChamp(final.toISOString()) === `${m[1]}-${m[2]}-${m[3]}T${m[4]}:${m[5]}` ? final.toISOString() : null;
+}

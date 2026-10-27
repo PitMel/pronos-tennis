@@ -68,6 +68,44 @@ export function creerDonnees(supabase) {
       if (!data || data.length === 0) throw Object.assign(new Error('Suppression refusée'), { code: '42501' });
     },
 
+    /** Administrateur : tous les matchs d'un tournoi, table brute (résultats compris, même masqués aux joueurs). */
+    matchsAdmin(tournoiId) {
+      return lire(supabase.from('matches')
+        .select('id, api_id, tournament_id, tour, heure_prevue, p1_id, p2_id, statut, vainqueur, sets_joues, score, fin_match, neutralise, modifie_manuellement')
+        .eq('tournament_id', tournoiId));
+    },
+
+    async matchAdmin(id) {
+      const lignes = await lire(supabase.from('matches')
+        .select('id, api_id, tournament_id, tour, heure_prevue, p1_id, p2_id, statut, vainqueur, sets_joues, score, fin_match, neutralise, modifie_manuellement')
+        .eq('id', id));
+      return lignes[0] ?? null;
+    },
+
+    /** Tous les joueurs de tennis connus (pour ajouter un match à la main). */
+    tousLesJoueurs() {
+      return lire(supabase.from('players').select('id, nom, pays, classement').order('nom'));
+    },
+
+    /** Administrateur : crée (id nul) ou modifie un match. Renvoie son identifiant. */
+    async enregistrerMatch({ id = null, valeurs }) {
+      if (id === null) {
+        const { data, error } = await supabase.from('matches').insert(valeurs).select('id');
+        if (error) throw error;
+        return data?.[0]?.id ?? null;
+      }
+      const { data, error } = await supabase.from('matches').update(valeurs).eq('id', id).select('id');
+      if (error) throw error;
+      if (!data || data.length === 0) throw Object.assign(new Error('Modification refusée'), { code: '42501' });
+      return id;
+    },
+
+    async supprimerMatch(id) {
+      const { data, error } = await supabase.from('matches').delete().eq('id', id).select('id');
+      if (error) throw error;
+      if (!data || data.length === 0) throw Object.assign(new Error('Suppression refusée'), { code: '42501' });
+    },
+
     /** Archives de clôture (scores finaux figés), pour la Race. */
     resultats() {
       return lire(supabase.from('tournament_results').select('tournament_id, joueur_id, points_matchs, points_pari_tournoi, bonus_classement, score_final, rang'));

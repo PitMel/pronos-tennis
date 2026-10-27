@@ -21,6 +21,7 @@ import { tournoisPourAccueil, statutPariTournoi, htmlAccueil } from './js/accuei
 import { matchsAParier } from './js/cartes.js';
 import { htmlAdminAccueil, htmlAccesRefuse } from './js/admin.js';
 import { validerTournoi, tournoiPourBase, messageErreurAdmin, htmlCalendrierAdmin, htmlFormulaireTournoi } from './js/admin-calendrier.js';
+import { validerMatch, matchPourBase, messageErreurMatch, htmlMatchsAdmin, htmlFormulaireMatch } from './js/admin-matchs.js';
 import { regrouperParisTournoi, choisir, brouillonDepuisPariTournoi, messageErreurPariTournoi } from './js/pari-tournoi.js';
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_CLE_PUBLIABLE, {
@@ -289,6 +290,7 @@ async function chargerBlocAccueil(tournoi) {
 /* ---------- Administration : formulaires et boutons ---------- */
 let flashAdmin = '';
 let pageAdmin = null; // { tournoi, idsApi } de la page « tournoi » de l'administration
+let pageAdminMatch = null; // { tournoi, match, joueurs, nbParis } de la page « match » de l'administration
 const prendreFlash = () => { const m = flashAdmin; flashAdmin = ''; return m; };
 
 function redessinerFormulaireTournoi(options) {
@@ -296,6 +298,14 @@ function redessinerFormulaireTournoi(options) {
   if (!pageAdmin || !contenu) return;
   const defilement = window.scrollY;
   contenu.innerHTML = htmlFormulaireTournoi({ ...pageAdmin, anneeParDefaut: anneeCourante(), ...options });
+  window.scrollTo(0, defilement);
+}
+
+function redessinerFormulaireMatch(options) {
+  const contenu = document.getElementById('contenu');
+  if (!pageAdminMatch || !contenu) return;
+  const defilement = window.scrollY;
+  contenu.innerHTML = htmlFormulaireMatch({ ...pageAdminMatch, ...options });
   window.scrollTo(0, defilement);
 }
 
@@ -316,6 +326,20 @@ async function gererSoumissionAdmin(e) {
     } catch (erreur) {
       redessinerFormulaireTournoi({ valeurs: brut, erreurs: [messageErreurAdmin(erreur)] });
     }
+  } else if (form.dataset.admin === 'match') {
+    const brut = Object.fromEntries(new FormData(form));
+    brut.neutralise = form.elements.neutralise.checked;
+    const creation = form.dataset.id === 'nouveau';
+    const tournoiId = Number(form.dataset.tournoi);
+    const erreurs = validerMatch(brut, { categorie: pageAdminMatch.tournoi.categorie, creation });
+    if (erreurs.length) { redessinerFormulaireMatch({ valeurs: brut, erreurs }); return; }
+    try {
+      await donnees.enregistrerMatch({ id: creation ? null : Number(form.dataset.id), valeurs: matchPourBase(brut, { tournoiId, creation }) });
+      flashAdmin = creation ? 'Match ajouté.' : 'Match enregistré.';
+      window.location.hash = `#/admin/tournoi/${tournoiId}/matchs`;
+    } catch (erreur) {
+      redessinerFormulaireMatch({ valeurs: brut, erreurs: [messageErreurMatch(erreur)] });
+    }
   } else if (form.dataset.admin === 'api-ajouter') {
     const apiId = String(new FormData(form).get('api_id') ?? '').trim();
     if (!/^[A-Za-z0-9_-]{1,40}$/.test(apiId)) { redessinerFormulaireTournoi({ erreurApi: 'Identifiant invalide (lettres, chiffres, tirets).' }); return; }
@@ -330,6 +354,17 @@ async function gererSoumissionAdmin(e) {
 async function gererClicAdmin(e) {
   const bouton = e.target.closest?.('button[data-action^="ad-"]');
   if (!bouton || !profilCourant?.is_admin) return;
+  if (bouton.dataset.action === 'ad-supprimer-match') {
+    const nb = Number(bouton.dataset.nbParis) || 0;
+    const question = nb ? `Supprimer ce match ? Les ${nb} pari${nb > 1 ? 's' : ''} sur ce match seront effacés. Cette action est définitive.` : 'Supprimer ce match ? Cette action est définitive.';
+    if (!window.confirm(question)) return;
+    try {
+      await donnees.supprimerMatch(Number(bouton.dataset.match));
+      flashAdmin = 'Match supprimé.';
+      window.location.hash = `#/admin/tournoi/${Number(bouton.dataset.tournoi)}/matchs`;
+    } catch (erreur) { redessinerFormulaireMatch({ erreurs: [messageErreurMatch(erreur)] }); }
+    return;
+  }
   if (bouton.dataset.action === 'ad-retirer-api') {
     if (!window.confirm('Retirer cet identifiant ? Sans autre identifiant, la synchronisation ne suivra plus ce tournoi.')) return;
     try {
@@ -346,6 +381,12 @@ function lireRoute() {
   if (window.location.hash === '#/saison') return { nom: 'saison' };
   if (window.location.hash === '#/admin') return { nom: 'admin' };
   if (window.location.hash === '#/admin/calendrier') return { nom: 'admin-calendrier' };
+  const adminMatchs = /^#\/admin\/tournoi\/(\d+)\/matchs$/.exec(window.location.hash);
+  if (adminMatchs) return { nom: 'admin-matchs', id: Number(adminMatchs[1]) };
+  const adminMatchNeuf = /^#\/admin\/tournoi\/(\d+)\/match\/nouveau$/.exec(window.location.hash);
+  if (adminMatchNeuf) return { nom: 'admin-match', id: null, tournoiId: Number(adminMatchNeuf[1]) };
+  const adminMatch = /^#\/admin\/match\/(\d+)$/.exec(window.location.hash);
+  if (adminMatch) return { nom: 'admin-match', id: Number(adminMatch[1]), tournoiId: null };
   const adminTournoi = /^#\/admin\/tournoi\/(\d+|nouveau)$/.exec(window.location.hash);
   if (adminTournoi) return { nom: 'admin-tournoi', id: adminTournoi[1] === 'nouveau' ? null : Number(adminTournoi[1]) };
   const race = /^#\/race\/(\d{4})$/.exec(window.location.hash);
@@ -373,9 +414,29 @@ async function afficherRoute({ silencieux = false } = {}) {
       page = null;
       pagePT = null;
       pageAdmin = null;
+      pageAdminMatch = null;
       if (!profilCourant.is_admin) contenu.innerHTML = htmlAccesRefuse();
       else if (route.nom === 'admin-calendrier') {
         contenu.innerHTML = htmlCalendrierAdmin({ tournois: await donnees.tournois(), message: prendreFlash() });
+      } else if (route.nom === 'admin-matchs') {
+        const tournoi = await donnees.tournoi(route.id);
+        if (!tournoi) { contenu.innerHTML = htmlErreur('Ce tournoi n’existe pas.'); return; }
+        const matchs = await donnees.matchsAdmin(tournoi.id);
+        const joueurs = await donnees.joueurs(matchs.flatMap((m) => [m.p1_id, m.p2_id]));
+        contenu.innerHTML = htmlMatchsAdmin({ tournoi, matchs, joueurs, message: prendreFlash() });
+      } else if (route.nom === 'admin-match') {
+        const match = route.id === null ? null : await donnees.matchAdmin(route.id);
+        if (route.id !== null && !match) { contenu.innerHTML = htmlErreur('Ce match n’existe pas.'); return; }
+        const tournoi = await donnees.tournoi(match ? match.tournament_id : route.tournoiId);
+        if (!tournoi) { contenu.innerHTML = htmlErreur('Ce tournoi n’existe pas.'); return; }
+        let joueurs;
+        let nbParis = null;
+        if (match) {
+          joueurs = await donnees.joueurs([match.p1_id, match.p2_id]);
+          nbParis = (await donnees.quiAParie(match.id)).filter((x) => x.a_parie).length;
+        } else joueurs = await donnees.tousLesJoueurs();
+        pageAdminMatch = { tournoi, match, joueurs, nbParis };
+        contenu.innerHTML = htmlFormulaireMatch({ ...pageAdminMatch, message: prendreFlash() });
       } else if (route.nom === 'admin-tournoi') {
         const tournoi = route.id === null ? null : await donnees.tournoi(route.id);
         if (route.id !== null && !tournoi) { contenu.innerHTML = htmlErreur('Ce tournoi n’existe pas.'); return; }

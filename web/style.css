@@ -375,16 +375,17 @@ svg.filet[data-edition="1"] { cursor: pointer; }
 .ligne-admin i { font-style: normal; font-size: 1.5rem; color: var(--vert-fonce); }
 .etiquettes { display: flex; flex-direction: column; gap: 3px; align-items: flex-end; flex: none; }
 .etiquettes em { font-style: normal; font-size: .7rem; font-weight: 700; padding: 2px 8px; border-radius: 99px; background: #E5ECE5; color: var(--vert-fonce); white-space: nowrap; }
-.etiquettes em.etat-en_cours, .etiquettes em.etat-pari_tournoi_ouvert { background: var(--balle); }
+.etiquettes em.etat-en_cours, .etiquettes em.statut-en_cours, .etiquettes em.etat-pari_tournoi_ouvert { background: var(--balle); }
 .btn-lien { text-decoration: none; margin: 0 0 14px; }
 .succes { margin: 0 0 12px; padding: 9px 12px; border-radius: 12px; background: #D7F0DF; color: #14562F; font-weight: 600; }
 .formulaire-admin .champ { margin: 0 0 12px; }
 .formulaire-admin label { display: block; font-weight: 700; font-size: .85rem; margin-bottom: 4px; color: var(--vert-fonce); }
-.formulaire-admin input[type="text"], .formulaire-admin input[type="number"], .formulaire-admin input[type="date"], .formulaire-admin select, .ajout-api input { width: 100%; font: inherit; padding: 10px 12px; border: 2px solid #D5DED6; border-radius: 12px; background: #fff; color: var(--texte); }
+.formulaire-admin input[type="text"], .formulaire-admin input[type="number"], .formulaire-admin input[type="date"], .formulaire-admin input[type="datetime-local"], .formulaire-admin select, .ajout-api input { width: 100%; font: inherit; padding: 10px 12px; border: 2px solid #D5DED6; border-radius: 12px; background: #fff; color: var(--texte); }
 .formulaire-admin .case label { display: flex; align-items: center; gap: 8px; margin-top: 26px; font-weight: 600; color: var(--texte); }
 .formulaire-admin .deux { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px; }
 .formulaire-admin input, .formulaire-admin select { min-width: 0; box-sizing: border-box; }
-.formulaire-admin input[type="date"] { padding-inline: 8px; font-size: .92rem; }
+.formulaire-admin input[type="date"], .formulaire-admin input[type="datetime-local"] { padding-inline: 8px; font-size: .92rem; }
+.carte-admin .btn-petit { margin-top: 8px; }
 .formulaire-admin .erreur { margin: 8px 0 0; min-height: 0; }
 .liste-ids { list-style: none; margin: 0 0 10px; padding: 0; }
 .liste-ids li { display: flex; justify-content: space-between; align-items: center; padding: 7px 0; border-top: 1px solid #E3E9E3; }
@@ -404,3 +405,12 @@ svg.filet[data-edition="1"] { cursor: pointer; }
   .bandeau .discret { padding: 6px 8px; font-size: .78rem; }
   .bandeau .pastille { width: 30px; height: 30px; }
 }
+
+/* Administration des matchs (4.3) */
+.sets-admin { border: 0; padding: 0; margin: 4px 0 14px; }
+.sets-admin legend { font-weight: 700; font-size: .85rem; color: var(--vert-fonce); padding: 0; margin-bottom: 4px; }
+.ligne-set { display: grid; grid-template-columns: 48px minmax(0, 1fr) 14px minmax(0, 1fr); gap: 8px; align-items: center; margin: 6px 0; }
+.ligne-set input { width: 100%; box-sizing: border-box; text-align: center; font: inherit; padding: 9px 6px; border: 2px solid #D5DED6; border-radius: 12px; background: #fff; color: var(--texte); }
+.ligne-set .tiret { text-align: center; color: #6B7B76; }
+.btn-petit.danger, button.btn-petit.danger { background: #FCE8E6; border-color: #F2B8B2; color: #8A1C12; width: auto; }
+.etiquettes em.alerte { background: #FCE8E6; color: #8A1C12; }
