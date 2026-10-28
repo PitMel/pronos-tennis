@@ -81,7 +81,17 @@ function htmlCarteTournoi(t, classement = null) {
  * @param {{race?: object|null, anneeCourante?: number|null, classements?: Map}} [options] la Race s'affiche en haut de la saison en cours ;
  *   classements : Map(idTournoi → classementTournoi) pour le trophée et les scores des tournois terminés
  */
-export function htmlListeTournois(tournois, { race = null, anneeCourante = null, classements = new Map() } = {}) {
+/** Onglets des saisons (de la plus récente à la plus ancienne) ; la saison affichée est marquée. */
+export function htmlOngletsSaisons(annees, affichee) {
+  if (annees.length < 2) return '';
+  return `<nav class="onglets-saisons" aria-label="Saisons">${annees.map((a) => `<a href="#/saison/${encodeURIComponent(a)}"${a === affichee ? ' aria-current="page"' : ''}>${echapper(a)}</a>`).join('')}</nav>`;
+}
+
+/**
+ * Liste des tournois. Sans `anneeAffichee`, toutes les saisons à la suite ; avec, une seule saison et des onglets
+ * pour passer de l'une à l'autre (la saison en cours existe toujours, même sans tournoi).
+ */
+export function htmlListeTournois(tournois, { race = null, anneeCourante = null, anneeAffichee = null, classements = new Map() } = {}) {
   const annees = grouperParAnnee(tournois);
   if (race && anneeCourante && !annees.some((a) => a.annee === anneeCourante)) {
     annees.unshift({ annee: anneeCourante, tournois: [] });
@@ -90,13 +100,15 @@ export function htmlListeTournois(tournois, { race = null, anneeCourante = null,
   if (annees.length === 0) {
     return `<section class="carte"><h2>Tournois</h2><p>Aucun tournoi pour le moment.</p></section>`;
   }
-  return annees.map(({ annee, tournois: liste }) => `
+  const choisie = anneeAffichee !== null && annees.some((a) => a.annee === anneeAffichee) ? anneeAffichee : null;
+  const visibles = choisie === null ? annees : annees.filter((a) => a.annee === choisie);
+  return `${anneeAffichee !== null ? htmlOngletsSaisons(annees.map((a) => a.annee), choisie ?? anneeCourante) : ''}${visibles.map(({ annee, tournois: liste }) => `
     <section>
       <h2 class="titre-annee">Saison ${echapper(annee)}</h2>
       ${race && annee === anneeCourante ? htmlRace(race) : ''}
       ${race && annee !== anneeCourante && liste.some((t) => t.etat === 'clos') ? `<p class="lien-archive"><a href="#/race/${encodeURIComponent(annee)}">Race ${echapper(annee)} : classement final ›</a></p>` : ''}
       ${liste.length ? liste.map((t) => htmlCarteTournoi(t, classements.get(t.id) ?? null)).join('') : '<p class="vide">Aucun tournoi pour cette saison.</p>'}
-    </section>`).join('');
+    </section>`).join('')}`;
 }
 
 /* ---------- Classement d'un tournoi (3 temps) ---------- */

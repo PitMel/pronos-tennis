@@ -614,7 +614,9 @@ async function gererClicAdmin(e) {
 function lireRoute() {
   if (window.location.hash === '#/regles') return { nom: 'regles' };
   if (window.location.hash === '#/profil' || window.location.hash === '#/mot-de-passe') return { nom: 'profil' };
-  if (window.location.hash === '#/saison') return { nom: 'saison' };
+  if (window.location.hash === '#/saison') return { nom: 'saison', annee: null };
+  const saison = /^#\/saison\/(\d{4})$/.exec(window.location.hash);
+  if (saison) return { nom: 'saison', annee: Number(saison[1]) };
   if (window.location.hash === '#/admin') return { nom: 'admin' };
   if (window.location.hash === '#/admin/calendrier') return { nom: 'admin-calendrier' };
   const adminMatchs = /^#\/admin\/tournoi\/(\d+)\/matchs$/.exec(window.location.hash);
@@ -753,13 +755,14 @@ async function afficherRoute({ silencieux = false } = {}) {
         donnees.tournois(), donnees.resultats(), donnees.profilsGroupe(profilCourant.is_test), import('./moteur/index.js'),
       ]);
       const annee = anneeCourante();
-      const race = construireRace({ moteur, annee, tournois, resultats, profils });
+      const affichee = route.annee ?? annee;
+      const race = construireRace({ moteur, annee: affichee, tournois, resultats, profils });
       const classements = new Map();
       for (const t of tournois.filter((x) => x.etat === 'clos')) {
         const c = classementTournoi({ moteur, tournoi: t, matchs: [], paris: new Map(), archives: resultats.filter((r) => r.tournament_id === t.id), profils });
         if (c.cloture) classements.set(t.id, c);
       }
-      contenu.innerHTML = htmlListeTournois(tournois, { race, anneeCourante: annee, classements });
+      contenu.innerHTML = htmlListeTournois(tournois, { race, anneeCourante: affichee, anneeAffichee: affichee, classements });
     } else {
       page = null;
       pagePT = null;

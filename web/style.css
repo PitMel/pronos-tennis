@@ -461,3 +461,8 @@ svg.filet[data-edition="1"] { cursor: pointer; }
 .ligne-photo { display: flex; align-items: center; gap: 16px; margin-bottom: 8px; }
 .ligne-photo .btn-petit { display: inline-block; margin: 0 8px 8px 0; cursor: pointer; }
 .btn-fichier input { display: none; }
+
+/* Onglets des saisons (5.2) */
+.onglets-saisons { display: flex; gap: 8px; margin: 4px 0 8px; overflow-x: auto; padding-bottom: 2px; }
+.onglets-saisons a { flex: none; padding: 6px 16px; border-radius: 99px; background: #E5ECE5; color: var(--vert-fonce); font-weight: 700; text-decoration: none; }
+.onglets-saisons a[aria-current="page"] { background: var(--vert-fonce); color: #fff; }
