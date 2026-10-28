@@ -102,7 +102,7 @@ export function htmlListeTournois(tournois, { race = null, anneeCourante = null,
   }
   const choisie = anneeAffichee !== null && annees.some((a) => a.annee === anneeAffichee) ? anneeAffichee : null;
   const visibles = choisie === null ? annees : annees.filter((a) => a.annee === choisie);
-  return `${anneeAffichee !== null ? htmlOngletsSaisons(annees.map((a) => a.annee), choisie ?? anneeCourante) : ''}${visibles.map(({ annee, tournois: liste }) => `
+  return `${anneeAffichee !== null ? `<p class="lien-archive lien-palmares"><a href="#/palmares">Palmarès des saisons ›</a></p>` : ''}${anneeAffichee !== null ? htmlOngletsSaisons(annees.map((a) => a.annee), choisie ?? anneeCourante) : ''}${visibles.map(({ annee, tournois: liste }) => `
     <section>
       <h2 class="titre-annee">Saison ${echapper(annee)}</h2>
       ${race && annee === anneeCourante ? htmlRace(race) : ''}

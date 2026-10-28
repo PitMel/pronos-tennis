@@ -21,6 +21,7 @@ import { tournoisPourAccueil, statutPariTournoi, htmlAccueil } from './js/accuei
 import { matchsAParier } from './js/cartes.js';
 import { htmlAdminAccueil, htmlAccesRefuse } from './js/admin.js';
 import { validerTournoi, tournoiPourBase, messageErreurAdmin, htmlCalendrierAdmin, htmlFormulaireTournoi } from './js/admin-calendrier.js';
+import { construirePalmares, htmlPalmares } from './js/palmares.js';
 import { htmlPageProfil, htmlBlocPhoto, htmlBlocCouleur, erreurFichierPhoto, messageErreurPhoto, reduirePhoto } from './js/profil.js';
 import { validerMotDePasse, messageErreurMotDePasse } from './js/mot-de-passe.js';
 import { htmlComptesAdmin, htmlFormulaireCompte, validerCompte, comptePourBase, messageErreurCompte } from './js/admin-comptes.js';
@@ -614,6 +615,7 @@ async function gererClicAdmin(e) {
 function lireRoute() {
   if (window.location.hash === '#/regles') return { nom: 'regles' };
   if (window.location.hash === '#/profil' || window.location.hash === '#/mot-de-passe') return { nom: 'profil' };
+  if (window.location.hash === '#/palmares') return { nom: 'palmares' };
   if (window.location.hash === '#/saison') return { nom: 'saison', annee: null };
   const saison = /^#\/saison\/(\d{4})$/.exec(window.location.hash);
   if (saison) return { nom: 'saison', annee: Number(saison[1]) };
@@ -652,7 +654,7 @@ async function afficherRoute({ silencieux = false } = {}) {
   if (!silencieux) contenu.innerHTML = '<p class="chargement-court">Chargement…</p>';
   try {
     document.querySelectorAll('nav.menu a').forEach((a) => {
-      const actif = route.nom === 'accueil' ? 'accueil' : route.nom === 'regles' ? 'regles' : route.nom === 'profil' ? 'mdp' : route.nom.startsWith('admin') ? 'admin' : 'saison';
+      const actif = route.nom === 'accueil' ? 'accueil' : route.nom === 'regles' ? 'regles' : route.nom === 'profil' ? 'mdp' : route.nom === 'palmares' ? 'saison' : route.nom.startsWith('admin') ? 'admin' : 'saison';
       if (a.dataset.menu === actif) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
     });
     if (route.nom.startsWith('admin')) {
@@ -720,6 +722,14 @@ async function afficherRoute({ silencieux = false } = {}) {
         pageAdmin = { tournoi, idsApi: tournoi ? await donnees.idsApi(tournoi.id) : [] };
         contenu.innerHTML = htmlFormulaireTournoi({ ...pageAdmin, anneeParDefaut: anneeCourante(), message: prendreFlash() });
       } else contenu.innerHTML = htmlAdminAccueil({ synchro: await donnees.journalSynchro() });
+    } else if (route.nom === 'palmares') {
+      page = null;
+      pagePT = null;
+      const [tournois, resultats, profils, moteur] = await Promise.all([
+        donnees.tournois(), donnees.resultats(), donnees.profilsGroupe(profilCourant.is_test), import('./moteur/index.js'),
+      ]);
+      const joueurs = await donnees.joueurs(tournois.flatMap((t) => [t.vainqueur_id, t.finaliste_id]));
+      contenu.innerHTML = htmlPalmares(construirePalmares({ moteur, tournois, resultats, profils, joueurs }));
     } else if (route.nom === 'profil') {
       page = null;
       pagePT = null;

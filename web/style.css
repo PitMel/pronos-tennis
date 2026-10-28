@@ -466,3 +466,18 @@ svg.filet[data-edition="1"] { cursor: pointer; }
 .onglets-saisons { display: flex; gap: 8px; margin: 4px 0 8px; overflow-x: auto; padding-bottom: 2px; }
 .onglets-saisons a { flex: none; padding: 6px 16px; border-radius: 99px; background: #E5ECE5; color: var(--vert-fonce); font-weight: 700; text-decoration: none; }
 .onglets-saisons a[aria-current="page"] { background: var(--vert-fonce); color: #fff; }
+
+/* Palmarès (5.3) */
+.carte-palmares .titre-annee { margin-top: 0; }
+.champion-race { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 0 0 12px; padding: 10px 12px; border-radius: 12px; background: #FFF4D6; }
+.champion-race > span { font-size: .8rem; font-weight: 700; color: #5C4300; text-transform: uppercase; letter-spacing: .03em; width: 100%; }
+.nom-pastille { display: inline-flex; align-items: center; gap: 6px; }
+.liste-palmares { list-style: none; margin: 0; padding: 0; }
+.liste-palmares li a { display: flex; flex-direction: column; gap: 6px; padding: 10px 0; border-bottom: 1px solid #E5ECE5; color: inherit; text-decoration: none; }
+.trophee-nom { display: flex; align-items: center; gap: 10px; }
+.trophee-nom small, .palmares-detail small { display: block; color: #4B5F58; font-weight: 400; }
+.palmares-detail { display: flex; flex-wrap: wrap; gap: 6px 16px; padding-left: 32px; font-size: .92rem; }
+.meilleur-pronos { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.meilleur-pronos small { display: inline; }
+.lien-palmares { text-align: right; }
+.champion-race a { color: var(--vert-fonce); font-weight: 700; }
