@@ -443,3 +443,13 @@ svg.filet[data-edition="1"] { cursor: pointer; }
 .journal-admin li { display: grid; grid-template-columns: 5.2rem minmax(0, 1fr); gap: 8px; padding: 8px 0; border-bottom: 1px solid #E5ECE5; font-size: .92rem; }
 .journal-admin small { display: block; color: #4B5F58; }
 .date-journal { color: #4B5F58; font-size: .8rem; }
+
+/* Administration : comptes (4.6) */
+.ligne-compte { display: flex; align-items: center; gap: 12px; }
+.ligne-compte .pastille { flex: none; }
+.couleurs-admin { border: 0; padding: 0; margin: 0 0 14px; display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; }
+.couleurs-admin legend { font-weight: 700; margin-bottom: 8px; padding: 0; }
+.couleurs-admin .choix-couleur { display: flex; margin: 0; font-weight: 600; color: var(--texte); align-items: center; gap: 8px; padding: 8px 10px; border: 2px solid #D5DED6; border-radius: 12px; background: #fff; font-size: .9rem; cursor: pointer; }
+.couleurs-admin .choix-couleur:has(input:checked) { border-color: var(--vert, #1F4D43); background: #EEF4EE; }
+.choix-couleur input { position: absolute; opacity: 0; pointer-events: none; }
+.choix-couleur .echantillon { display: block; flex: none; width: 22px; height: 22px; border-radius: 50%; }

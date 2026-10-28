@@ -95,6 +95,7 @@ export function htmlAdminAccueil({ synchro = [], maintenant = new Date() } = {})
       <h3>Gérer</h3>
       <ul class="liste-admin">
         <li><a class="ligne-admin" href="#/admin/calendrier"><span><b>Calendrier des tournois</b><small>Dates, lieu, surface, catégorie, identifiants de l’API</small></span><i aria-hidden="true">›</i></a></li>
+        <li><a class="ligne-admin" href="#/admin/comptes"><span><b>Comptes</b><small>Couleur, activation, groupe réel ou test</small></span><i aria-hidden="true">›</i></a></li>
       </ul>
     </section>
     ${htmlSynchro(resumerSynchro(synchro, maintenant), maintenant)}`;

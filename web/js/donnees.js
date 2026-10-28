@@ -34,7 +34,14 @@ export function creerDonnees(supabase) {
 
     /** Tous les profils (lecture ouverte) : l'administration voit les deux groupes, actifs ou non. */
     profilsTous() {
-      return lire(supabase.from('profiles').select('id, prenom, couleur, is_test, actif').order('prenom'));
+      return lire(supabase.from('profiles').select('id, prenom, couleur, is_test, actif, is_admin').order('prenom'));
+    },
+
+    /** Administrateur : modifie les colonnes autorisées d'un profil (couleur, actif, groupe test). */
+    async enregistrerCompte(id, valeurs) {
+      const { data, error } = await supabase.from('profiles').update(valeurs).eq('id', id).select('id');
+      if (error) throw error;
+      if (!data || data.length === 0) throw Object.assign(new Error('Modification refusée'), { code: '42501' });
     },
 
     /** Administrateur : données de clôture d'un tournoi (même si les conditions automatiques ne sont pas remplies). */

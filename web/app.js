@@ -21,6 +21,7 @@ import { tournoisPourAccueil, statutPariTournoi, htmlAccueil } from './js/accuei
 import { matchsAParier } from './js/cartes.js';
 import { htmlAdminAccueil, htmlAccesRefuse } from './js/admin.js';
 import { validerTournoi, tournoiPourBase, messageErreurAdmin, htmlCalendrierAdmin, htmlFormulaireTournoi } from './js/admin-calendrier.js';
+import { htmlComptesAdmin, htmlFormulaireCompte, validerCompte, comptePourBase, messageErreurCompte } from './js/admin-comptes.js';
 import { htmlParisAdmin, validerCorrectionPari, pariPourBase, validerCorrectionPariTournoi, messageErreurParisAdmin } from './js/admin-paris.js';
 import { htmlClotureAdmin, apercuCloture, messageErreurCloture } from './js/admin-cloture.js';
 import { validerMatch, matchPourBase, messageErreurMatch, htmlMatchsAdmin, htmlFormulaireMatch } from './js/admin-matchs.js';
@@ -294,6 +295,7 @@ async function chargerBlocAccueil(tournoi) {
 let flashAdmin = '';
 let pageAdmin = null; // { tournoi, idsApi } de la page « tournoi » de l'administration
 let pageAdminMatch = null; // { tournoi, match, joueurs, nbParis } de la page « match » de l'administration
+let pageCompte = null; // { profil, moi } de la page « compte » de l'administration
 let pageParis = null; // { moteur, tournoi, matchs, joueurs, profils, paris, parisT, exclusions, journal, selection } de la page « paris et exclusions »
 let pageCloture = null; // { moteur, tournoi, donnees, profils, joueurs, archive } de la page « clôture »
 const prendreFlash = () => { const m = flashAdmin; flashAdmin = ''; return m; };
@@ -427,6 +429,22 @@ async function gererSoumissionAdmin(e) {
   const form = e.target.closest?.('form[data-admin]');
   if (!form || !profilCourant?.is_admin) return;
   e.preventDefault();
+  if (form.dataset.admin === 'compte') {
+    const brut = { couleur: new FormData(form).get('couleur') ?? '', actif: form.elements.actif.checked, is_test: form.elements.is_test.checked };
+    const redessiner = (extra) => { if (pageCompte) document.getElementById('contenu').innerHTML = htmlFormulaireCompte({ ...pageCompte, ...extra }); };
+    const erreurs = validerCompte(brut);
+    if (erreurs.length) { redessiner({ valeurs: brut, erreurs }); return; }
+    const questions = [];
+    if (brut.is_test !== pageCompte.profil.is_test) questions.push('Changer ce compte de groupe ? Ses classements et archives seront séparés de l’ancien groupe.');
+    if (pageCompte.profil.actif && !brut.actif) questions.push('Désactiver ce compte ? Il ne pourra plus parier.');
+    if (questions.length && !window.confirm(questions.join('\n\n'))) return;
+    try {
+      await donnees.enregistrerCompte(form.dataset.id, comptePourBase(brut));
+      flashAdmin = 'Compte enregistré.';
+      window.location.hash = '#/admin/comptes';
+    } catch (erreur) { redessiner({ valeurs: brut, erreurs: [messageErreurCompte(erreur)] }); }
+    return;
+  }
   if (['pari-match', 'pari-tournoi', 'exclusion'].includes(form.dataset.admin)) { await gererSoumissionParis(form); return; }
   if (form.dataset.admin === 'tournoi') {
     const brut = Object.fromEntries(new FormData(form));
@@ -508,6 +526,9 @@ function lireRoute() {
   if (window.location.hash === '#/admin/calendrier') return { nom: 'admin-calendrier' };
   const adminMatchs = /^#\/admin\/tournoi\/(\d+)\/matchs$/.exec(window.location.hash);
   if (adminMatchs) return { nom: 'admin-matchs', id: Number(adminMatchs[1]) };
+  if (window.location.hash === '#/admin/comptes') return { nom: 'admin-comptes' };
+  const adminCompte = /^#\/admin\/compte\/([^/]+)$/.exec(window.location.hash);
+  if (adminCompte) return { nom: 'admin-compte', id: decodeURIComponent(adminCompte[1]) };
   const adminParis = /^#\/admin\/tournoi\/(\d+)\/paris$/.exec(window.location.hash);
   if (adminParis) return { nom: 'admin-paris', id: Number(adminParis[1]) };
   const adminCloture = /^#\/admin\/tournoi\/(\d+)\/cloture$/.exec(window.location.hash);
@@ -546,9 +567,17 @@ async function afficherRoute({ silencieux = false } = {}) {
       pageAdminMatch = null;
       pageCloture = null;
       pageParis = null;
+      pageCompte = null;
       if (!profilCourant.is_admin) contenu.innerHTML = htmlAccesRefuse();
       else if (route.nom === 'admin-calendrier') {
         contenu.innerHTML = htmlCalendrierAdmin({ tournois: await donnees.tournois(), message: prendreFlash() });
+      } else if (route.nom === 'admin-comptes') {
+        contenu.innerHTML = htmlComptesAdmin({ profils: await donnees.profilsTous(), moi: profilCourant.id, message: prendreFlash() });
+      } else if (route.nom === 'admin-compte') {
+        const profil = (await donnees.profilsTous()).find((p) => p.id === route.id);
+        if (!profil) { contenu.innerHTML = htmlErreur('Ce compte n’existe pas.'); return; }
+        pageCompte = { profil, moi: profilCourant.id };
+        contenu.innerHTML = htmlFormulaireCompte({ ...pageCompte, message: prendreFlash() });
       } else if (route.nom === 'admin-paris') {
         const tournoi = await donnees.tournoi(route.id);
         if (!tournoi) { contenu.innerHTML = htmlErreur('Ce tournoi n’existe pas.'); return; }
