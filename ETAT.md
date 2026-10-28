@@ -114,6 +114,8 @@ Par Pierre, 23 octobre 2026 :
 
 Par Pierre, 24 octobre 2026 : l'administrateur peut aussi corriger son propre pari ; l'administrateur peut réécrire un pari de vrai joueur ou en saisir un manquant, même après le match, avec mention « corrigé par l'administrateur » ; deux vues séparées ; clôture automatique « tournoi clos » (finale terminée et comptée ; l'administrateur peut forcer, corriger, rouvrir) acceptée.
 
+Par Pierre, 28 octobre 2026 : les **vrais comptes** sont créés par lui dans Supabase (Authentication > Add user), puis il prévient Claude qui prépare la ligne SQL du profil ; les **faux comptes** se jouent en se reconnectant (pas de bouton « Jouer en tant que… »). Question posée par Pierre : permettre à un joueur de changer son mot de passe, voire de créer son compte, dans l'application. Réponse de Claude : changement de mot de passe = faisable gratuitement et sans secret (page Profil, étape 5, **en attente de son accord**) ; création de compte par le joueur = possible plus tard (demande d'inscription validée par l'administrateur, nécessite une migration et la réactivation des inscriptions côté Supabase), rangée dans les idées.
+
 Choix de conception faits par Claude (à signaler à Pierre s'ils le gênent) :
 - L'administrateur lit la table brute `matches` (nécessaire pour corriger résultats et statuts) : en tant que joueur, il peut donc voir un résultat avant la révélation. Aucun pari n'est concerné.
 - Un compte créé après la révélation d'un match ne peut plus parier sur ce match.
