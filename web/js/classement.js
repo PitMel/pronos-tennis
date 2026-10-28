@@ -27,7 +27,7 @@ export function construireRace({ moteur, annee, tournois, resultats, profils }) 
   for (const p of profils) complets[p.id] = points[p.id] ?? moteur.ZERO;
   const rangs = moteur.rangs(complets);
   const lignes = profils
-    .map((p) => ({ id: p.id, prenom: p.prenom, couleur: p.couleur ?? null, rang: rangs[p.id], points: moteur.formaterPoints(complets[p.id]) }))
+    .map((p) => ({ id: p.id, prenom: p.prenom, couleur: p.couleur ?? null, photo_url: p.photo_url ?? null, rang: rangs[p.id], points: moteur.formaterPoints(complets[p.id]) }))
     .sort((a, b) => a.rang - b.rang || a.prenom.localeCompare(b.prenom, 'fr'));
   return { annee, tournoisClos: clos.length, lignes };
 }
@@ -65,7 +65,7 @@ export function classementTournoi({ moteur, tournoi, matchs, paris, archives, pr
       const r = archive.get(x.id);
       const v = (texte) => Fraction.de(texte ?? '0');
       return {
-        id: x.id, prenom: x.prenom, couleur: x.couleur ?? null, rang: rangs[x.id],
+        id: x.id, prenom: x.prenom, couleur: x.couleur ?? null, photo_url: x.photo_url ?? null, rang: rangs[x.id],
         matchs: cellule(moteur, v(r?.points_matchs)),
         pari: cellule(moteur, v(r?.points_pari_tournoi)),
         bonus: cellule(moteur, v(r?.bonus_classement)),
@@ -79,7 +79,7 @@ export function classementTournoi({ moteur, tournoi, matchs, paris, archives, pr
   const points = Object.fromEntries(profils.map((x) => [x.id, bilan?.get(x.id) ?? ZERO]));
   const rangs = moteur.rangs(points);
   const lignes = profils.map((x) => ({
-    id: x.id, prenom: x.prenom, couleur: x.couleur ?? null, rang: rangs[x.id],
+    id: x.id, prenom: x.prenom, couleur: x.couleur ?? null, photo_url: x.photo_url ?? null, rang: rangs[x.id],
     matchs: cellule(moteur, points[x.id]), pari: null, bonus: null, final: null,
   })).sort((a, b) => a.rang - b.rang || a.prenom.localeCompare(b.prenom, 'fr'));
   const comptes = matchs.filter((m) => m.neutralise || (m.statut === 'termine' && m.resultat_visible)).length;

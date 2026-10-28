@@ -8,10 +8,14 @@ import { htmlCartePariTournoi, htmlPagePariTournoi } from './pari-tournoi.js';
 
 export { htmlCarteMatch, htmlPagePariTournoi };
 
-/** Pastille ronde avec l'initiale du prénom, dans la couleur du joueur. */
+const PHOTO_VALIDE = /^https:\/\/[a-z0-9]+\.supabase\.co\/storage\/v1\/object\/public\/avatars\/[0-9a-f-]{36}\.jpg(\?v=[0-9]{1,15})?$/;
+
+/** Pastille ronde : la photo du joueur si elle existe, sinon l'initiale du prénom sur sa couleur. */
 export function htmlPastille(profil, classe = 'pastille') {
   const initiale = echapper((profil.prenom || '?').trim().charAt(0).toUpperCase());
   const couleur = /^#[0-9A-Fa-f]{6}$/.test(profil.couleur ?? '') ? profil.couleur : '#2F6CC2';
+  const photo = PHOTO_VALIDE.test(profil.photo_url ?? '') ? profil.photo_url : null;
+  if (photo) return `<span class="${classe} pastille-photo" style="background-color:${couleur};background-image:url('${echapper(photo)}')" aria-hidden="true"></span>`;
   return `<span class="${classe}" style="background:${couleur}" aria-hidden="true">${initiale}</span>`;
 }
 

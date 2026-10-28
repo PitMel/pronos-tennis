@@ -21,7 +21,8 @@ import { tournoisPourAccueil, statutPariTournoi, htmlAccueil } from './js/accuei
 import { matchsAParier } from './js/cartes.js';
 import { htmlAdminAccueil, htmlAccesRefuse } from './js/admin.js';
 import { validerTournoi, tournoiPourBase, messageErreurAdmin, htmlCalendrierAdmin, htmlFormulaireTournoi } from './js/admin-calendrier.js';
-import { validerMotDePasse, messageErreurMotDePasse, htmlPageMotDePasse } from './js/mot-de-passe.js';
+import { htmlPageProfil, htmlBlocPhoto, htmlBlocCouleur, erreurFichierPhoto, messageErreurPhoto, reduirePhoto } from './js/profil.js';
+import { validerMotDePasse, messageErreurMotDePasse } from './js/mot-de-passe.js';
 import { htmlComptesAdmin, htmlFormulaireCompte, validerCompte, comptePourBase, messageErreurCompte } from './js/admin-comptes.js';
 import { htmlParisAdmin, validerCorrectionPari, pariPourBase, validerCorrectionPariTournoi, messageErreurParisAdmin } from './js/admin-paris.js';
 import { htmlClotureAdmin, apercuCloture, messageErreurCloture } from './js/admin-cloture.js';
@@ -90,13 +91,16 @@ function afficherCadre(profil) {
       <a href="#/saison" data-menu="saison">Saison</a>
       <a href="#/regles" data-menu="regles">Règles</a>
       ${profil.is_admin ? '<a href="#/admin" data-menu="admin">Admin</a>' : ''}
-      <a href="#/mot-de-passe" data-menu="mdp">Compte</a>
+      <a href="#/profil" data-menu="mdp">Compte</a>
     </nav>
     <main id="contenu"></main>`;
   document.getElementById('contenu').addEventListener('click', gererClicPariTournoi);
   document.getElementById('contenu').addEventListener('click', gererClicAdmin);
   document.getElementById('contenu').addEventListener('submit', gererSoumissionAdmin);
   document.getElementById('contenu').addEventListener('submit', gererChangementMotDePasse);
+  document.getElementById('contenu').addEventListener('submit', gererCouleur);
+  document.getElementById('contenu').addEventListener('change', gererPhoto);
+  document.getElementById('contenu').addEventListener('click', gererClicProfil);
   document.getElementById('contenu').addEventListener('change', gererChangementAdmin);
   brancherParis(document.getElementById('contenu'), {
     etat: etatParis,
@@ -428,6 +432,75 @@ async function gererClotureAdmin(bouton) {
   } catch (e) { redessinerCloture({ imposes, erreurs: [messageErreurCloture(e)] }); }
 }
 
+/* ---------- Profil : photo et couleur ---------- */
+function majBandeau() {
+  const p = document.querySelector('.bandeau .pastille');
+  if (p) p.outerHTML = htmlPastille(profilCourant);
+}
+
+function redessinerProfil(options = {}) {
+  document.getElementById('contenu').innerHTML = htmlPageProfil({ profil: profilCourant, ...options });
+}
+
+/** Remplace le bloc photo affiché (page Profil ou fiche de compte de l'administrateur). */
+function afficherBlocPhoto(profilId, extra = {}) {
+  const bloc = document.querySelector(`[data-bloc-photo="${profilId}"]`);
+  if (!bloc) return;
+  const profil = profilId === profilCourant.id ? profilCourant : pageCompte?.profil;
+  bloc.outerHTML = htmlBlocPhoto({ profil, autre: profilId !== profilCourant.id, ...extra });
+}
+
+function memoriserPhoto(profilId, url) {
+  if (profilId === profilCourant.id) { profilCourant = { ...profilCourant, photo_url: url }; majBandeau(); }
+  if (pageCompte && pageCompte.profil.id === profilId) pageCompte = { ...pageCompte, profil: { ...pageCompte.profil, photo_url: url } };
+}
+
+async function gererPhoto(e) {
+  const champ = e.target.closest?.('input[type="file"][data-photo]');
+  if (!champ) return;
+  const profilId = champ.dataset.photo;
+  const fichier = champ.files?.[0];
+  const erreurFichier = erreurFichierPhoto(fichier);
+  if (erreurFichier) { afficherBlocPhoto(profilId, { erreur: erreurFichier }); return; }
+  try {
+    const blob = await reduirePhoto(fichier);
+    const url = await donnees.televerserPhoto(profilId, blob);
+    memoriserPhoto(profilId, url);
+    afficherBlocPhoto(profilId, { message: 'Photo enregistrée.' });
+  } catch (erreur) {
+    const illisible = erreur?.message === 'Image illisible' || erreur?.name === 'InvalidStateError' || erreur?.name === 'EncodingError';
+    afficherBlocPhoto(profilId, { erreur: illisible ? 'Cette image ne peut pas être lue : essaie un autre fichier.' : messageErreurPhoto(erreur) });
+  }
+}
+
+async function gererRetraitPhoto(bouton) {
+  const profilId = bouton.dataset.profil;
+  if (!window.confirm('Retirer cette photo ?')) return;
+  try {
+    await donnees.retirerPhoto(profilId);
+    memoriserPhoto(profilId, null);
+    afficherBlocPhoto(profilId, { message: 'Photo retirée.' });
+  } catch (erreur) { afficherBlocPhoto(profilId, { erreur: messageErreurPhoto(erreur) }); }
+}
+
+async function gererClicProfil(e) {
+  const bouton = e.target.closest?.('button[data-action="photo-retirer"]');
+  if (bouton) await gererRetraitPhoto(bouton);
+}
+
+async function gererCouleur(e) {
+  const form = e.target.closest?.('form[data-profil-couleur]');
+  if (!form) return;
+  e.preventDefault();
+  const couleur = new FormData(form).get('couleur') || null;
+  try {
+    await donnees.enregistrerCompte(profilCourant.id, { couleur });
+    profilCourant = { ...profilCourant, couleur };
+    majBandeau();
+    redessinerProfil({ couleur: { message: 'Couleur enregistrée.' } });
+  } catch (erreur) { redessinerProfil({ couleur: { erreur: messageErreurPhoto(erreur) } }); }
+}
+
 async function gererChangementMotDePasse(e) {
   const form = e.target.closest?.('form[data-mdp]');
   if (!form) return;
@@ -435,13 +508,13 @@ async function gererChangementMotDePasse(e) {
   const contenu = document.getElementById('contenu');
   const brut = Object.fromEntries(new FormData(form));
   const erreurs = validerMotDePasse(brut);
-  if (erreurs.length) { contenu.innerHTML = htmlPageMotDePasse({ erreurs }); return; }
+  if (erreurs.length) { contenu.innerHTML = htmlPageProfil({ profil: profilCourant, motDePasse: { erreurs } }); return; }
   const bouton = form.querySelector('button');
   bouton.disabled = true;
   const verification = await supabase.auth.signInWithPassword({ email: emailTechnique(profilCourant.prenom), password: brut.actuel });
-  if (verification.error) { contenu.innerHTML = htmlPageMotDePasse({ erreurs: [messageErreurMotDePasse(verification.error, { etape: 'verification' })] }); return; }
+  if (verification.error) { contenu.innerHTML = htmlPageProfil({ profil: profilCourant, motDePasse: { erreurs: [messageErreurMotDePasse(verification.error, { etape: 'verification' })] } }); return; }
   const { error } = await supabase.auth.updateUser({ password: brut.nouveau });
-  contenu.innerHTML = htmlPageMotDePasse(error ? { erreurs: [messageErreurMotDePasse(error)] } : { message: 'Mot de passe modifié.' });
+  contenu.innerHTML = htmlPageProfil({ profil: profilCourant, motDePasse: error ? { erreurs: [messageErreurMotDePasse(error)] } : { message: 'Mot de passe modifié.' } });
 }
 
 async function gererSoumissionAdmin(e) {
@@ -540,7 +613,7 @@ async function gererClicAdmin(e) {
 /* ---------- Routage par l'adresse (#/ accueil, #/saison, #/tournoi/12, #/tournoi/12/pari, #/race/2026 ou #/regles) ---------- */
 function lireRoute() {
   if (window.location.hash === '#/regles') return { nom: 'regles' };
-  if (window.location.hash === '#/mot-de-passe') return { nom: 'mot-de-passe' };
+  if (window.location.hash === '#/profil' || window.location.hash === '#/mot-de-passe') return { nom: 'profil' };
   if (window.location.hash === '#/saison') return { nom: 'saison' };
   if (window.location.hash === '#/admin') return { nom: 'admin' };
   if (window.location.hash === '#/admin/calendrier') return { nom: 'admin-calendrier' };
@@ -577,7 +650,7 @@ async function afficherRoute({ silencieux = false } = {}) {
   if (!silencieux) contenu.innerHTML = '<p class="chargement-court">Chargement…</p>';
   try {
     document.querySelectorAll('nav.menu a').forEach((a) => {
-      const actif = route.nom === 'accueil' ? 'accueil' : route.nom === 'regles' ? 'regles' : route.nom === 'mot-de-passe' ? 'mdp' : route.nom.startsWith('admin') ? 'admin' : 'saison';
+      const actif = route.nom === 'accueil' ? 'accueil' : route.nom === 'regles' ? 'regles' : route.nom === 'profil' ? 'mdp' : route.nom.startsWith('admin') ? 'admin' : 'saison';
       if (a.dataset.menu === actif) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
     });
     if (route.nom.startsWith('admin')) {
@@ -645,10 +718,10 @@ async function afficherRoute({ silencieux = false } = {}) {
         pageAdmin = { tournoi, idsApi: tournoi ? await donnees.idsApi(tournoi.id) : [] };
         contenu.innerHTML = htmlFormulaireTournoi({ ...pageAdmin, anneeParDefaut: anneeCourante(), message: prendreFlash() });
       } else contenu.innerHTML = htmlAdminAccueil({ synchro: await donnees.journalSynchro() });
-    } else if (route.nom === 'mot-de-passe') {
+    } else if (route.nom === 'profil') {
       page = null;
       pagePT = null;
-      contenu.innerHTML = htmlPageMotDePasse();
+      contenu.innerHTML = htmlPageProfil({ profil: profilCourant });
     } else if (route.nom === 'regles') {
       page = null;
       pagePT = null;

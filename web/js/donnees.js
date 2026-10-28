@@ -29,12 +29,29 @@ export function creerDonnees(supabase) {
 
     /** Les parieurs du groupe (réel ou test) de la personne connectée, actifs seulement. */
     profilsGroupe(isTest) {
-      return lire(supabase.from('profiles').select('id, prenom, couleur').eq('is_test', isTest).eq('actif', true).order('prenom'));
+      return lire(supabase.from('profiles').select('id, prenom, couleur, photo_url').eq('is_test', isTest).eq('actif', true).order('prenom'));
     },
 
     /** Tous les profils (lecture ouverte) : l'administration voit les deux groupes, actifs ou non. */
     profilsTous() {
-      return lire(supabase.from('profiles').select('id, prenom, couleur, is_test, actif, is_admin').order('prenom'));
+      return lire(supabase.from('profiles').select('id, prenom, couleur, photo_url, is_test, actif, is_admin').order('prenom'));
+    },
+
+    /** Envoie la photo (JPEG déjà réduit) d'un compte et la rattache au profil. Renvoie l'adresse enregistrée. */
+    async televerserPhoto(profilId, blob) {
+      const chemin = `${profilId}.jpg`;
+      const { error } = await supabase.storage.from('avatars').upload(chemin, blob, { upsert: true, contentType: 'image/jpeg', cacheControl: '3600' });
+      if (error) throw error;
+      const { data } = supabase.storage.from('avatars').getPublicUrl(chemin);
+      const url = `${data.publicUrl}?v=${Date.now()}`;
+      await this.enregistrerCompte(profilId, { photo_url: url });
+      return url;
+    },
+
+    /** Retire la photo d'un compte (le fichier est supprimé si le stockage le permet, l'adresse l'est dans tous les cas). */
+    async retirerPhoto(profilId) {
+      await this.enregistrerCompte(profilId, { photo_url: null });
+      try { await supabase.storage.from('avatars').remove([`${profilId}.jpg`]); } catch { /* le profil n'affiche déjà plus la photo */ }
     },
 
     /** Administrateur : modifie les colonnes autorisées d'un profil (couleur, actif, groupe test). */

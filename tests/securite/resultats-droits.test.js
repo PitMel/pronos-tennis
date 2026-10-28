@@ -170,11 +170,12 @@ test('un joueur ne peut pas se donner les droits d’administrateur, ni changer 
 });
 
 test('un joueur peut changer sa couleur et sa photo, mais pas celles des autres', async () => {
-  const ok = await b.comme(ID.lea, "update public.profiles set couleur = '#112233', photo_url = 'photos/lea.jpg' where id = $1", [ID.lea]);
+  const ok = await b.comme(ID.lea, "update public.profiles set couleur = '#112233', photo_url = $2 where id = $1", [ID.lea, `https://wmqyplehxtafxoilllfd.supabase.co/storage/v1/object/public/avatars/${ID.lea}.jpg`]);
   assert.equal(ok.affectedRows, 1);
   const autre = await b.comme(ID.lea, "update public.profiles set couleur = '#000000' where id = $1", [ID.marc]);
   assert.equal(autre.affectedRows, 0);
   await refuse(b.comme(ID.lea, "update public.profiles set couleur = 'rouge' where id = $1", [ID.lea]));
+  await refuse(b.comme(ID.lea, "update public.profiles set photo_url = 'photos/lea.jpg' where id = $1", [ID.lea])); // adresse hors du stockage (0007)
 });
 
 test('personne ne crée ni ne supprime de profil depuis le navigateur', async () => {

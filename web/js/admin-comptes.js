@@ -5,11 +5,9 @@
 import { echapper } from './outils.js';
 import { htmlEnteteAdmin } from './admin.js';
 import { htmlPastille } from './vues.js';
+import { htmlBlocPhoto, PALETTE } from './profil.js';
 
-export const PALETTE = [
-  ['#2F6CC2', 'Bleu'], ['#D8A21E', 'Or'], ['#0F766E', 'Vert'], ['#C2410C', 'Orange'], ['#7C3AED', 'Violet'],
-  ['#BE185D', 'Rose'], ['#475569', 'Ardoise'], ['#15803D', 'Prairie'], ['#B91C1C', 'Rouge'], ['#0E7490', 'Turquoise'],
-];
+export { PALETTE } from './profil.js';
 const COULEUR = /^#[0-9A-Fa-f]{6}$/;
 
 /** Valide le formulaire d'un compte (valeurs brutes). */
@@ -66,7 +64,7 @@ export function htmlComptesAdmin({ profils, moi, message = '' }) {
 }
 
 /** Formulaire d'un compte. */
-export function htmlFormulaireCompte({ profil, moi, valeurs = null, erreurs = [], message = '' }) {
+export function htmlFormulaireCompte({ profil, moi, valeurs = null, erreurs = [], message = '', photo = {} }) {
   const v = valeurs ?? { couleur: profil.couleur ?? '', actif: profil.actif, is_test: profil.is_test };
   const soiMeme = profil.id === moi;
   const couleurs = [['', 'Aucune (bleu par défaut)'], ...PALETTE];
@@ -89,5 +87,6 @@ export function htmlFormulaireCompte({ profil, moi, valeurs = null, erreurs = []
   return `
     ${htmlEnteteAdmin(`Compte · ${profil.prenom}`, { retour: { href: '#/admin/comptes', texte: 'Comptes' }, details: `${profil.is_admin ? 'Administrateur' : 'Joueur'} · groupe ${profil.is_test ? 'test' : 'réel'}${profil.actif ? '' : ' · désactivé'}` })}
     ${message ? `<p class="succes" role="status">${echapper(message)}</p>` : ''}
-    <section class="carte carte-admin">${form}</section>`;
+    <section class="carte carte-admin">${form}</section>
+    ${htmlBlocPhoto({ profil, autre: !soiMeme, ...photo })}`;
 }
