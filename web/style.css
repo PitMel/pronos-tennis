@@ -453,3 +453,4 @@ svg.filet[data-edition="1"] { cursor: pointer; }
 .couleurs-admin .choix-couleur:has(input:checked) { border-color: var(--vert, #1F4D43); background: #EEF4EE; }
 .choix-couleur input { position: absolute; opacity: 0; pointer-events: none; }
 .choix-couleur .echantillon { display: block; flex: none; width: 22px; height: 22px; border-radius: 50%; }
+@media (max-width: 430px) { .menu { gap: 0; padding: 0 6px 10px; } .menu a { padding: 6px 9px; font-size: .86rem; } }

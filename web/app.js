@@ -21,6 +21,7 @@ import { tournoisPourAccueil, statutPariTournoi, htmlAccueil } from './js/accuei
 import { matchsAParier } from './js/cartes.js';
 import { htmlAdminAccueil, htmlAccesRefuse } from './js/admin.js';
 import { validerTournoi, tournoiPourBase, messageErreurAdmin, htmlCalendrierAdmin, htmlFormulaireTournoi } from './js/admin-calendrier.js';
+import { validerMotDePasse, messageErreurMotDePasse, htmlPageMotDePasse } from './js/mot-de-passe.js';
 import { htmlComptesAdmin, htmlFormulaireCompte, validerCompte, comptePourBase, messageErreurCompte } from './js/admin-comptes.js';
 import { htmlParisAdmin, validerCorrectionPari, pariPourBase, validerCorrectionPariTournoi, messageErreurParisAdmin } from './js/admin-paris.js';
 import { htmlClotureAdmin, apercuCloture, messageErreurCloture } from './js/admin-cloture.js';
@@ -89,11 +90,13 @@ function afficherCadre(profil) {
       <a href="#/saison" data-menu="saison">Saison</a>
       <a href="#/regles" data-menu="regles">Règles</a>
       ${profil.is_admin ? '<a href="#/admin" data-menu="admin">Admin</a>' : ''}
+      <a href="#/mot-de-passe" data-menu="mdp">Compte</a>
     </nav>
     <main id="contenu"></main>`;
   document.getElementById('contenu').addEventListener('click', gererClicPariTournoi);
   document.getElementById('contenu').addEventListener('click', gererClicAdmin);
   document.getElementById('contenu').addEventListener('submit', gererSoumissionAdmin);
+  document.getElementById('contenu').addEventListener('submit', gererChangementMotDePasse);
   document.getElementById('contenu').addEventListener('change', gererChangementAdmin);
   brancherParis(document.getElementById('contenu'), {
     etat: etatParis,
@@ -425,6 +428,22 @@ async function gererClotureAdmin(bouton) {
   } catch (e) { redessinerCloture({ imposes, erreurs: [messageErreurCloture(e)] }); }
 }
 
+async function gererChangementMotDePasse(e) {
+  const form = e.target.closest?.('form[data-mdp]');
+  if (!form) return;
+  e.preventDefault();
+  const contenu = document.getElementById('contenu');
+  const brut = Object.fromEntries(new FormData(form));
+  const erreurs = validerMotDePasse(brut);
+  if (erreurs.length) { contenu.innerHTML = htmlPageMotDePasse({ erreurs }); return; }
+  const bouton = form.querySelector('button');
+  bouton.disabled = true;
+  const verification = await supabase.auth.signInWithPassword({ email: emailTechnique(profilCourant.prenom), password: brut.actuel });
+  if (verification.error) { contenu.innerHTML = htmlPageMotDePasse({ erreurs: [messageErreurMotDePasse(verification.error, { etape: 'verification' })] }); return; }
+  const { error } = await supabase.auth.updateUser({ password: brut.nouveau });
+  contenu.innerHTML = htmlPageMotDePasse(error ? { erreurs: [messageErreurMotDePasse(error)] } : { message: 'Mot de passe modifié.' });
+}
+
 async function gererSoumissionAdmin(e) {
   const form = e.target.closest?.('form[data-admin]');
   if (!form || !profilCourant?.is_admin) return;
@@ -521,6 +540,7 @@ async function gererClicAdmin(e) {
 /* ---------- Routage par l'adresse (#/ accueil, #/saison, #/tournoi/12, #/tournoi/12/pari, #/race/2026 ou #/regles) ---------- */
 function lireRoute() {
   if (window.location.hash === '#/regles') return { nom: 'regles' };
+  if (window.location.hash === '#/mot-de-passe') return { nom: 'mot-de-passe' };
   if (window.location.hash === '#/saison') return { nom: 'saison' };
   if (window.location.hash === '#/admin') return { nom: 'admin' };
   if (window.location.hash === '#/admin/calendrier') return { nom: 'admin-calendrier' };
@@ -557,7 +577,7 @@ async function afficherRoute({ silencieux = false } = {}) {
   if (!silencieux) contenu.innerHTML = '<p class="chargement-court">Chargement…</p>';
   try {
     document.querySelectorAll('nav.menu a').forEach((a) => {
-      const actif = route.nom === 'accueil' ? 'accueil' : route.nom === 'regles' ? 'regles' : route.nom.startsWith('admin') ? 'admin' : 'saison';
+      const actif = route.nom === 'accueil' ? 'accueil' : route.nom === 'regles' ? 'regles' : route.nom === 'mot-de-passe' ? 'mdp' : route.nom.startsWith('admin') ? 'admin' : 'saison';
       if (a.dataset.menu === actif) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
     });
     if (route.nom.startsWith('admin')) {
@@ -625,6 +645,10 @@ async function afficherRoute({ silencieux = false } = {}) {
         pageAdmin = { tournoi, idsApi: tournoi ? await donnees.idsApi(tournoi.id) : [] };
         contenu.innerHTML = htmlFormulaireTournoi({ ...pageAdmin, anneeParDefaut: anneeCourante(), message: prendreFlash() });
       } else contenu.innerHTML = htmlAdminAccueil({ synchro: await donnees.journalSynchro() });
+    } else if (route.nom === 'mot-de-passe') {
+      page = null;
+      pagePT = null;
+      contenu.innerHTML = htmlPageMotDePasse();
     } else if (route.nom === 'regles') {
       page = null;
       pagePT = null;
