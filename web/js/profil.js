@@ -73,13 +73,28 @@ export function htmlBlocCouleur({ profil, message = '', erreur = '' }) {
     </section>`;
 }
 
+/** Bloc « Installer l'appli » : explications statiques (Android / iPhone). */
+export function htmlBlocInstallation() {
+  return `
+    <section class="carte carte-admin" data-installer>
+      <h3>Installer l’appli</h3>
+      <p class="small">Pour l’ouvrir comme une vraie appli, avec son icône sur ton écran d’accueil :</p>
+      <ul class="aide-installation">
+        <li><strong>iPhone (Safari)</strong> : bouton Partager, puis « Sur l’écran d’accueil ».</li>
+        <li><strong>Android (Chrome)</strong> : menu ⋮, puis « Installer l’application » (ou « Ajouter à l’écran d’accueil »).</li>
+        <li><strong>Ordinateur (Chrome ou Edge)</strong> : icône d’installation à droite de la barre d’adresse.</li>
+      </ul>
+    </section>`;
+}
+
 /** Page Profil complète. */
 export function htmlPageProfil({ profil, photo = {}, couleur = {}, motDePasse = {} }) {
   return `
     <section class="hero hero-admin"><h2 class="hero-titre">${echapper(profil.prenom)}</h2><p class="hero-details">Ton profil</p></section>
     ${htmlBlocPhoto({ profil, ...photo })}
     ${htmlBlocCouleur({ profil, ...couleur })}
-    ${htmlPageMotDePasse(motDePasse)}`;
+    ${htmlPageMotDePasse(motDePasse)}
+    ${htmlBlocInstallation()}`;
 }
 
 /**

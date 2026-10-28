@@ -481,3 +481,6 @@ svg.filet[data-edition="1"] { cursor: pointer; }
 .meilleur-pronos small { display: inline; }
 .lien-palmares { text-align: right; }
 .champion-race a { color: var(--vert-fonce); font-weight: 700; }
+
+/* Aide à l'installation (page Profil) */
+.aide-installation { margin: 0; padding-left: 1.1rem; display: grid; gap: .4rem; font-size: .92rem; line-height: 1.4; }

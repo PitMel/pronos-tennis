@@ -823,3 +823,10 @@ async function demarrer() {
 }
 
 demarrer().catch(() => afficherConnexion('Connexion impossible : vérifie ta connexion internet.'));
+
+/* Installation sur l'écran d'accueil + ouverture hors ligne (coque de l'appli seulement, jamais les données). */
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  });
+}
