@@ -204,7 +204,6 @@ svg.filet[data-edition="1"] { cursor: pointer; }
 /* jeux de chaque set : cellules de même largeur, centrées ; les deux rangées sont donc alignées colonne par colonne */
 .sets { display: flex; justify-content: center; gap: 6px; font-variant-numeric: tabular-nums; padding: 3px 0; }
 .sets b { font-weight: 800; font-size: 1.05rem; color: #fff; width: 1.2em; text-align: center; }
-.ligne-joueur.gagnant .nom-joueur::after { content: " ✓"; color: var(--balle); }
 .ligne-joueur.perdant .nom-joueur, .sets.perdant b { color: #9FB7AE; font-weight: 700; }
 .filet-ligne { height: 2px; background: rgba(244, 247, 242, .55); border-radius: 2px; margin: 2px 0; }
 
