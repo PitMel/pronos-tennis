@@ -136,6 +136,10 @@ Choix de conception de l'étape 3.3 (à signaler à Pierre) : la maquette 1 n'es
 
 **Hors cahier des charges, à étudier seulement une fois tout le reste accompli** (priorité : application fonctionnelle en ligne). Rien ne se code sans son accord : citation à l'ouverture de la page ; images des tournois ; dates des tournois (affichage ; la saisie admin des dates est déjà prévue au cahier) ; photos des joueurs de tennis ; confrontations directes (H2H) ; notification à l'ouverture d'un tournoi (voir point ouvert n° 10 : e-mail/push, gratuit uniquement) ; couleurs de la page selon le tournoi ; armoire des trophées (à rapprocher des trophées du palmarès, section 12.2).
 
+**Ajoutées le 29 oct. 2026 (Pierre)**, même statut (rien ne se code sans son accord) :
+- **Sauvegarde automatique de la base** : l'offre gratuite de Supabase n'en propose pas (voir `ENTRETIEN.md`, « Ce qui n'est PAS couvert »). À étudier : une exportation régulière (par exemple un workflow GitHub planifié), à condition qu'elle reste gratuite et que les données (pronostics et résultats) ne se retrouvent jamais dans le dépôt public.
+- **Création de compte par le joueur lui-même** : aujourd'hui impossible, seul l'administrateur crée les comptes. Piste déjà notée le 28 oct. : demande d'inscription validée par l'administrateur (nécessite une migration et la réactivation des inscriptions côté Supabase, désactivées volontairement pour la sécurité).
+
 ## Points ouverts
 
 - Dates des ATP Finals 2026 : **réglé le 26 oct.** Pierre confirme **15 au 22 novembre 2026** ; saisies dans la vraie base (tournoi n° 12) et dans `supabase/calendrier-2026.sql`.
