@@ -15,13 +15,13 @@
 body {
   margin: 0;
   font-family: 'Bricolage Grotesque', system-ui, -apple-system, 'Segoe UI', sans-serif;
-  background: var(--fond);
+  background: var(--vert-fonce); /* bandes de chaque côté de l'application sur grand écran : même vert que le bandeau */
   color: var(--texte);
   line-height: 1.45;
   min-height: 100vh;
 }
 
-#app { max-width: 960px; margin: 0 auto; padding: 0 16px 32px; }
+#app { max-width: 960px; min-height: 100vh; margin: 0 auto; padding: 0 16px 32px; background: var(--fond); }
 
 .chargement { text-align: center; color: var(--gris); margin-top: 30vh; }
 
