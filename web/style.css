@@ -142,9 +142,11 @@ a.retour { display: inline-block; margin: 0 0 12px; color: var(--vert-fonce); fo
 /* ---------- Saison : classement et cartes ---------- */
 .ligne-titre { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
 .ligne-titre .badge { flex-shrink: 0; margin: 0; }
+/* étiquette de catégorie, puis dessous l'état (À venir / En cours / Terminé), alignées à droite */
+.ligne-titre .etiquettes { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; }
+.bonus-classement { color: var(--gris); font-size: .9em; }
 .carte-tournoi .periode { margin-top: 4px; }
 .carte-tournoi .lieu { color: var(--gris); }
-.carte-tournoi .badge-etat { margin-top: 8px; }
 .vide { color: var(--gris); }
 
 .carte-race h3 { margin: 0; font-size: 1.15rem; color: var(--vert-fonce); }

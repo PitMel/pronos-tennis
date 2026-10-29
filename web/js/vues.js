@@ -61,18 +61,24 @@ function htmlCarteTournoi(t, classement = null) {
     const premiers = classement.lignes.filter((l) => l.rang === 1);
     palmares = `<p class="palmares-groupe">${htmlTrophee(t.categorie)}<span><b>${echapper(premiers.map((l) => l.prenom).join(' et '))}</b>`
       + ` · ${echapper(premiers[0].final.texte)}</span></p>`
-      + `<p class="scores-groupe">${classement.lignes.map((l) => `${echapper(l.prenom)} <b class="${l.final.negatif ? 'neg' : ''}">${echapper(l.final.texte)}</b>`).join(' · ')}</p>`;
+      + `<p class="scores-groupe">${classement.lignes.map((l) => {
+        // score avant bonification (matchs + pari tournoi), puis la bonification du 1er et du 2e entre parenthèses : « Paul 112 (+12) »
+        const base = l.avantBonus ?? l.final;
+        return `${echapper(l.prenom)} <b class="${base.negatif ? 'neg' : ''}">${echapper(base.texte)}</b>${l.bonus?.positif ? ` <span class="bonus-classement">(${echapper(l.bonus.texte)})</span>` : ''}`;
+      }).join(' · ')}</p>`;
   }
   return `
     <a class="carte carte-tournoi categorie-${echapper(t.categorie)}" href="#/tournoi/${encodeURIComponent(t.id)}">
       <div class="ligne-titre">
         <h3>${echapper(t.nom)}</h3>
-        <span class="badge badge-categorie">${echapper(CATEGORIES[t.categorie] ?? t.categorie)}</span>
+        <span class="etiquettes">
+          <span class="badge badge-categorie">${echapper(CATEGORIES[t.categorie] ?? t.categorie)}</span>
+          <span class="badge badge-etat etat-${echapper(t.etat)}">${echapper(ETATS[t.etat] ?? t.etat)}</span>
+        </span>
       </div>
       <p class="periode">${echapper(formaterPeriode(t.date_debut, t.date_fin))}</p>
       <p class="lieu">${echapper(lieuEtSurface(t))}</p>
       ${palmares}
-      <span class="badge badge-etat etat-${echapper(t.etat)}">${echapper(ETATS[t.etat] ?? t.etat)}</span>
     </a>`;
 }
 

@@ -197,3 +197,24 @@ test('vues : la page tournoi affiche le classement du tournoi quand il est fourn
   assert.match(html, /Classement du tournoi/);
   assert.ok(html.indexOf('Classement du tournoi') < html.indexOf('id="pari-tournoi"')); // le pari tournoi vient juste après le classement
 });
+
+test('saison : résumé du tournoi = score avant bonification, puis bonus du 1er et du 2e entre parenthèses (exemple Shanghai)', () => {
+  const t = { id: 9, annee: 2026, nom: 'Shanghai', ville: 'Shanghai', surface: 'dur', indoor: false, categorie: 'masters_1000', date_debut: '2026-10-07', date_fin: '2026-10-18', etat: 'clos' };
+  const archives = [
+    { tournament_id: 9, joueur_id: 'p', points_matchs: '100', points_pari_tournoi: '12', bonus_classement: '12', score_final: '124' },
+    { tournament_id: 9, joueur_id: 'a', points_matchs: '367/4', points_pari_tournoi: '0', bonus_classement: '5', score_final: '387/4' },
+    { tournament_id: 9, joueur_id: 'j', points_matchs: '-19', points_pari_tournoi: '0', bonus_classement: '0', score_final: '-19' },
+  ];
+  const c = classementTournoi({ moteur, tournoi: t, matchs: [], paris: new Map(), archives, profils });
+  const html = htmlListeTournois([t], { race: null, anneeCourante: 2026, classements: new Map([[9, c]]) });
+  const resume = /<p class="scores-groupe">([\s\S]*?)<\/p>/.exec(html)[1];
+  assert.match(resume, /^Paul <b class="">112<\/b> <span class="bonus-classement">\(\+12\)<\/span> · André <b class="">91,75<\/b> <span class="bonus-classement">\(\+5\)<\/span> · Jacques <b class="neg">−19<\/b>$/);
+  assert.doesNotMatch(resume, /124|96,75/); // le score final n'est pas dans cette ligne
+});
+
+test('saison : l’étiquette d’état est sous l’étiquette de catégorie, à droite du titre', () => {
+  const t = { id: 9, annee: 2026, nom: 'Shanghai', ville: 'Shanghai', surface: 'dur', indoor: false, categorie: 'masters_1000', date_debut: null, date_fin: null, etat: 'a_venir' };
+  const html = htmlListeTournois([t], { race: null, anneeCourante: 2026 });
+  assert.match(html, /<span class="etiquettes">\s*<span class="badge badge-categorie">Masters 1000<\/span>\s*<span class="badge badge-etat etat-a_venir">À venir<\/span>\s*<\/span>/);
+  assert.equal(html.match(/badge-etat/g).length, 1); // plus d'étiquette d'état en bas de la carte
+});

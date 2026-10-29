@@ -70,6 +70,8 @@ export function classementTournoi({ moteur, tournoi, matchs, paris, archives, pr
         pari: cellule(moteur, v(r?.points_pari_tournoi)),
         bonus: cellule(moteur, v(r?.bonus_classement)),
         final: cellule(moteur, finals[x.id], { signe: false }),
+        // score avant bonification (matchs + pari tournoi), affiché dans le résumé de la Saison avec le bonus entre parenthèses
+        avantBonus: cellule(moteur, v(r?.points_matchs).plus(v(r?.points_pari_tournoi)), { signe: false }),
       };
     }).sort((a, b) => a.rang - b.rang || a.prenom.localeCompare(b.prenom, 'fr'));
     return { cloture: true, matchsComptes: matchs.length, lignes };
@@ -80,7 +82,7 @@ export function classementTournoi({ moteur, tournoi, matchs, paris, archives, pr
   const rangs = moteur.rangs(points);
   const lignes = profils.map((x) => ({
     id: x.id, prenom: x.prenom, couleur: x.couleur ?? null, photo_url: x.photo_url ?? null, rang: rangs[x.id],
-    matchs: cellule(moteur, points[x.id]), pari: null, bonus: null, final: null,
+    matchs: cellule(moteur, points[x.id]), pari: null, bonus: null, final: null, avantBonus: null,
   })).sort((a, b) => a.rang - b.rang || a.prenom.localeCompare(b.prenom, 'fr'));
   const comptes = matchs.filter((m) => m.neutralise || (m.statut === 'termine' && m.resultat_visible)).length;
   return { cloture: false, matchsComptes: comptes, lignes };
