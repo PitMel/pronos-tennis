@@ -249,14 +249,9 @@ svg.filet[data-edition="1"] { cursor: pointer; }
 .tour summary .compte b.pos, .tour summary .compte b.neg { font-weight: 800; }
 
 /* ---------- Pari tournoi (3.4) ---------- */
-.carte-pari-tournoi { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 0 0 14px; padding: 14px 16px; border-radius: 18px; background: #fff; color: var(--texte); text-decoration: none; border: 2px solid #D5DED6; }
-.carte-pari-tournoi b { display: block; font-size: 1.05rem; color: var(--vert-fonce); }
-.carte-pari-tournoi small { display: block; color: var(--gris); font-size: .85rem; margin-top: 2px; }
-.carte-pari-tournoi i { font-style: normal; font-size: 1.6rem; color: var(--vert-fonce); }
-.carte-pari-tournoi.pari-tournoi-ouvert { border-color: var(--balle); background: #F6FAD7; }
-.carte-pari-tournoi.pari-tournoi-ferme { opacity: .65; }
-.hero-pari .hero-titre { font-size: clamp(1.6rem, 5vw, 2.2rem); }
 .carte-pari h3 { margin: 0 0 8px; font-size: 1.1rem; color: var(--vert-fonce); }
+.carte-pari h4 { margin: 0 0 8px; font-size: 1rem; color: var(--texte); }
+#pari-tournoi { scroll-margin-top: 12px; }
 .carte-pari .choix-en-cours, .carte-pari .mon-pari, .palmares-pari { margin: 0 0 10px; color: var(--texte); }
 .palmares-pari { font-size: 1rem; }
 .liste-choix { list-style: none; margin: 0; padding: 0; }

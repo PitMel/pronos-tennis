@@ -193,7 +193,7 @@ test('vues : trophée différent par catégorie ; saison avec vainqueur du group
 test('vues : la page tournoi affiche le classement du tournoi quand il est fourni', () => {
   const tournoi = { id: 1, annee: 2026, nom: 'Paris', ville: 'Paris', surface: 'dur', indoor: true, categorie: 'masters_1000', date_debut: null, date_fin: null, etat: 'en_cours', vainqueur_id: null, finaliste_id: null };
   const classement = classementTournoi({ moteur, tournoi, matchs: [], paris: new Map(), archives: [], profils });
-  const html = htmlPageTournoi({ tournoi, matchs: [], joueurs: new Map(), ctx: { moi: 'a', moteur, profils, paris: new Map(), classement, pariTournoi: null } });
+  const html = htmlPageTournoi({ tournoi, matchs: [], joueurs: new Map(), ctx: { moi: 'a', moteur, profils, paris: new Map(), classement, parisTournoi: new Map(), quiTournoi: new Map(), saisiePariTournoi: {} } });
   assert.match(html, /Classement du tournoi/);
-  assert.ok(html.indexOf('carte-pari-tournoi') < html.indexOf('Classement du tournoi'));
+  assert.ok(html.indexOf('Classement du tournoi') < html.indexOf('id="pari-tournoi"')); // le pari tournoi vient juste après le classement
 });

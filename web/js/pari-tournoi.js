@@ -1,7 +1,7 @@
 // Pari tournoi (cahier des charges, section 6) : un vainqueur et un finaliste, choisis parmi les joueurs encore en lice.
 // Fonctions pures : données → HTML. Le moteur de points est reçu dans le contexte (ctx.moteur).
+// Le pari tournoi est une section de la page du tournoi (entre le classement et les tours), pas une page séparée.
 import { echapper } from './outils.js';
-import { ETATS } from './tournois.js';
 import { nomCourt, phraseQui } from './cartes.js';
 
 const NBSP = ' ';
@@ -80,25 +80,6 @@ export function etatPariTournoi(tournoi, { revele }) {
   return revele ? 'revele' : 'ouvert';
 }
 
-/** Carte d'accès sur la page du tournoi. */
-export function htmlCartePariTournoi(tournoi, { monPari = null, joueurs = new Map() } = {}) {
-  const lien = `#/tournoi/${encodeURIComponent(tournoi.id)}/pari`;
-  let texte;
-  let classe = '';
-  if (monPari) {
-    texte = `Ton choix : ${echapper(nomCourt(joueurs.get(monPari.vainqueur_id)))} vainqueur, ${echapper(nomCourt(joueurs.get(monPari.finaliste_id)))} finaliste`;
-  } else if (tournoi.etat === 'a_venir') {
-    texte = 'Ouvre quand toutes les affiches des huitièmes sont connues';
-    classe = ' pari-tournoi-ferme';
-  } else if (tournoi.etat === 'clos') {
-    texte = 'Pari terminé : voir les choix de chacun';
-  } else {
-    texte = 'À toi de choisir ton vainqueur et ton finaliste';
-    classe = ' pari-tournoi-ouvert';
-  }
-  return `<a class="carte-pari-tournoi${classe}" href="${lien}"><span><b>Pari tournoi</b><small>${texte}</small></span><i aria-hidden="true">›</i></a>`;
-}
-
 function etiquetteJoueur(j) {
   return `<span class="nom-joueur">${echapper(nomCourt(j))}</span>${j.classement ? `<span class="rang-joueur">n°${NBSP}${echapper(j.classement)}</span>` : ''}`;
 }
@@ -139,7 +120,21 @@ function htmlChoixDeTous(tournoi, ctx, liste) {
 }
 
 /**
- * Page « Pari tournoi » d'un tournoi.
+ * Contexte de la section « Pari tournoi » à partir du contexte de la page tournoi
+ * (les paris de match et ceux du tournoi y cohabitent : parisTournoi / quiTournoi / saisiePariTournoi).
+ * La saisie (brouillon, modification en cours…) est un objet partagé, lu au moment du rendu.
+ */
+export function contextePariTournoi(ctx = {}) {
+  const saisie = ctx.saisiePariTournoi ?? {};
+  return {
+    moi: ctx.moi, profils: ctx.profils, moteur: ctx.moteur,
+    paris: ctx.parisTournoi, qui: ctx.quiTournoi,
+    brouillon: saisie.brouillon, edition: saisie.edition, enCours: saisie.enCours, message: saisie.message,
+  };
+}
+
+/**
+ * Section « Pari tournoi » de la page d'un tournoi (placée entre le classement et les tours).
  * @param {object} o
  * @param {object} o.tournoi
  * @param {Array} o.matchs  lignes de matches_visibles
@@ -147,7 +142,7 @@ function htmlChoixDeTous(tournoi, ctx, liste) {
  * @param {object} o.ctx    moi, profils (moi d'abord), moteur, paris: Map(idProfil → pari), qui: Map(idProfil → a parié)|null,
  *                          brouillon, edition (bool), enCours (bool), message (string)
  */
-export function htmlPagePariTournoi({ tournoi, matchs, joueurs, ctx = {} }) {
+export function htmlSectionPariTournoi({ tournoi, matchs, joueurs, ctx = {} }) {
   const liste = joueursDuTournoi(matchs, joueurs);
   const moi = ctx.moi ?? null;
   const monPari = moi ? ctx.paris?.get(moi) ?? null : null;
@@ -156,17 +151,13 @@ export function htmlPagePariTournoi({ tournoi, matchs, joueurs, ctx = {} }) {
   const participe = !ctx.qui || !moi || ctx.qui.has(moi);
   const points = tournoi.categorie === 'grand_slam' ? 8 : 4;
   const regle = `Chaque joueur choisi qui joue la finale rapporte ${points} points, et ${points} de plus si ton vainqueur gagne le tournoi : ${points * 3} au maximum. Les points sont versés à la fin du tournoi.`;
-
-  const entete = `
-    <section class="hero hero-pari categorie-${echapper(tournoi.categorie)}">
-      <a class="retour retour-clair" href="#/tournoi/${encodeURIComponent(tournoi.id)}">← ${echapper(tournoi.nom)}</a>
-      <h2 class="hero-titre">Pari tournoi</h2>
-      <p class="hero-details">Un vainqueur et un finaliste, à choisir parmi les joueurs encore en lice.</p>
-      <span class="badge badge-etat etat-${echapper(tournoi.etat)}">${echapper(ETATS[tournoi.etat] ?? tournoi.etat)}</span>
+  const section = (corps) => `<section class="carte carte-pari" id="pari-tournoi" data-pari-tournoi>
+      <h3>Pari tournoi</h3>
+      ${corps}
     </section>`;
 
   if (etat === 'a-venir') {
-    return `${entete}<section class="carte"><h3>Pas encore ouvert</h3><p>Le pari tournoi ouvre quand toutes les affiches des huitièmes sont connues (pour les ATP Finals : quand les 4 premiers matchs de poule sont connus).</p><p class="small">${echapper(regle)}</p></section>`;
+    return section(`<h4>Pas encore ouvert</h4><p>Le pari tournoi ouvre quand toutes les affiches des huitièmes sont connues (pour les ATP Finals : quand les 4 premiers matchs de poule sont connus).</p><p class="small">${echapper(regle)}</p>`);
   }
 
   const resultat = tournoi.etat === 'clos' && tournoi.vainqueur_id
@@ -176,37 +167,35 @@ export function htmlPagePariTournoi({ tournoi, matchs, joueurs, ctx = {} }) {
     const note = etat === 'revele'
       ? '<p class="small">Tout le monde a parié : les choix sont révélés et figés. Un joueur barré est éliminé avant la finale.</p>'
       : '<p class="small">Tournoi terminé. Un joueur barré a été éliminé avant la finale.</p>';
-    return `${entete}<section class="carte carte-pari">${resultat}${htmlChoixDeTous(tournoi, { ...ctx, joueurs }, liste)}${note}<p class="small">${echapper(regle)}</p></section>`;
+    return section(`${resultat}${htmlChoixDeTous(tournoi, { ...ctx, joueurs }, liste)}${note}<p class="small">${echapper(regle)}</p>`);
   }
 
   // ouvert : saisie
   if (!participe) {
-    return `${entete}<section class="carte"><h3>Tu ne participes pas à ce pari</h3><p>L’administrateur t’en a exclu.</p></section>`;
+    return section('<h4>Tu ne participes pas à ce pari</h4><p>L’administrateur t’en a exclu.</p>');
   }
   const enEdition = !monPari || ctx.edition;
   const phrase = phraseQui(ctx.profils ?? [], moi, ctx.qui);
   const commun = `${phrase ? `${echapper(phrase)} ` : ''}Les choix des autres s’ouvrent quand tout le monde a parié. Modifiable jusqu’à ce que tout le monde ait parié.`;
   if (liste.length === 0) {
-    return `${entete}<section class="carte"><p>Aucun joueur n’est encore connu pour ce tournoi.</p></section>`;
+    return section('<p>Aucun joueur n’est encore connu pour ce tournoi.</p>');
   }
 
   if (!enEdition) {
-    return `${entete}<section class="carte carte-pari" data-pari-tournoi>
-      <h3>Ton pari</h3>
+    return section(`<h4>Ton pari</h4>
       <p class="mon-pari"><b>${echapper(nomCourt(joueurs.get(monPari.vainqueur_id)))}</b> vainqueur · <b>${echapper(nomCourt(joueurs.get(monPari.finaliste_id)))}</b> finaliste</p>
       <button type="button" class="btn alt" data-action="tp-modifier">Modifier mon pari</button>
-      <p class="small">${commun}</p><p class="small">${echapper(regle)}</p></section>`;
+      <p class="small">${commun}</p><p class="small">${echapper(regle)}</p>`);
   }
 
   const b = ctx.brouillon ?? {};
   const complet = Boolean(b.vainqueur && b.finaliste && b.vainqueur !== b.finaliste);
   const nomChoisi = (id) => (id ? echapper(nomCourt(joueurs.get(id))) : '…');
-  return `${entete}<section class="carte carte-pari" data-pari-tournoi>
-      <h3>Choisis ton vainqueur et ton finaliste</h3>
+  return section(`<h4>Choisis ton vainqueur et ton finaliste</h4>
       <p class="choix-en-cours">Vainqueur : <b>${nomChoisi(b.vainqueur)}</b> · Finaliste : <b>${nomChoisi(b.finaliste)}</b></p>
       <ul class="liste-choix">${liste.map((j) => htmlLigneChoix(j, b, ctx.enCours)).join('')}</ul>
       ${ctx.message ? `<p class="erreur" role="alert">${echapper(ctx.message)}</p>` : ''}
       <button type="button" class="btn main" data-action="tp-valider"${complet && !ctx.enCours ? '' : ' disabled'}>${ctx.enCours ? 'Enregistrement…' : (monPari ? 'Enregistrer la modification' : 'Valider mon pari')}</button>
       ${monPari ? '<button type="button" class="btn alt" data-action="tp-annuler">Annuler la modification</button>' : ''}
-      <p class="small">${commun}</p><p class="small">${echapper(regle)}</p></section>`;
+      <p class="small">${commun}</p><p class="small">${echapper(regle)}</p>`);
 }

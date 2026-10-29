@@ -5,8 +5,10 @@ import * as moteur from '../../src/moteur/index.js';
 import { creerDonnees } from '../../web/js/donnees.js';
 import {
   joueursDuTournoi, regrouperParisTournoi, choisir, brouillonDepuisPariTournoi, pariTournoiRevele, etatPariTournoi,
-  messageErreurPariTournoi, MESSAGE_PARI_TOURNOI_FERME, htmlCartePariTournoi, htmlPagePariTournoi,
+  messageErreurPariTournoi, MESSAGE_PARI_TOURNOI_FERME, htmlSectionPariTournoi, contextePariTournoi,
 } from '../../web/js/pari-tournoi.js';
+import { htmlPageTournoi } from '../../web/js/vues.js';
+import { classementTournoi } from '../../web/js/classement.js';
 
 const joueurs = new Map([
   [1, { id: 1, nom: 'Carlos Alcaraz', classement: 1 }], [2, { id: 2, nom: 'Taylor Fritz', classement: 14 }],
@@ -71,27 +73,53 @@ test('messageErreurPariTournoi', () => {
   assert.match(messageErreurPariTournoi({ message: 'x' }), /Réessaie/);
 });
 
-test('carte d’accès sur la page du tournoi', () => {
-  assert.match(htmlCartePariTournoi(tournoi({ etat: 'a_venir' })), /pari-tournoi-ferme/);
-  assert.match(htmlCartePariTournoi(tournoi()), /pari-tournoi-ouvert[\s\S]*À toi de choisir/);
-  assert.match(htmlCartePariTournoi(tournoi(), { monPari: { vainqueur_id: 1, finaliste_id: 2 }, joueurs }), /Alcaraz vainqueur, Fritz finaliste/);
-  assert.match(htmlCartePariTournoi(tournoi()), /href="#\/tournoi\/7\/pari"/);
+test('contextePariTournoi : reprend les paris du tournoi et la saisie partagée, jamais les paris de match', () => {
+  const saisie = { brouillon: { vainqueur: 1 }, edition: true, enCours: false, message: 'x' };
+  const paris = new Map([['p', { vainqueur_id: 1 }]]);
+  const qui = new Map([['p', true]]);
+  const c = contextePariTournoi({ moi: 'p', profils, moteur, paris: new Map([[5, new Map()]]), qui: new Map([[5, new Map()]]), parisTournoi: paris, quiTournoi: qui, saisiePariTournoi: saisie });
+  assert.equal(c.paris, paris);
+  assert.equal(c.qui, qui);
+  assert.deepEqual([c.brouillon, c.edition, c.enCours, c.message], [{ vainqueur: 1 }, true, false, 'x']);
+  assert.equal(contextePariTournoi({}).brouillon, undefined); // pas de saisie : rien ne plante
+});
+
+test('page tournoi : la section « Pari tournoi » est entre le classement et les tours, sans carte d’accès ni page séparée', () => {
+  const t = tournoi();
+  const matchs = [m(2, 'R16', 3, 4)];
+  const classement = classementTournoi({ moteur, tournoi: t, matchs: [], paris: new Map(), archives: [], profils });
+  const ctx = {
+    moi: 'p', moteur, profils, paris: new Map(), qui: new Map(), classement,
+    parisTournoi: new Map(), quiTournoi: new Map([['p', false], ['l', false], ['t', false]]), saisiePariTournoi: { brouillon: { vainqueur: 3 } },
+  };
+  const html = htmlPageTournoi({ tournoi: t, matchs, joueurs, ctx });
+  const classementPos = html.indexOf('Classement du tournoi');
+  const pariPos = html.indexOf('id="pari-tournoi"');
+  const tourPos = html.indexOf('Huitièmes de finale');
+  assert.ok(classementPos > 0 && classementPos < pariPos && pariPos < tourPos, `ordre : ${classementPos}, ${pariPos}, ${tourPos}`);
+  assert.match(html, /<h3>Pari tournoi<\/h3>/);
+  assert.match(html, /Choisis ton vainqueur et ton finaliste/);
+  assert.match(html, /Vainqueur : <b>Djokovic<\/b> · Finaliste : <b>…<\/b>/); // le brouillon partagé est affiché
+  assert.doesNotMatch(html, /carte-pari-tournoi/);
+  assert.doesNotMatch(html, /href="#\/tournoi\/7\/pari"/);
+  // sans les données du pari tournoi dans le contexte : pas de section
+  assert.doesNotMatch(htmlPageTournoi({ tournoi: t, matchs, joueurs, ctx: { ...ctx, parisTournoi: undefined } }), /id="pari-tournoi"/);
 });
 
 test('page : saisie, éliminés désactivés, bouton valider selon le brouillon', () => {
   const matchs = [fini(1, 'R16', 1, 2, 2), m(2, 'R16', 3, 4)];
   const ctx = { moi: 'p', profils, moteur, paris: new Map(), qui: new Map([['p', false], ['l', true], ['t', false]]) };
-  const vide = htmlPagePariTournoi({ tournoi: tournoi(), matchs, joueurs, ctx });
+  const vide = htmlSectionPariTournoi({ tournoi: tournoi(), matchs, joueurs, ctx });
   assert.match(vide, /Choisis ton vainqueur et ton finaliste/);
   assert.match(vide, /data-action="tp-valider" disabled/);
   assert.match(vide, /Léa a parié, Thomas pas encore/);
   assert.match(vide, /ligne-choix elimine/);
   assert.match(vide, /data-joueur="1"[^>]*disabled/); // Alcaraz éliminé
   assert.match(vide, /Chaque joueur choisi qui joue la finale rapporte 4 points[\s\S]*12 au maximum/);
-  const rempli = htmlPagePariTournoi({ tournoi: tournoi(), matchs, joueurs, ctx: { ...ctx, brouillon: { vainqueur: 3, finaliste: 4 } } });
+  const rempli = htmlSectionPariTournoi({ tournoi: tournoi(), matchs, joueurs, ctx: { ...ctx, brouillon: { vainqueur: 3, finaliste: 4 } } });
   assert.match(rempli, /Vainqueur : <b>Djokovic<\/b> · Finaliste : <b>Medvedev<\/b>/);
   assert.match(rempli, /data-action="tp-valider">Valider mon pari/);
-  const gc = htmlPagePariTournoi({ tournoi: tournoi({ categorie: 'grand_slam' }), matchs, joueurs, ctx });
+  const gc = htmlSectionPariTournoi({ tournoi: tournoi({ categorie: 'grand_slam' }), matchs, joueurs, ctx });
   assert.match(gc, /rapporte 8 points[\s\S]*24 au maximum/);
 });
 
@@ -99,14 +127,14 @@ test('page : pari posé, modification, tournoi à venir, exclu', () => {
   const matchs = [m(2, 'R16', 3, 4)];
   const paris = new Map([['p', { vainqueur_id: 3, finaliste_id: 4 }]]);
   const base = { moi: 'p', profils, moteur, paris, qui: new Map([['p', true], ['l', false], ['t', false]]) };
-  const pose = htmlPagePariTournoi({ tournoi: tournoi(), matchs, joueurs, ctx: base });
+  const pose = htmlSectionPariTournoi({ tournoi: tournoi(), matchs, joueurs, ctx: base });
   assert.match(pose, /Djokovic<\/b> vainqueur · <b>Medvedev<\/b> finaliste/);
   assert.match(pose, /data-action="tp-modifier"/);
-  const edition = htmlPagePariTournoi({ tournoi: tournoi(), matchs, joueurs, ctx: { ...base, edition: true, brouillon: { vainqueur: 3, finaliste: 4 } } });
+  const edition = htmlSectionPariTournoi({ tournoi: tournoi(), matchs, joueurs, ctx: { ...base, edition: true, brouillon: { vainqueur: 3, finaliste: 4 } } });
   assert.match(edition, /Enregistrer la modification/);
   assert.match(edition, /data-action="tp-annuler"/);
-  assert.match(htmlPagePariTournoi({ tournoi: tournoi({ etat: 'a_venir' }), matchs: [], joueurs, ctx: base }), /Pas encore ouvert/);
-  assert.match(htmlPagePariTournoi({ tournoi: tournoi(), matchs, joueurs, ctx: { ...base, paris: new Map(), qui: new Map([['l', true], ['t', false]]) } }), /Tu ne participes pas/);
+  assert.match(htmlSectionPariTournoi({ tournoi: tournoi({ etat: 'a_venir' }), matchs: [], joueurs, ctx: base }), /Pas encore ouvert/);
+  assert.match(htmlSectionPariTournoi({ tournoi: tournoi(), matchs, joueurs, ctx: { ...base, paris: new Map(), qui: new Map([['l', true], ['t', false]]) } }), /Tu ne participes pas/);
 });
 
 test('page : tout le monde a parié = choix révélés avec joueurs barrés ; clos = points (exemple E)', () => {
@@ -115,7 +143,7 @@ test('page : tout le monde a parié = choix révélés avec joueurs barrés ; cl
     ['p', { vainqueur_id: 1, finaliste_id: 3 }], ['l', { vainqueur_id: 3, finaliste_id: 4 }],
   ]);
   const ctx = { moi: 'p', profils, moteur, paris, qui: new Map([['p', true], ['l', true], ['t', true]]) };
-  const revele = htmlPagePariTournoi({ tournoi: tournoi(), matchs, joueurs, ctx });
+  const revele = htmlSectionPariTournoi({ tournoi: tournoi(), matchs, joueurs, ctx });
   assert.match(revele, /<s class="barre">Alcaraz<\/s>/); // éliminé avant la finale
   assert.match(revele, /Thomas<\/th><td colspan="2" class="vide">pas de pari/);
   assert.doesNotMatch(revele, /data-action="tp-valider"/);
@@ -123,7 +151,7 @@ test('page : tout le monde a parié = choix révélés avec joueurs barrés ; cl
   // Masters : vainqueur et finaliste exacts = 12 ; les deux en finale mais inversés = 8 (pas de bonus vainqueur)
   const clos = tournoi({ etat: 'clos', vainqueur_id: 3, finaliste_id: 4 });
   const ctxClos = { ...ctx, paris: new Map([['p', { vainqueur_id: 4, finaliste_id: 3 }], ['l', { vainqueur_id: 3, finaliste_id: 4 }]]) };
-  const html = htmlPagePariTournoi({ tournoi: clos, matchs, joueurs, ctx: ctxClos });
+  const html = htmlSectionPariTournoi({ tournoi: clos, matchs, joueurs, ctx: ctxClos });
   assert.match(html, /Pierre<\/th><td>Medvedev<\/td><td>Djokovic<\/td><td class="pos">\+8<\/td>/);
   assert.match(html, /Léa<\/th><td>Djokovic<\/td><td>Medvedev<\/td><td class="pos">\+12<\/td>/);
 });

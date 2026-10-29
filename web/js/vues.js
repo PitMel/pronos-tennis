@@ -4,9 +4,9 @@ import {
   CATEGORIES, ETATS, grouperParTour, grouperParAnnee, lieuEtSurface, etapesProgression,
 } from './tournois.js';
 import { htmlCarteMatch, htmlBaremeTour, bilanDuTour, matchsAParier } from './cartes.js';
-import { htmlCartePariTournoi, htmlPagePariTournoi } from './pari-tournoi.js';
+import { htmlSectionPariTournoi, contextePariTournoi } from './pari-tournoi.js';
 
-export { htmlCarteMatch, htmlPagePariTournoi };
+export { htmlCarteMatch, htmlSectionPariTournoi };
 
 const PHOTO_VALIDE = /^https:\/\/[a-z0-9]+\.supabase\.co\/storage\/v1\/object\/public\/avatars\/[0-9a-f-]{36}\.jpg(\?v=[0-9]{1,15})?$/;
 
@@ -219,8 +219,8 @@ export function htmlPageTournoi({ tournoi, matchs, joueurs, ctx = {} }) {
       ${vainqueur ? `<p class="palmares">Vainqueur : <strong>${echapper(vainqueur.nom)}</strong>${finaliste ? ` · finaliste : ${echapper(finaliste.nom)}` : ''}</p>` : ''}
       ${htmlProgression(sections)}
     </section>
-    ${ctx.pariTournoi !== undefined ? htmlCartePariTournoi(tournoi, { monPari: ctx.pariTournoi, joueurs }) : ''}
     ${ctx.classement ? htmlClassementTournoi(ctx.classement, { moi: ctx.moi, tournoi }) : ''}
+    ${ctx.parisTournoi !== undefined ? htmlSectionPariTournoi({ tournoi, matchs, joueurs, ctx: contextePariTournoi(ctx) }) : ''}
     ${sections.map(htmlSection).join('')}`;
 }
 
