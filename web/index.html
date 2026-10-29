@@ -22,6 +22,13 @@
   <div id="app" aria-live="polite">
     <p class="chargement">Chargement…</p>
   </div>
+  <script>
+    // Filet de sécurité : si rien ne s'est affiché après 15 s (réseau coupé, bibliothèque inaccessible…), on le dit clairement.
+    setTimeout(function () {
+      var c = document.querySelector('#app > .chargement');
+      if (c) c.innerHTML = 'Le chargement prend trop de temps. Vérifie ta connexion internet puis <a href="">réessaie</a>. Si cela dure, préviens Pierre.';
+    }, 15000);
+  </script>
   <script type="module" src="app.js"></script>
   <noscript>Cette application a besoin de JavaScript.</noscript>
 </body>

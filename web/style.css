@@ -484,3 +484,11 @@ svg.filet[data-edition="1"] { cursor: pointer; }
 
 /* Aide à l'installation (page Profil) */
 .aide-installation { margin: 0; padding-left: 1.1rem; display: grid; gap: .4rem; font-size: .92rem; line-height: 1.4; }
+
+/* Service indisponible (Supabase en veille ou en panne) */
+.service-pleine-page { max-width: 440px; margin: 0 auto; padding: 14vh 16px 24px; text-align: center; }
+.service-pleine-page h1 { margin: 0 0 16px; font-size: 1.9rem; font-weight: 800; letter-spacing: -.02em; }
+.service-pleine-page h1 { color: var(--vert-fonce); }
+.service-pleine-page h1 span { color: var(--terrain); }
+.carte-service { text-align: center; }
+.carte-service h2 { margin-top: 0; }

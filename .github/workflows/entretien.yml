@@ -1,0 +1,59 @@
+# Entretien automatique : évite les deux mises en veille « gratuites » qui couperaient l'appli sans prévenir.
+#  1. Supabase (offre gratuite) met un projet en pause après 7 jours avec trop peu d'activité (sa doc : « quelques requêtes par jour » suffisent) : on le sollicite chaque jour.
+#  2. GitHub désactive les tâches planifiées d'un dépôt public sans activité depuis 60 jours : si le dernier commit date de
+#     plus de 30 jours, on enregistre un petit commit daté (.github/derniere-activite.txt). Ce commit ne republie pas le site.
+# Ce workflow ne dépend PAS de SYNCHRO_ACTIVE : il tourne toute l'année, saison ou non.
+# Secrets utilisés (déjà créés pour la synchronisation) : SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY.
+# Si l'un des contrôles échoue, l'exécution devient rouge (GitHub envoie normalement un e-mail) : voir ENTRETIEN.md.
+name: Entretien
+
+on:
+  schedule:
+    - cron: '17 5 * * *'   # tous les jours, 5 h 17 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: entretien
+  cancel-in-progress: false
+
+jobs:
+  entretien:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - name: Réveiller Supabase
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_SERVICE_ROLE_KEY" ]; then
+            echo "::error::Les secrets SUPABASE_URL et SUPABASE_SERVICE_ROLE_KEY sont absents (Settings > Secrets and variables > Actions)."
+            exit 1
+          fi
+          code=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 30 --retry 3 --retry-delay 10 \
+            -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
+            "$SUPABASE_URL/rest/v1/tournaments?select=id&limit=1" || echo 000)
+          echo "Réponse de Supabase : HTTP $code"
+          if [ "$code" != "200" ]; then
+            echo "::error::Supabase ne répond pas normalement (HTTP $code). Le projet est peut-être en pause : tableau de bord Supabase > Restore project (voir ENTRETIEN.md)."
+            exit 1
+          fi
+      - name: Marqueur d'activité GitHub
+        run: |
+          dernier=$(git log -1 --format=%ct)
+          age_jours=$(( ($(date +%s) - dernier) / 86400 ))
+          echo "Dernier commit : il y a $age_jours jour(s)"
+          if [ "$age_jours" -ge 30 ]; then
+            date -u +%F > .github/derniere-activite.txt
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add .github/derniere-activite.txt
+            git commit -m "Entretien : marqueur d'activité (évite la désactivation des tâches planifiées)"
+            git push
+          else
+            echo "Activité récente : rien à faire."
+          fi

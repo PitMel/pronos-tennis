@@ -34,8 +34,8 @@ export function resumerSynchro(lignes, maintenant = new Date()) {
   const alertes = [];
   if (!dernier) alertes.push('Aucun appel enregistré : la synchronisation n’a jamais tourné.');
   else {
-    if (!dernier.ok) alertes.push('Le dernier appel a échoué.');
-    if (maintenant.getTime() - new Date(dernier.date_appel).getTime() > 48 * HEURES) alertes.push('Aucun appel depuis plus de 48 heures : vérifie que la synchronisation est activée.');
+    if (!dernier.ok) alertes.push('Le dernier appel a échoué : regarde le détail dans la liste ci-dessous (clé API, quota…), puis onglet Actions du dépôt GitHub pour le journal complet.');
+    if (maintenant.getTime() - new Date(dernier.date_appel).getTime() > 48 * HEURES) alertes.push('Aucun appel depuis plus de 48 heures : sur GitHub, onglet Actions, ouvre « Synchronisation API » ; s’il est désactivé, clique « Enable workflow ». Vérifie aussi que la variable SYNCHRO_ACTIVE vaut true (voir ENTRETIEN.md).');
   }
   return {
     dernier,

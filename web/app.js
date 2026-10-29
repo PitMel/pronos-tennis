@@ -16,6 +16,7 @@ import { creerDonnees } from './js/donnees.js';
 import { htmlListeTournois, htmlPageTournoi, htmlErreur, htmlPastille, htmlCarteMatch, htmlPagePariTournoi, htmlPageRace } from './js/vues.js';
 import { ordonnerProfils, regrouperParis, regrouperQui, pariAEnregistrer, messageErreurPari } from './js/paris.js';
 import { brancherParis } from './js/paris-ui.js';
+import { messageService, htmlServiceIndisponible } from './js/service.js';
 import { htmlPageRegles } from './js/regles.js';
 import { tournoisPourAccueil, statutPariTournoi, htmlAccueil } from './js/accueil.js';
 import { matchsAParier } from './js/cartes.js';
@@ -790,13 +791,27 @@ async function afficherRoute({ silencieux = false } = {}) {
     if (silencieux) throw erreur;
     page = null;
     pagePT = null;
-    contenu.innerHTML = htmlErreur('Impossible de charger les données. Vérifie ta connexion internet, puis réessaie.');
+    const probleme = messageService(erreur, { enLigne: navigator.onLine });
+    contenu.innerHTML = probleme
+      ? htmlServiceIndisponible(probleme)
+      : htmlErreur('Impossible de charger les données. Réessaie dans un instant ; si cela continue, préviens Pierre.');
   }
 }
+
+// Bouton « Réessayer » de la carte « service indisponible ».
+document.addEventListener('click', (e) => {
+  if (!e.target.closest?.('[data-reessayer]')) return;
+  if (profilCourant) afficherRoute().catch(() => {});
+  else { racine.innerHTML = '<p class="chargement">Chargement…</p>'; demarrerSansPlanter(); }
+});
 
 window.addEventListener('hashchange', () => afficherRoute());
 
 /* ---------- Démarrage ---------- */
+function afficherServiceIndisponiblePleinePage(probleme) {
+  racine.innerHTML = `<div class="service-pleine-page"><h1>Pronos <span>Tennis</span></h1>${htmlServiceIndisponible(probleme)}</div>`;
+}
+
 async function demarrer() {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) { afficherConnexion(); return; }
@@ -807,6 +822,9 @@ async function demarrer() {
     .eq('id', session.user.id)
     .maybeSingle();
 
+  // Service en panne ou en veille : on garde la session et on propose de réessayer (sans déconnecter personne).
+  const probleme = error ? messageService(error, { enLigne: navigator.onLine }) : null;
+  if (probleme) { afficherServiceIndisponiblePleinePage(probleme); return; }
   if (error || !profil) {
     await supabase.auth.signOut();
     afficherConnexion('Ce compte n’a pas de profil : préviens Pierre.');
@@ -822,7 +840,14 @@ async function demarrer() {
   await afficherRoute();
 }
 
-demarrer().catch(() => afficherConnexion('Connexion impossible : vérifie ta connexion internet.'));
+function demarrerSansPlanter() {
+  return demarrer().catch((erreur) => {
+    const probleme = messageService(erreur, { enLigne: navigator.onLine });
+    if (probleme) afficherServiceIndisponiblePleinePage(probleme);
+    else afficherConnexion('Connexion impossible : réessaie dans un instant.');
+  });
+}
+demarrerSansPlanter();
 
 /* Installation sur l'écran d'accueil + ouverture hors ligne (coque de l'appli seulement, jamais les données). */
 if ('serviceWorker' in navigator) {
