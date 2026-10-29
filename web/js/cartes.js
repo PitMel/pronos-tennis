@@ -1,4 +1,4 @@
-// Carte de match « Filet » (maquette 1) : en-tête (heure + pastille d'état), tableau de score à gauche du terrain,
+// Carte de match « Filet » (maquette 1) : en-tête (heure + pastille d'état), noms et score à gauche du terrain,
 // terrain avec une barre par joueur, puis panneau clair en dessous (résumé des points, scénarios, saisie du pari).
 // Fonctions pures : données → HTML. Le moteur de points est reçu dans le contexte (ctx.moteur).
 import { echapper, formaterHeureParis } from './outils.js';
@@ -106,20 +106,22 @@ function chip(etat, { attendus, participe }) {
   }
 }
 
-/** Tableau de score « façon télévision », à gauche du terrain, centré sur le filet. */
+/**
+ * Colonne à gauche du terrain, centrée sur le filet. De haut en bas :
+ *   nom du joueur 1 (suivi de son classement ATP) · jeux du joueur 1 · barre du filet · jeux du joueur 2 · nom du joueur 2.
+ * Les jeux des deux joueurs sont dans des cellules de même largeur, centrées : les chiffres de chaque set sont alignés
+ * l'un au-dessus de l'autre. Chaque nom est centré dans l'espace restant de sa moitié. Le classement est celui de la dernière synchronisation.
+ */
 function htmlTableauScore(match, p1, p2, gagnant) {
   const jeux = match.resultat_visible && Array.isArray(match.score?.games)
     ? match.score.games.filter((s) => Array.isArray(s) && s.length === 2 && s.every((n) => Number.isFinite(n)))
     : [];
-  const ligne = (joueur, numero, indice) => {
-    const classes = ['ligne-joueur'];
-    if (gagnant === numero) classes.push('gagnant');
-    else if (gagnant) classes.push('perdant');
-    return `<div class="${classes.join(' ')}"><span class="identite"><span class="nom-joueur">${echapper(nomCourt(joueur))}</span>`
-      + `${joueur?.classement ? `<span class="rang-joueur">n°${NBSP}${echapper(joueur.classement)}</span>` : ''}</span>`
-      + `<span class="sets">${jeux.map((s) => `<b>${echapper(s[indice])}</b>`).join('')}</span></div>`;
-  };
-  return `<div class="tableau-score">${ligne(p1, 1, 0)}<div class="filet-ligne"></div>${ligne(p2, 2, 1)}</div>`;
+  const etat = (numero) => (gagnant === numero ? ' gagnant' : gagnant ? ' perdant' : '');
+  const nom = (joueur, numero) => `<div class="ligne-joueur${etat(numero)}"><span class="identite"><span class="nom-joueur">${echapper(nomCourt(joueur))}</span>`
+    + `${joueur?.classement ? ` <span class="rang-joueur">(n°${NBSP}${echapper(joueur.classement)})</span>` : ''}</span></div>`;
+  const score = (numero, indice) => (jeux.length
+    ? `<div class="sets${etat(numero)}">${jeux.map((s) => `<b>${echapper(s[indice])}</b>`).join('')}</div>` : '');
+  return `<div class="tableau-score">${nom(p1, 1)}${score(1, 0)}<div class="filet-ligne"></div>${score(2, 1)}${nom(p2, 2)}</div>`;
 }
 
 /** Barème sur la moitié choisie pendant la saisie : « +12 / −1,5 » pour chaque confiance. */
