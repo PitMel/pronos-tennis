@@ -163,10 +163,10 @@ test('etapesProgression : balle sur le tour en cours, coches sur les tours finis
   assert.deepEqual(e.map((x) => x.libelle), ['Huitièmes', 'Quarts', 'Demies', 'Finale']);
 });
 
-test('etapesProgression : tournoi fini = tout « fait », balle sur la finale ; sans match = rien', () => {
+test('etapesProgression : tournoi fini = tout « fait », coche sur la finale (pas de balle) ; sans match = rien', () => {
   const fini = etapesProgression(grouperParTour(['R16', 'QF', 'SF', 'F'].map((t, i) => m(i + 1, t, { statut: 'termine' })), 'masters_1000'));
   assert.deepEqual(fini.map((x) => x.etat), ['fait', 'fait', 'fait', 'fait']);
-  assert.deepEqual(fini.map((x) => x.balle), [false, false, false, true]);
+  assert.deepEqual(fini.map((x) => x.balle), [false, false, false, false]);
   const vide = etapesProgression(grouperParTour([], 'masters_1000'));
   assert.deepEqual(vide.map((x) => [x.etat, x.balle]), [['a-venir', false], ['a-venir', false], ['a-venir', false], ['a-venir', false]]);
 });

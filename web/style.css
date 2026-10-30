@@ -133,7 +133,7 @@ a.retour { display: inline-block; margin: 0 0 12px; color: var(--vert-fonce); fo
 .tour { background: #fff; border-radius: var(--rayon); margin-bottom: 12px; box-shadow: 0 2px 10px rgba(31, 77, 67, .08); }
 .tour summary { cursor: pointer; padding: 14px 18px; font-weight: 800; color: var(--vert-fonce); display: flex; justify-content: space-between; gap: 10px; list-style-position: inside; }
 .tour summary .compte { font-weight: 400; color: var(--gris); font-size: .9rem; }
-.tour-termine summary { color: var(--gris); }
+.tour-termine summary { color: var(--vert-fonce); }
 .tour-a-venir { padding: 14px 18px; opacity: .55; background: #eceeed; box-shadow: none; }
 .tour-a-venir h3 { margin: 0; font-size: 1rem; color: var(--gris); }
 .tour-a-venir p { margin: 2px 0 0; color: var(--gris); }
@@ -262,7 +262,7 @@ svg.filet[data-edition="1"] { cursor: pointer; }
 .carte-pari h3 { margin: 0 0 8px; font-size: 1.1rem; color: var(--vert-fonce); }
 .carte-pari h4 { margin: 0 0 8px; font-size: 1rem; color: var(--texte); }
 #pari-tournoi { scroll-margin-top: 12px; }
-.carte-pari .choix-en-cours, .carte-pari .mon-pari, .palmares-pari { margin: 0 0 10px; color: var(--texte); }
+.carte-pari .choix-en-cours, .carte-pari .mon-pari, .palmares-pari { margin: 0 0 10px; color: var(--vert-fonce); }
 .palmares-pari { font-size: 1rem; }
 .liste-choix { list-style: none; margin: 0; padding: 0; }
 .ligne-choix { display: grid; grid-template-columns: 1fr auto auto; gap: 6px; align-items: center; padding: 8px 0; border-top: 1px solid #E3E9E3; }
@@ -278,7 +278,7 @@ svg.filet[data-edition="1"] { cursor: pointer; }
 .btn-role:disabled { opacity: .4; cursor: default; }
 .choix-tous { width: 100%; border-collapse: collapse; font-size: .92rem; }
 .choix-tous th, .choix-tous td { padding: 8px 6px; text-align: left; border-top: 1px solid #E3E9E3; }
-.choix-tous thead th { border-top: 0; font-size: .78rem; color: var(--gris); }
+.choix-tous thead th { border-top: 0; font-size: .78rem; color: var(--vert-fonce); }
 .choix-tous tbody th { font-weight: 800; color: var(--vert-fonce); }
 .choix-tous tr.isme { background: #F6FAD7; }
 .choix-tous td.pos { font-weight: 800; color: #14562F; }

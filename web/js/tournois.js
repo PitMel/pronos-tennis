@@ -111,7 +111,7 @@ export function lieuEtSurface(t) {
 /**
  * Barre de progression des tours (en-tête de la page tournoi, maquette 1).
  * Chaque étape : { tour, libelle, etat: 'fait' | 'en-cours' | 'a-venir', balle }.
- * La balle de tennis marque le tour en cours ; tournoi entièrement joué : tout est « fait » et la balle est sur la finale.
+ * La balle de tennis marque le tour en cours ; tournoi entièrement joué : tout est « fait » (coche partout, finale comprise).
  */
 export function etapesProgression(sections) {
   const aDesMatchs = sections.some((s) => !s.aVenir);
@@ -125,7 +125,7 @@ export function etapesProgression(sections) {
       tour: s.tour,
       libelle: LIBELLES_COURTS[s.tour],
       etat,
-      balle: s.courant || (fini && i === sections.length - 1),
+      balle: s.courant,
     };
   });
 }
