@@ -259,3 +259,10 @@ test('Race : les trophées gagnés suivent le nom du joueur — Grand Chelem, pu
   assert.deepEqual(labels('Paul'), ["Open d&#39;Australie", 'Wimbledon', 'Miami Open', 'Nitto ATP Finals']);
   assert.doesNotMatch(html, /<span class="nom-race">Jacques<span class="trophees-race">/); // aucun trophée : rien d'affiché
 });
+
+test('saison : les dates sont dans la même colonne que le titre, juste dessous', () => {
+  const t = { id: 9, annee: 2026, nom: 'Shanghai', ville: 'Shanghai', surface: 'dur', indoor: false, categorie: 'masters_1000', date_debut: '2026-10-07', date_fin: '2026-10-18', etat: 'en_cours' };
+  const html = htmlListeTournois([t], { race: null, anneeCourante: 2026 });
+  assert.match(html, /<div class="titre-tournoi">\s*<h3>Shanghai<\/h3>\s*<p class="periode">7 au 18 octobre 2026<\/p>\s*<\/div>\s*<span class="etiquettes">/);
+  assert.match(html, /badge-etat etat-en_cours">En cours/);
+});

@@ -182,7 +182,7 @@ test('vues : en-tête du tournoi (titre d\u2019abord, détails dessous, balle de
   const liste = htmlListeTournois([tournoi]);
   // carte : titre et étiquette de catégorie sur la même ligne (étiquette à droite), puis dates, puis lieu et surface
   const carte = liste.slice(liste.indexOf('carte-tournoi'));
-  assert.ok(carte.indexOf('<h3>') < carte.indexOf('badge-categorie'));
-  assert.ok(carte.indexOf('badge-categorie') < carte.indexOf('class="periode"'));
-  assert.ok(carte.indexOf('class="periode"') < carte.indexOf('class="lieu"'));
+  assert.ok(carte.indexOf('<h3>') < carte.indexOf('class="periode"')); // les dates juste sous le titre
+  assert.ok(carte.indexOf('class="periode"') < carte.indexOf('badge-categorie')); // l'étiquette est dans la colonne de droite
+  assert.ok(carte.indexOf('badge-categorie') < carte.indexOf('class="lieu"'));
 });

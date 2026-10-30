@@ -60,13 +60,15 @@ function htmlCarteTournoi(t, classement = null) {
   return `
     <a class="carte carte-tournoi categorie-${echapper(t.categorie)}" href="#/tournoi/${encodeURIComponent(t.id)}">
       <div class="ligne-titre">
-        <h3>${echapper(t.nom)}</h3>
+        <div class="titre-tournoi">
+          <h3>${echapper(t.nom)}</h3>
+          <p class="periode">${echapper(formaterPeriode(t.date_debut, t.date_fin))}</p>
+        </div>
         <span class="etiquettes">
           <span class="badge badge-categorie">${echapper(CATEGORIES[t.categorie] ?? t.categorie)}</span>
           <span class="badge badge-etat etat-${echapper(t.etat)}">${echapper(ETATS[t.etat] ?? t.etat)}</span>
         </span>
       </div>
-      <p class="periode">${echapper(formaterPeriode(t.date_debut, t.date_fin))}</p>
       <p class="lieu">${echapper(lieuEtSurface(t))}</p>
       ${palmares}
     </a>`;

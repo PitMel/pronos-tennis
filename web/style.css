@@ -122,8 +122,9 @@ a.carte-tournoi:hover { box-shadow: 0 4px 16px rgba(31, 77, 67, .18); }
 .badge-direct { background: #fde4e1; color: var(--erreur); }
 .badge-verrou { background: #fff1c9; color: #7a5a00; }
 .badge-revele { background: #dff3e4; color: #1b5e2e; }
-.etat-en_cours, .etat-pari_tournoi_ouvert { background: var(--balle); }
-.etat-clos { background: #d9dfdc; color: var(--gris); }
+.etat-en_cours { background: #C62828; color: #fff; }
+.etat-pari_tournoi_ouvert { background: #FFF1C9; color: #7A5A00; }
+.etat-clos { background: #DFF3E4; color: #1B5E2E; }
 .palmares { margin-top: 10px; color: var(--texte); }
 
 a.retour { display: inline-block; margin: 0 0 12px; color: var(--vert-fonce); font-weight: 600; text-decoration: none; }
@@ -144,9 +145,10 @@ a.retour { display: inline-block; margin: 0 0 12px; color: var(--vert-fonce); fo
 .ligne-titre .badge { flex-shrink: 0; margin: 0; }
 /* étiquette de catégorie, puis dessous l'état (À venir / En cours / Terminé), alignées à droite */
 .ligne-titre .etiquettes { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; }
-.bonus-classement { color: var(--gris); font-size: .9em; }
-.carte-tournoi .periode { margin-top: 4px; }
-.carte-tournoi .lieu { color: var(--gris); }
+.bonus-classement { color: var(--texte); font-size: .9em; }
+.titre-tournoi { min-width: 0; }
+.carte-tournoi .periode { margin: 2px 0 0; }
+.carte-tournoi p, .carte-tournoi .periode, .carte-tournoi .lieu { color: var(--texte); }
 .vide { color: var(--gris); }
 
 .carte-race h3 { margin: 0; font-size: 1.15rem; color: var(--vert-fonce); }
@@ -164,7 +166,8 @@ a.retour { display: inline-block; margin: 0 0 12px; color: var(--vert-fonce); fo
 .hero-titre { font-size: clamp(1.9rem, 6vw, 2.8rem); line-height: 1.05; letter-spacing: -.03em; font-weight: 800; margin: 10px 0 8px; color: #fff; }
 .hero-details { margin: 0 0 10px; color: #BFD2C9; }
 .hero .badge-etat { background: rgba(255, 255, 255, .15); color: #fff; margin-left: 0; }
-.hero .etat-en_cours, .hero .etat-pari_tournoi_ouvert { background: var(--balle); color: var(--vert-fonce); }
+.hero .etat-en_cours { background: #E5483A; color: #fff; }
+.hero .etat-pari_tournoi_ouvert { background: #FFF1C9; color: #7A5A00; }
 .hero .palmares { color: #fff; margin: 10px 0 0; }
 a.retour-clair { color: #BFD2C9; margin: 0; }
 
@@ -285,7 +288,7 @@ svg.filet[data-edition="1"] { cursor: pointer; }
 .trophees-race { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 2px; }
 .trophees-race .trophee { width: 20px; height: 20px; }
 .palmares-groupe { display: flex; align-items: center; gap: 6px; margin: 8px 0 0; color: var(--texte); font-size: .95rem; }
-.scores-groupe { margin: 2px 0 0; font-size: .82rem; color: var(--gris); }
+.scores-groupe { margin: 2px 0 0; font-size: .82rem; color: var(--texte); }
 .scores-groupe b { color: var(--texte); font-variant-numeric: tabular-nums; }
 .scores-groupe b.neg { color: var(--erreur); }
 .carte-classement h3, .carte-detail-race h3 { margin: 0 0 8px; font-size: 1.1rem; color: var(--vert-fonce); }
