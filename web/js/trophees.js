@@ -29,5 +29,5 @@ export function cleTrophee(categorie, nom = null) {
 export function htmlTrophee(categorie, nom = null) {
   const d = DESSINS[cleTrophee(categorie, nom)];
   const titre = nom ? `Trophée : ${nom}` : `Trophée ${d.titre}`;
-  return `<svg class="trophee" viewBox="0 0 64 64" width="22" height="22" role="img" aria-label="${echapper(titre)}">${d.dessin}</svg>`;
+  return `<svg class="trophee" viewBox="0 0 64 64" width="22" height="22" role="img" aria-label="${echapper(titre)}"><title>${echapper(nom ?? d.titre)}</title>${d.dessin}</svg>`;
 }

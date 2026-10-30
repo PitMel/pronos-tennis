@@ -18,7 +18,7 @@ export function htmlPageRegles({ moteur }) {
   const mult = (categorie, tour) => fmt(moteur.multiplicateurTour(categorie, tour));
 
   const baremeBase = tableau(['Confiance', 'Si ton joueur gagne', 'S’il perd'],
-    CONFIANCES.map((c) => { const g = gp(c, 'masters_1000', 'R16'); return [String(c), `+${fmt(g.gagne)}`, g.perdu.comparer(moteur.ZERO) < 0 ? fmt(g.perdu) : `+${fmt(g.perdu)}`]; }));
+    CONFIANCES.map((c) => { const g = gp(c, 'masters_1000', 'R16'); return [String(c), `+${fmt(g.gagne)}`, g.perdu.comparer(moteur.ZERO) < 0 ? fmt(g.perdu) : `+${fmt(g.perdu)}`]; }), 'centre-premiere');
 
   const tours = [['R16', 'Huitièmes'], ['QF', 'Quarts'], ['SF', 'Demies et finale']];
   const baremeTours = tableau(['Confiance', ...tours.map(([t, l]) => `${l} ×${mult('masters_1000', t)}`)],
@@ -32,8 +32,8 @@ export function htmlPageRegles({ moteur }) {
     ['Maximum', fmt(moteur.POINTS_PARI_TOURNOI.grand_slam.fois(3)), fmt(moteur.POINTS_PARI_TOURNOI.masters_1000.fois(3))],
   ]);
   const tableBonus = tableau(['', '1er', '2e'], [
-    ['Masters 1000', `+${bonus('masters_1000')[0]}`, `+${bonus('masters_1000')[1]}`],
     ['Grand Chelem', `+${bonus('grand_slam')[0]}`, `+${bonus('grand_slam')[1]}`],
+    ['Masters 1000', `+${bonus('masters_1000')[0]}`, `+${bonus('masters_1000')[1]}`],
     ['ATP Finals', `+${bonus('atp_finals')[0]}`, `+${bonus('atp_finals')[1]}`],
   ]);
   const bonusSets = fmt(moteur.BONUS_SETS_BON_VAINQUEUR);
@@ -50,10 +50,10 @@ export function htmlPageRegles({ moteur }) {
     <section class="carte carte-regles">
       <h3>1. Un pari de match</h3>
       <p>Tu choisis <b>un joueur</b> et une <b>confiance de 6 à 10</b>. En Grand Chelem, tu annonces aussi le <b>nombre de sets</b> du match (3, 4 ou 5).</p>
-      <p>Matchs concernés : huitièmes, quarts, demi-finales et finale. En Grand Chelem, les « huitièmes » sont le 4ᵉ tour. Aux ATP Finals : poules (Round Robin), demi-finales et finale.</p>
+      <p>Ce chiffre correspond au <b>pourcentage de chances de victoire estimé</b> : parier 7 sur le joueur A revient à dire que tu estimes que le joueur A a 70&nbsp;% de chances de gagner. Le bonus et le malus sont calculés pour récompenser le joueur le plus proche de l’optimum : si un parieur parie toujours 7 sur un joueur qui gagne 7 matchs sur 10, il aura à terme un meilleur score qu’un parieur qui parie 6, 8 ou 10 sur ce même joueur.</p>
+      <p>Matchs concernés : huitièmes, quarts, demi-finales et finale. Aux ATP Finals : poules (Round Robin), demi-finales et finale.</p>
       <p>Plus tu es confiant, plus tu gagnes si tu as raison, et plus tu perds si tu te trompes :</p>
       ${baremeBase}
-      <p class="small">Gagné = ta confiance. Les valeurs sont multipliées selon le tour (voir 2). À 6 et 7 tu gagnes encore des points en cas d’erreur ; à partir de 8, tu en perds.</p>
     </section>
 
     <section class="carte carte-regles">

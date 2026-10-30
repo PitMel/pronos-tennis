@@ -124,7 +124,8 @@ a.carte-tournoi:hover { box-shadow: 0 4px 16px rgba(31, 77, 67, .18); }
 .badge-revele { background: #dff3e4; color: #1b5e2e; }
 .etat-en_cours { background: #C62828; color: #fff; }
 .etat-pari_tournoi_ouvert { background: #FFF1C9; color: #7A5A00; }
-.etat-clos { background: #DFF3E4; color: #1B5E2E; }
+.etat-clos { background: #BDE5C8; color: #14532B; }
+.etat-a_venir { background: #DCEBFA; color: #1F4E8C; }
 .palmares { margin-top: 10px; color: var(--texte); }
 
 a.retour { display: inline-block; margin: 0 0 12px; color: var(--vert-fonce); font-weight: 600; text-decoration: none; }
@@ -164,6 +165,8 @@ a.retour { display: inline-block; margin: 0 0 12px; color: var(--vert-fonce); fo
 /* ---------- En-tête d'un tournoi (maquette 1) ---------- */
 .hero { background: var(--vert-fonce); color: #fff; margin: -20px -16px 18px; padding: 16px 16px 20px; }
 .hero-titre { font-size: clamp(1.9rem, 6vw, 2.8rem); line-height: 1.05; letter-spacing: -.03em; font-weight: 800; margin: 10px 0 8px; color: #fff; }
+/* trophée du tournoi après le titre : taille proche de celle du texte */
+.hero-titre .trophee { width: .95em; height: .95em; margin-left: .3em; vertical-align: -.12em; }
 .hero-details { margin: 0 0 10px; color: #BFD2C9; }
 .hero .badge-etat { background: rgba(255, 255, 255, .15); color: #fff; margin-left: 0; }
 .hero .etat-en_cours { background: #E5483A; color: #fff; }
@@ -287,13 +290,12 @@ svg.filet[data-edition="1"] { cursor: pointer; }
 .nom-race { display: flex; align-items: center; flex-wrap: wrap; gap: 2px 8px; min-width: 0; }
 .trophees-race { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 2px; }
 .trophees-race .trophee { width: 20px; height: 20px; }
-/* tournoi terminé : trophée plus grand et nom du vainqueur des pronos proportionné */
-.palmares-groupe { display: flex; align-items: center; gap: 10px; margin: 8px 0 0; color: var(--texte); font-size: 1.2rem; line-height: 1.2; }
+/* tournoi terminé : trophée plus grand ; le nom du vainqueur des pronos ne dépasse pas la taille du titre du tournoi (1,15 rem) */
+.palmares-groupe { display: flex; align-items: center; gap: 10px; margin: 8px 0 0; color: var(--texte); font-size: 1.15rem; line-height: 1.2; }
 .palmares-groupe .trophee { width: 46px; height: 46px; }
-/* vainqueur du tournoi de tennis : bandeau doré, même taille de texte que le vainqueur des pronos */
-.carte-tournoi p.vainqueur-tennis { display: flex; align-items: center; gap: 10px; margin: 10px 0 0; padding: 8px 12px; border-radius: 12px; border: 1px solid #E6C24A; border-left: 5px solid #D9A400; background: linear-gradient(90deg, #FFF3C2, #FFFAE6); color: var(--texte); font-size: 1.2rem; line-height: 1.2; }
+/* vainqueur du tournoi de tennis : cadre à bordure dorée (sans fond), même taille de texte que le vainqueur des pronos */
+.carte-tournoi p.vainqueur-tennis { margin: 10px 0 0; padding: 8px 12px; border-radius: 12px; border: 1px solid #E6C24A; border-left: 5px solid #D9A400; color: var(--texte); font-size: 1.15rem; line-height: 1.2; }
 .vainqueur-tennis strong { font-weight: 800; }
-.vainqueur-tennis .vt-balle svg { display: block; width: 28px; height: 28px; }
 /* classement du tournoi : trophée après le nom du vainqueur */
 .trophee-vainqueur { display: inline-flex; align-items: center; margin-left: 6px; vertical-align: middle; }
 .trophee-vainqueur .trophee { width: 22px; height: 22px; }
@@ -345,6 +347,7 @@ svg.filet[data-edition="1"] { cursor: pointer; }
 .table-regles thead th { border-top: 0; font-size: .74rem; color: var(--gris); vertical-align: bottom; }
 .table-regles tbody th { text-align: left; font-weight: 700; color: var(--vert-fonce); }
 .table-regles.compact { font-size: .82rem; }
+.table-regles.centre-premiere tbody th { text-align: center; }
 .table-regles.compact td { white-space: nowrap; padding-left: 3px; padding-right: 3px; }
 .hero-regles .hero-titre { font-size: clamp(1.8rem, 6vw, 2.6rem); }
 

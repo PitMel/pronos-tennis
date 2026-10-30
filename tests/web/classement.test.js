@@ -298,3 +298,12 @@ test('saison : tournoi terminé = ligne « Vainqueur : Prénom Nom » entre le l
   assert.doesNotMatch(htmlListeTournois([{ ...t, vainqueur_id: null }], { joueurs }), /vainqueur-tennis/);
   assert.doesNotMatch(htmlListeTournois([t], {}), /vainqueur-tennis/); // joueurs non fournis : rien ne plante
 });
+
+test('trophée : infobulle au survol avec le nom du tournoi ; plus de balle dans le cadre du vainqueur', () => {
+  assert.match(htmlTrophee('grand_slam', 'Roland-Garros'), /<title>Roland-Garros<\/title>/);
+  assert.match(htmlTrophee('masters_1000', 'Shanghai'), /<title>Shanghai<\/title>/);
+  const t = { id: 1, nom: 'Shanghai', categorie: 'masters_1000', etat: 'clos', vainqueur_id: 5 };
+  const h = htmlListeTournois([t], { joueurs: new Map([[5, { nom: 'Jannik Sinner' }]]) });
+  assert.match(h, /class="vainqueur-tennis">Vainqueur : <strong>Jannik Sinner<\/strong>/);
+  assert.doesNotMatch(h, /vt-balle/);
+});

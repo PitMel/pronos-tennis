@@ -50,7 +50,7 @@ function htmlCarteTournoi(t, classement = null, joueurs = new Map()) {
   // « Vainqueur : Prénom Nom » : le joueur de tennis qui a gagné le tournoi (tournoi terminé, finale connue)
   const gagnant = t.etat === 'clos' && t.vainqueur_id ? joueurs.get(t.vainqueur_id) : null;
   const vainqueurTennis = gagnant
-    ? `<p class="vainqueur-tennis"><span class="vt-balle" aria-hidden="true">${SVG_BALLE}</span><span>Vainqueur : <strong>${echapper(gagnant.nom)}</strong></span></p>` : '';
+    ? `<p class="vainqueur-tennis">Vainqueur : <strong>${echapper(gagnant.nom)}</strong></p>` : '';
   if (t.etat === 'clos' && classement?.cloture) {
     const premiers = classement.lignes.filter((l) => l.rang === 1);
     palmares = `<p class="palmares-groupe">${htmlTrophee(t.categorie, t.nom)}<span><b>${echapper(premiers.map((l) => l.prenom).join(' et '))}</b>`
@@ -219,7 +219,7 @@ export function htmlPageTournoi({ tournoi, matchs, joueurs, ctx = {} }) {
   return `
     <section class="hero categorie-${echapper(tournoi.categorie)}">
       <a class="retour retour-clair" href="#/saison">← Saison ${echapper(tournoi.annee)}</a>
-      <h2 class="hero-titre">${echapper(tournoi.nom)}</h2>
+      <h2 class="hero-titre">${echapper(tournoi.nom)}${htmlTrophee(tournoi.categorie, tournoi.nom)}</h2>
       <p class="hero-details">${echapper(details)}</p>
       <span class="badge badge-etat etat-${echapper(tournoi.etat)}">${echapper(ETATS[tournoi.etat] ?? tournoi.etat)}</span>
       ${vainqueur ? `<p class="palmares">Vainqueur : <strong>${echapper(vainqueur.nom)}</strong>${finaliste ? ` · finaliste : ${echapper(finaliste.nom)}` : ''}</p>` : ''}

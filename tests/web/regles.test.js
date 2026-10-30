@@ -32,3 +32,12 @@ test('règles : pari tournoi, bonus de classement, bonus de sets (cahier §4.3, 
   assert.match(texte, /divisés par 2/);
   assert.match(texte, /Race/);
 });
+
+test('règles : explication du pourcentage, phrases retirées, tableaux réordonnés', () => {
+  assert.match(texte, /Ce chiffre correspond au pourcentage de chances de victoire estimé/);
+  assert.match(texte, /parie toujours 7 sur un joueur qui gagne 7 matchs sur 10/);
+  assert.doesNotMatch(texte, /4ᵉ tour/);
+  assert.doesNotMatch(texte, /Gagné = ta confiance/);
+  assert.match(html, /table-regles centre-premiere/);
+  assert.ok(html.indexOf('Grand Chelem</th><td>+24') < html.indexOf('Masters 1000</th><td>+12'));
+});
