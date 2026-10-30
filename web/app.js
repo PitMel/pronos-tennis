@@ -740,7 +740,8 @@ async function afficherRoute({ silencieux = false } = {}) {
         const c = classementTournoi({ moteur, tournoi: t, matchs: [], paris: new Map(), archives: resultats.filter((r) => r.tournament_id === t.id), profils });
         if (c.cloture) classements.set(t.id, c);
       }
-      contenu.innerHTML = htmlListeTournois(tournois, { race, anneeCourante: affichee, anneeAffichee: affichee, classements });
+      const joueurs = await donnees.joueurs(tournois.filter((t) => t.etat === 'clos').map((t) => t.vainqueur_id));
+      contenu.innerHTML = htmlListeTournois(tournois, { race, anneeCourante: affichee, anneeAffichee: affichee, classements, joueurs });
     } else {
       page = null;
       const [tournois, resultats, profils, moteur] = await Promise.all([

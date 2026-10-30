@@ -266,3 +266,35 @@ test('saison : les dates sont dans la même colonne que le titre, juste dessous'
   assert.match(html, /<div class="titre-tournoi">\s*<h3>Shanghai<\/h3>\s*<p class="periode">7 au 18 octobre 2026<\/p>\s*<\/div>\s*<span class="etiquettes">/);
   assert.match(html, /badge-etat etat-en_cours">En cours/);
 });
+
+test('classement du tournoi : une fois terminé, le trophée suit le nom du vainqueur (et lui seul)', () => {
+  const t = { id: 9, annee: 2026, nom: 'Wimbledon', categorie: 'grand_slam', etat: 'clos' };
+  const archives = [
+    { tournament_id: 9, joueur_id: 'p', points_matchs: '10', points_pari_tournoi: '0', bonus_classement: '0', score_final: '20', rang: 1 },
+    { tournament_id: 9, joueur_id: 'a', points_matchs: '10', points_pari_tournoi: '0', bonus_classement: '0', score_final: '5', rang: 2 },
+  ];
+  const c = classementTournoi({ moteur, tournoi: t, matchs: [], paris: new Map(), archives, profils });
+  const html = htmlClassementTournoi(c, { tournoi: t });
+  assert.match(html, /<span>Paul<\/span><span class="trophee-vainqueur"><svg class="trophee"[^>]*aria-label="Trophée : Wimbledon"/);
+  assert.equal(html.match(/trophee-vainqueur/g).length, 1); // André n'en a pas
+  // tournoi en cours : aucun trophée
+  const enCours = classementTournoi({ moteur, tournoi: { ...t, etat: 'en_cours' }, matchs: [], paris: new Map(), archives: [], profils });
+  assert.doesNotMatch(htmlClassementTournoi(enCours, { tournoi: { ...t, etat: 'en_cours' } }), /trophee-vainqueur/);
+});
+
+test('saison : tournoi terminé = ligne « Vainqueur : Prénom Nom » entre le lieu et le vainqueur des pronos', () => {
+  const t = { id: 9, annee: 2026, nom: 'Shanghai', ville: 'Shanghai', surface: 'dur', indoor: false, categorie: 'masters_1000', date_debut: '2026-10-07', date_fin: '2026-10-18', etat: 'clos', vainqueur_id: 59 };
+  const archives = [{ tournament_id: 9, joueur_id: 'p', points_matchs: '100', points_pari_tournoi: '12', bonus_classement: '12', score_final: '124', rang: 1 }];
+  const c = classementTournoi({ moteur, tournoi: t, matchs: [], paris: new Map(), archives, profils });
+  const joueurs = new Map([[59, { id: 59, nom: 'Alejandro Davidovich Fokina' }]]);
+  const html = htmlListeTournois([t], { race: null, anneeCourante: 2026, classements: new Map([[9, c]]), joueurs });
+  const lieu = html.indexOf('class="lieu"');
+  const vt = html.indexOf('class="vainqueur-tennis"');
+  const pronos = html.indexOf('class="palmares-groupe"');
+  assert.ok(lieu > 0 && lieu < vt && vt < pronos, `ordre : ${lieu}, ${vt}, ${pronos}`);
+  assert.match(html, /Vainqueur : <strong>Alejandro Davidovich Fokina<\/strong>/);
+  // pas de ligne si le tournoi n'est pas terminé, ou si le vainqueur est inconnu
+  assert.doesNotMatch(htmlListeTournois([{ ...t, etat: 'en_cours' }], { joueurs }), /vainqueur-tennis/);
+  assert.doesNotMatch(htmlListeTournois([{ ...t, vainqueur_id: null }], { joueurs }), /vainqueur-tennis/);
+  assert.doesNotMatch(htmlListeTournois([t], {}), /vainqueur-tennis/); // joueurs non fournis : rien ne plante
+});

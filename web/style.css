@@ -287,7 +287,16 @@ svg.filet[data-edition="1"] { cursor: pointer; }
 .nom-race { display: flex; align-items: center; flex-wrap: wrap; gap: 2px 8px; min-width: 0; }
 .trophees-race { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 2px; }
 .trophees-race .trophee { width: 20px; height: 20px; }
-.palmares-groupe { display: flex; align-items: center; gap: 6px; margin: 8px 0 0; color: var(--texte); font-size: .95rem; }
+/* tournoi terminé : trophée plus grand et nom du vainqueur des pronos proportionné */
+.palmares-groupe { display: flex; align-items: center; gap: 10px; margin: 8px 0 0; color: var(--texte); font-size: 1.2rem; line-height: 1.2; }
+.palmares-groupe .trophee { width: 46px; height: 46px; }
+/* vainqueur du tournoi de tennis : bandeau doré, même taille de texte que le vainqueur des pronos */
+.carte-tournoi p.vainqueur-tennis { display: flex; align-items: center; gap: 10px; margin: 10px 0 0; padding: 8px 12px; border-radius: 12px; border: 1px solid #E6C24A; border-left: 5px solid #D9A400; background: linear-gradient(90deg, #FFF3C2, #FFFAE6); color: var(--texte); font-size: 1.2rem; line-height: 1.2; }
+.vainqueur-tennis strong { font-weight: 800; }
+.vainqueur-tennis .vt-balle svg { display: block; width: 28px; height: 28px; }
+/* classement du tournoi : trophée après le nom du vainqueur */
+.trophee-vainqueur { display: inline-flex; align-items: center; margin-left: 6px; vertical-align: middle; }
+.trophee-vainqueur .trophee { width: 22px; height: 22px; }
 .scores-groupe { margin: 2px 0 0; font-size: .82rem; color: var(--texte); }
 .scores-groupe b { color: var(--texte); font-variant-numeric: tabular-nums; }
 .scores-groupe b.neg { color: var(--erreur); }
