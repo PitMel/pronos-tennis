@@ -5,8 +5,9 @@ import {
 } from './tournois.js';
 import { htmlCarteMatch, htmlBaremeTour, bilanDuTour, matchsAParier } from './cartes.js';
 import { htmlSectionPariTournoi, contextePariTournoi } from './pari-tournoi.js';
+import { htmlTrophee } from './trophees.js';
 
-export { htmlCarteMatch, htmlSectionPariTournoi };
+export { htmlCarteMatch, htmlSectionPariTournoi, htmlTrophee };
 
 const PHOTO_VALIDE = /^https:\/\/[a-z0-9]+\.supabase\.co\/storage\/v1\/object\/public\/avatars\/[0-9a-f-]{36}\.jpg(\?v=[0-9]{1,15})?$/;
 
@@ -22,24 +23,13 @@ export function htmlPastille(profil, classe = 'pastille') {
 const SVG_BALLE = '<svg viewBox="0 0 28 28" width="26" height="26" aria-hidden="true"><circle cx="14" cy="14" r="12.5" fill="#D8E64C" stroke="#17324B" stroke-width="1.5"/><path d="M5.5 8 Q9.5 14 5.5 20" fill="none" stroke="#fff" stroke-width="1.7"/><path d="M22.5 8 Q18.5 14 22.5 20" fill="none" stroke="#fff" stroke-width="1.7"/></svg>';
 const SVG_COCHE = '<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M3 8.5 l3.2 3.2 l6.8 -7" fill="none" stroke="#1F4D43" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
-/** Trophée du vainqueur : une forme et une couleur par catégorie (Grand Chelem, Masters 1000, ATP Finals). */
-export function htmlTrophee(categorie) {
-  const formes = {
-    grand_slam: ['Trophée Grand Chelem', '#E0B100', '<path d="M7 3h10v5a5 5 0 0 1-10 0V3z" fill="currentColor"/><path d="M7 5H4a3 3 0 0 0 3 4M17 5h3a3 3 0 0 1-3 4" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M12 13v4M8 21h8M9.5 17h5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none"/>'],
-    masters_1000: ['Trophée Masters 1000', '#7C8B94', '<circle cx="12" cy="9" r="6" fill="currentColor"/><path d="M8.5 14l-2 7 5.5-3 5.5 3-2-7" fill="currentColor" opacity=".75"/><text x="12" y="11.4" text-anchor="middle" font-size="6.5" font-weight="800" fill="#fff">1K</text>'],
-    atp_finals: ['Trophée ATP Finals', '#2F6CC2', '<path d="M12 2l3 6.2 6.8.9-5 4.7 1.3 6.7L12 17.2 5.9 20.5l1.3-6.7-5-4.7 6.8-.9L12 2z" fill="currentColor"/>'],
-  };
-  const [titre, couleur, dessin] = formes[categorie] ?? formes.masters_1000;
-  return `<svg class="trophee" viewBox="0 0 24 24" width="22" height="22" role="img" aria-label="${echapper(titre)}" style="color:${couleur}">${dessin}</svg>`;
-}
-
 /* ---------- Classement de l'année (Race) ---------- */
 export function htmlRace(race) {
   const lignes = race.lignes.map((l) => `
     <li class="ligne-race">
       <span class="rang">${echapper(l.rang)}</span>
       ${htmlPastille(l, 'pastille pastille-petite')}
-      <span class="nom-race">${echapper(l.prenom)}</span>
+      <span class="nom-race">${echapper(l.prenom)}${l.trophees?.length ? `<span class="trophees-race">${l.trophees.map((t) => htmlTrophee(t.categorie, t.nom)).join('')}</span>` : ''}</span>
       <span class="points-race">${echapper(l.points)}</span>
     </li>`).join('');
   const etat = race.tournoisClos === 0
@@ -59,7 +49,7 @@ function htmlCarteTournoi(t, classement = null) {
   let palmares = '';
   if (t.etat === 'clos' && classement?.cloture) {
     const premiers = classement.lignes.filter((l) => l.rang === 1);
-    palmares = `<p class="palmares-groupe">${htmlTrophee(t.categorie)}<span><b>${echapper(premiers.map((l) => l.prenom).join(' et '))}</b>`
+    palmares = `<p class="palmares-groupe">${htmlTrophee(t.categorie, t.nom)}<span><b>${echapper(premiers.map((l) => l.prenom).join(' et '))}</b>`
       + ` · ${echapper(premiers[0].final.texte)}</span></p>`
       + `<p class="scores-groupe">${classement.lignes.map((l) => {
         // score avant bonification (matchs + pari tournoi), puis la bonification du 1er et du 2e entre parenthèses : « Paul 112 (+12) »
@@ -154,7 +144,7 @@ export function htmlPageRace(detail, { moi = null } = {}) {
       </li>`).join('');
   const entetes = detail.colonnes.map((c) => `<th scope="col">${htmlPastille(c, 'pastille pastille-petite')}<span>${echapper(c.prenom)}</span></th>`).join('');
   const lignes = detail.tournois.map((t) => `
-      <tr><th scope="row"><span class="nom-tournoi">${htmlTrophee(t.categorie)}${echapper(t.nom)}</span><small>${echapper(CATEGORIES[t.categorie] ?? t.categorie)}</small></th>
+      <tr><th scope="row"><span class="nom-tournoi">${htmlTrophee(t.categorie, t.nom)}${echapper(t.nom)}</span><small>${echapper(CATEGORIES[t.categorie] ?? t.categorie)}</small></th>
         ${detail.colonnes.map((c) => { const x = t.cellules[c.id]; return `<td class="${[x.negatif ? 'neg' : '', x.gagnant ? 'gagnant' : ''].filter(Boolean).join(' ')}">${echapper(x.texte)}</td>`; }).join('')}</tr>`).join('');
   const total = detail.colonnes.map((c) => `<td>${echapper(c.points)}</td>`).join('');
   return `

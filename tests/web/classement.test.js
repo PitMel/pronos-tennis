@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import * as moteur from '../../src/moteur/index.js';
 import { construireRace, classementTournoi, detailRace } from '../../web/js/classement.js';
 import { htmlRace, htmlListeTournois, htmlClassementTournoi, htmlPageRace, htmlTrophee, htmlPageTournoi } from '../../web/js/vues.js';
+import { cleTrophee } from '../../web/js/trophees.js';
 
 const profils = [
   { id: 'a', prenom: 'André', couleur: '#aa0000' },
@@ -217,4 +218,44 @@ test('saison : l’étiquette d’état est sous l’étiquette de catégorie, �
   const html = htmlListeTournois([t], { race: null, anneeCourante: 2026 });
   assert.match(html, /<span class="etiquettes">\s*<span class="badge badge-categorie">Masters 1000<\/span>\s*<span class="badge badge-etat etat-a_venir">À venir<\/span>\s*<\/span>/);
   assert.equal(html.match(/badge-etat/g).length, 1); // plus d'étiquette d'état en bas de la carte
+});
+
+test('trophées : un par Grand Chelem (reconnu par le nom), un pour tous les Masters 1000, un pour les ATP Finals', () => {
+  const cles = [
+    ['grand_slam', "Open d'Australie"], ['grand_slam', 'Australian Open'], ['grand_slam', 'Roland-Garros'], ['grand_slam', 'Roland Garros'],
+    ['grand_slam', 'Wimbledon'], ['grand_slam', 'US Open'], ['grand_slam', 'Tournoi inconnu'],
+    ['masters_1000', 'Rolex Paris Masters'], ['masters_1000', 'Miami Open'], ['atp_finals', 'Nitto ATP Finals'],
+  ].map(([c, n]) => cleTrophee(c, n));
+  assert.deepEqual(cles, ['ao', 'ao', 'rg', 'rg', 'wi', 'us', 'gs', 'm1000', 'm1000', 'atpf']);
+  const dessins = new Set(['ao', 'rg', 'wi', 'us', 'gs', 'm1000', 'atpf'].map((k) => htmlTrophee(k === 'm1000' ? 'masters_1000' : k === 'atpf' ? 'atp_finals' : 'grand_slam', { ao: "Open d'Australie", rg: 'Roland-Garros', wi: 'Wimbledon', us: 'US Open', gs: 'Autre' }[k])));
+  assert.equal(dessins.size, 7); // sept dessins différents
+  assert.match(htmlTrophee('grand_slam', 'Wimbledon'), /aria-label="Trophée : Wimbledon"/);
+  assert.match(htmlTrophee('masters_1000'), /aria-label="Trophée Masters 1000"/);
+});
+
+test('Race : les trophées gagnés suivent le nom du joueur — Grand Chelem, puis Masters 1000, puis ATP Finals, chacun dans l’ordre chronologique', () => {
+  const ts = [
+    { id: 1, annee: 2026, nom: 'Miami Open', categorie: 'masters_1000', date_debut: '2026-03-18', etat: 'clos' },
+    { id: 2, annee: 2026, nom: 'Wimbledon', categorie: 'grand_slam', date_debut: '2026-06-29', etat: 'clos' },
+    { id: 3, annee: 2026, nom: "Open d'Australie", categorie: 'grand_slam', date_debut: '2026-01-18', etat: 'clos' },
+    { id: 4, annee: 2026, nom: 'Rolex Paris Masters', categorie: 'masters_1000', date_debut: '2026-11-02', etat: 'clos' },
+    { id: 5, annee: 2026, nom: 'Nitto ATP Finals', categorie: 'atp_finals', date_debut: '2026-11-15', etat: 'clos' },
+    { id: 6, annee: 2026, nom: 'Monte-Carlo', categorie: 'masters_1000', date_debut: '2026-04-12', etat: 'en_cours' }, // pas terminé : aucun trophée
+    { id: 7, annee: 2025, nom: 'US Open', categorie: 'grand_slam', date_debut: '2025-08-24', etat: 'clos' }, // autre année : ignoré
+  ];
+  const r = (t, j, rang) => ({ tournament_id: t, joueur_id: j, score_final: '10', rang });
+  const rs = [
+    r(1, 'p', 1), r(1, 'a', 2), r(2, 'p', 1), r(2, 'a', 2), r(3, 'p', 1), r(3, 'a', 2), r(4, 'a', 1), r(4, 'p', 2),
+    r(5, 'p', 1), r(5, 'a', 1) /* ex æquo : les deux */, r(6, 'a', 1), r(7, 'a', 1), r(1, 'zzz', 1),
+  ];
+  const race = construireRace({ moteur, annee: 2026, tournois: ts, resultats: rs, profils });
+  const noms = (id) => race.lignes.find((l) => l.id === id).trophees.map((t) => t.nom);
+  assert.deepEqual(noms('p'), ["Open d'Australie", 'Wimbledon', 'Miami Open', 'Nitto ATP Finals']);
+  assert.deepEqual(noms('a'), ['Rolex Paris Masters', 'Nitto ATP Finals']);
+  assert.deepEqual(noms('j'), []);
+  const html = htmlRace(race);
+  const ligne = (prenom) => new RegExp(`<span class="nom-race">${prenom}<span class="trophees-race">([\\s\\S]*?)</span></span>`).exec(html)[1];
+  const labels = (prenom) => [...ligne(prenom).matchAll(/aria-label="Trophée : ([^"]+)"/g)].map((m) => m[1]);
+  assert.deepEqual(labels('Paul'), ["Open d&#39;Australie", 'Wimbledon', 'Miami Open', 'Nitto ATP Finals']);
+  assert.doesNotMatch(html, /<span class="nom-race">Jacques<span class="trophees-race">/); // aucun trophée : rien d'affiché
 });

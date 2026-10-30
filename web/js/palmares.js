@@ -51,7 +51,7 @@ export function htmlPalmares(palmares) {
         <small>${echapper(s.points)} pts · <a href="#/race/${encodeURIComponent(s.annee)}">détail ›</a></small></p>` : ''}
       <ul class="liste-palmares">${s.tournois.map((t) => `
         <li><a href="#/tournoi/${encodeURIComponent(t.id)}">
-          <span class="trophee-nom">${htmlTrophee(t.categorie)}<span><b>${echapper(t.nom)}</b><small>${echapper(CATEGORIES[t.categorie] ?? t.categorie)}${t.date_debut ? ` · ${echapper(formaterPeriode(t.date_debut, t.date_fin))}` : ''}</small></span></span>
+          <span class="trophee-nom">${htmlTrophee(t.categorie, t.nom)}<span><b>${echapper(t.nom)}</b><small>${echapper(CATEGORIES[t.categorie] ?? t.categorie)}${t.date_debut ? ` · ${echapper(formaterPeriode(t.date_debut, t.date_fin))}` : ''}</small></span></span>
           <span class="palmares-detail">
             ${t.vainqueur ? `<span>🎾 ${echapper(t.vainqueur)}${t.finaliste ? `<small> bat ${echapper(t.finaliste)}</small>` : ''}</span>` : ''}
             ${t.meilleurs.length ? `<span class="meilleur-pronos">${t.meilleurs.map((m) => `${htmlPastille(m, 'pastille pastille-petite')}${echapper(m.prenom)}`).join(' ')}<small>${echapper(t.meilleurs[0].score)} pts</small></span>` : '<small>Pas de pronostics archivés</small>'}

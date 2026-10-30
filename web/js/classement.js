@@ -3,6 +3,29 @@
 // Jalon 3.5 : classement d'un tournoi en trois temps (matchs, + pari tournoi, + bonus = score final) et détail de la Race.
 import { bilanDuTour } from './cartes.js';
 
+const ORDRE_CATEGORIES = { grand_slam: 0, masters_1000: 1, atp_finals: 2 };
+
+/**
+ * Trophées de la Race : un trophée = une première place (rang 1, ex æquo compris) dans l'archive d'un tournoi terminé.
+ * Ordre : Grand Chelem, puis Masters 1000, puis ATP Finals ; dans chaque catégorie, ordre chronologique (dates inconnues en dernier).
+ * @returns {Map<string, Array<{id:number, nom:string, categorie:string, date_debut:string|null}>>}
+ */
+function tropheesParJoueur(tournoisClos, resultats, idsGroupe) {
+  const parTournoi = new Map(tournoisClos.map((t) => [t.id, t]));
+  const gagnes = new Map();
+  for (const r of resultats) {
+    const t = parTournoi.get(r.tournament_id);
+    if (!t || !idsGroupe.has(r.joueur_id) || Number(r.rang) !== 1) continue;
+    if (!gagnes.has(r.joueur_id)) gagnes.set(r.joueur_id, []);
+    gagnes.get(r.joueur_id).push({ id: t.id, nom: t.nom ?? '', categorie: t.categorie, date_debut: t.date_debut ?? null });
+  }
+  for (const liste of gagnes.values()) {
+    liste.sort((a, b) => (ORDRE_CATEGORIES[a.categorie] ?? 9) - (ORDRE_CATEGORIES[b.categorie] ?? 9)
+      || (a.date_debut ?? '9999-12-31').localeCompare(b.date_debut ?? '9999-12-31') || a.id - b.id);
+  }
+  return gagnes;
+}
+
 /**
  * @param {object} p
  * @param {object} p.moteur        module du moteur de points (calculerRace, rangs, formaterPoints, ZERO)
@@ -26,8 +49,12 @@ export function construireRace({ moteur, annee, tournois, resultats, profils }) 
   const complets = {};
   for (const p of profils) complets[p.id] = points[p.id] ?? moteur.ZERO;
   const rangs = moteur.rangs(complets);
+  const trophees = tropheesParJoueur(clos, resultats, ids);
   const lignes = profils
-    .map((p) => ({ id: p.id, prenom: p.prenom, couleur: p.couleur ?? null, photo_url: p.photo_url ?? null, rang: rangs[p.id], points: moteur.formaterPoints(complets[p.id]) }))
+    .map((p) => ({
+      id: p.id, prenom: p.prenom, couleur: p.couleur ?? null, photo_url: p.photo_url ?? null, rang: rangs[p.id], points: moteur.formaterPoints(complets[p.id]),
+      trophees: trophees.get(p.id) ?? [],
+    }))
     .sort((a, b) => a.rang - b.rang || a.prenom.localeCompare(b.prenom, 'fr'));
   return { annee, tournoisClos: clos.length, lignes };
 }

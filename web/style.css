@@ -281,6 +281,9 @@ svg.filet[data-edition="1"] { cursor: pointer; }
 
 /* ---------- Classement du tournoi et page Race (3.5) ---------- */
 .trophee { flex: none; vertical-align: middle; }
+.nom-race { display: flex; align-items: center; flex-wrap: wrap; gap: 2px 8px; min-width: 0; }
+.trophees-race { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 2px; }
+.trophees-race .trophee { width: 20px; height: 20px; }
 .palmares-groupe { display: flex; align-items: center; gap: 6px; margin: 8px 0 0; color: var(--texte); font-size: .95rem; }
 .scores-groupe { margin: 2px 0 0; font-size: .82rem; color: var(--gris); }
 .scores-groupe b { color: var(--texte); font-variant-numeric: tabular-nums; }
