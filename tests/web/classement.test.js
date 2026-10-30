@@ -209,7 +209,7 @@ test('saison : résumé du tournoi = score avant bonification, puis bonus du 1er
   const c = classementTournoi({ moteur, tournoi: t, matchs: [], paris: new Map(), archives, profils });
   const html = htmlListeTournois([t], { race: null, anneeCourante: 2026, classements: new Map([[9, c]]) });
   const resume = /<p class="scores-groupe">([\s\S]*?)<\/p>/.exec(html)[1];
-  assert.match(resume, /^Paul <b class="">112<\/b> <span class="bonus-classement">\(\+12\)<\/span> · André <b class="">91,75<\/b> <span class="bonus-classement">\(\+5\)<\/span> · Jacques <b class="neg">−19<\/b>$/);
+  assert.match(resume, /^Paul <b class="">112<\/b> <b class="bonus-classement">\(\+12\)<\/b> · André <b class="">91,75<\/b> <b class="bonus-classement">\(\+5\)<\/b> · Jacques <b class="neg">−19<\/b>$/);
   assert.doesNotMatch(resume, /124|96,75/); // le score final n'est pas dans cette ligne
 });
 
@@ -306,4 +306,15 @@ test('trophée : infobulle au survol avec le nom du tournoi ; plus de balle dans
   const h = htmlListeTournois([t], { joueurs: new Map([[5, { nom: 'Jannik Sinner' }]]) });
   assert.match(h, /class="vainqueur-tennis">Vainqueur : <strong>Jannik Sinner<\/strong>/);
   assert.doesNotMatch(h, /vt-balle/);
+});
+
+test('saison : « | Moi · score » après le vainqueur des pronos, sauf si je suis le vainqueur', () => {
+  const t = { id: 1, annee: 2026, nom: 'Shanghai', categorie: 'masters_1000', etat: 'clos', date_debut: '2026-10-07', date_fin: '2026-10-18' };
+  const cl = { cloture: true, lignes: [
+    { id: 'p', prenom: 'Paul', rang: 1, final: { texte: '124' }, avantBonus: { texte: '112' }, bonus: { positif: true, texte: '+12' } },
+    { id: 'a', prenom: 'André', rang: 2, final: { texte: '96,75' }, avantBonus: { texte: '91,75' }, bonus: { positif: true, texte: '+5' } }] };
+  const h = (moi) => htmlListeTournois([t], { classements: new Map([[1, cl]]), moi });
+  assert.match(h('a'), /<b>Paul<\/b> · 124<\/span><span class="sep-moi"[^>]*>\|<\/span><span><b>Moi<\/b> · 96,75<\/span>/);
+  assert.doesNotMatch(h('p'), /Moi/);
+  assert.doesNotMatch(h(null), /Moi/);
 });

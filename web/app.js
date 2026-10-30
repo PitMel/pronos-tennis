@@ -741,7 +741,7 @@ async function afficherRoute({ silencieux = false } = {}) {
         if (c.cloture) classements.set(t.id, c);
       }
       const joueurs = await donnees.joueurs(tournois.filter((t) => t.etat === 'clos').map((t) => t.vainqueur_id));
-      contenu.innerHTML = htmlListeTournois(tournois, { race, anneeCourante: affichee, anneeAffichee: affichee, classements, joueurs });
+      contenu.innerHTML = htmlListeTournois(tournois, { race, anneeCourante: affichee, anneeAffichee: affichee, classements, joueurs, moi: profilCourant.id });
     } else {
       page = null;
       const [tournois, resultats, profils, moteur] = await Promise.all([

@@ -45,7 +45,7 @@ export function htmlRace(race) {
 }
 
 /* ---------- Page de la saison : classement puis tournois dans l'ordre chronologique ---------- */
-function htmlCarteTournoi(t, classement = null, joueurs = new Map()) {
+function htmlCarteTournoi(t, classement = null, joueurs = new Map(), moi = null) {
   let palmares = '';
   // « Vainqueur : Prénom Nom » : le joueur de tennis qui a gagné le tournoi (tournoi terminé, finale connue)
   const gagnant = t.etat === 'clos' && t.vainqueur_id ? joueurs.get(t.vainqueur_id) : null;
@@ -53,12 +53,15 @@ function htmlCarteTournoi(t, classement = null, joueurs = new Map()) {
     ? `<p class="vainqueur-tennis">Vainqueur : <strong>${echapper(gagnant.nom)}</strong></p>` : '';
   if (t.etat === 'clos' && classement?.cloture) {
     const premiers = classement.lignes.filter((l) => l.rang === 1);
+    // « | Moi · score » : mon score final, sauf si je suis le (ou l'un des) vainqueur(s) des pronos
+    const mienne = moi ? classement.lignes.find((l) => l.id === moi) : null;
+    const lienMoi = mienne && mienne.rang !== 1 ? `<span class="sep-moi" aria-hidden="true">|</span><span><b>Moi</b> · ${echapper(mienne.final.texte)}</span>` : '';
     palmares = `<p class="palmares-groupe">${htmlTrophee(t.categorie, t.nom)}<span><b>${echapper(premiers.map((l) => l.prenom).join(' et '))}</b>`
-      + ` · ${echapper(premiers[0].final.texte)}</span></p>`
+      + ` · ${echapper(premiers[0].final.texte)}</span>${lienMoi}</p>`
       + `<p class="scores-groupe">${classement.lignes.map((l) => {
         // score avant bonification (matchs + pari tournoi), puis la bonification du 1er et du 2e entre parenthèses : « Paul 112 (+12) »
         const base = l.avantBonus ?? l.final;
-        return `${echapper(l.prenom)} <b class="${base.negatif ? 'neg' : ''}">${echapper(base.texte)}</b>${l.bonus?.positif ? ` <span class="bonus-classement">(${echapper(l.bonus.texte)})</span>` : ''}`;
+        return `${echapper(l.prenom)} <b class="${base.negatif ? 'neg' : ''}">${echapper(base.texte)}</b>${l.bonus?.positif ? ` <b class="bonus-classement">(${echapper(l.bonus.texte)})</b>` : ''}`;
       }).join(' · ')}</p>`;
   }
   return `
@@ -95,7 +98,7 @@ export function htmlOngletsSaisons(annees, affichee) {
  * Liste des tournois. Sans `anneeAffichee`, toutes les saisons à la suite ; avec, une seule saison et des onglets
  * pour passer de l'une à l'autre (la saison en cours existe toujours, même sans tournoi).
  */
-export function htmlListeTournois(tournois, { race = null, anneeCourante = null, anneeAffichee = null, classements = new Map(), joueurs = new Map() } = {}) {
+export function htmlListeTournois(tournois, { race = null, anneeCourante = null, anneeAffichee = null, classements = new Map(), joueurs = new Map(), moi = null } = {}) {
   const annees = grouperParAnnee(tournois);
   if (race && anneeCourante && !annees.some((a) => a.annee === anneeCourante)) {
     annees.unshift({ annee: anneeCourante, tournois: [] });
@@ -111,7 +114,7 @@ export function htmlListeTournois(tournois, { race = null, anneeCourante = null,
       <h2 class="titre-annee">Saison ${echapper(annee)}</h2>
       ${race && annee === anneeCourante ? htmlRace(race) : ''}
       ${race && annee !== anneeCourante && liste.some((t) => t.etat === 'clos') ? `<p class="lien-archive"><a href="#/race/${encodeURIComponent(annee)}">Race ${echapper(annee)} : classement final ›</a></p>` : ''}
-      ${liste.length ? liste.map((t) => htmlCarteTournoi(t, classements.get(t.id) ?? null, joueurs)).join('') : '<p class="vide">Aucun tournoi pour cette saison.</p>'}
+      ${liste.length ? liste.map((t) => htmlCarteTournoi(t, classements.get(t.id) ?? null, joueurs, moi)).join('') : '<p class="vide">Aucun tournoi pour cette saison.</p>'}
     </section>`).join('')}`;
 }
 

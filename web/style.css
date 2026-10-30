@@ -146,7 +146,8 @@ a.retour { display: inline-block; margin: 0 0 12px; color: var(--vert-fonce); fo
 .ligne-titre .badge { flex-shrink: 0; margin: 0; }
 /* étiquette de catégorie, puis dessous l'état (À venir / En cours / Terminé), alignées à droite */
 .ligne-titre .etiquettes { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; }
-.bonus-classement { color: var(--texte); font-size: .9em; }
+.bonus-classement { color: var(--texte); font-size: .9em; font-weight: 700; }
+.palmares-groupe .sep-moi { margin: 0 2px; color: var(--gris); }
 .titre-tournoi { min-width: 0; }
 .carte-tournoi .periode { margin: 2px 0 0; }
 .carte-tournoi p, .carte-tournoi .periode, .carte-tournoi .lieu { color: var(--texte); }
@@ -166,7 +167,7 @@ a.retour { display: inline-block; margin: 0 0 12px; color: var(--vert-fonce); fo
 .hero { background: var(--vert-fonce); color: #fff; margin: -20px -16px 18px; padding: 16px 16px 20px; }
 .hero-titre { font-size: clamp(1.9rem, 6vw, 2.8rem); line-height: 1.05; letter-spacing: -.03em; font-weight: 800; margin: 10px 0 8px; color: #fff; }
 /* trophée du tournoi après le titre : taille proche de celle du texte */
-.hero-titre .trophee { width: .95em; height: .95em; margin-left: .3em; vertical-align: -.12em; }
+.hero-titre .trophee { width: 1.35em; height: 1.35em; margin-left: .3em; vertical-align: -.3em; }
 .hero-details { margin: 0 0 10px; color: #BFD2C9; }
 .hero .badge-etat { background: rgba(255, 255, 255, .15); color: #fff; margin-left: 0; }
 .hero .etat-en_cours { background: #E5483A; color: #fff; }
