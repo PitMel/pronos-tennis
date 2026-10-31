@@ -10,6 +10,7 @@ import { creerBaseSupabase } from './base.js';
 import { creerClientApi } from './client-api.js';
 import { executerClotures } from './cloture.js';
 import { executerSynchro } from './synchro.js';
+import { sonde } from './sonde.js';
 
 const TOURNOIS_DIAGNOSTIC = ['1725', '1726', '2794', '2795']; // Masters de Paris (2 identifiants) et Masters de Turin (2 identifiants)
 
@@ -122,6 +123,7 @@ export async function lancer({ argv = [], env = {}, fetchImpl = globalThis.fetch
   const secrets = [env.LIVETENNIS_API_KEY, env.SUPABASE_SERVICE_ROLE_KEY];
   const ecrire = (t) => sortie(masquer(t, secrets));
   const modeDiagnostic = argv.includes('--diagnostic');
+  const modeSonde = argv.includes('--sonde');
   const simulation = argv.includes('--simulation');
 
   if (!env.LIVETENNIS_API_KEY) {
@@ -129,6 +131,12 @@ export async function lancer({ argv = [], env = {}, fetchImpl = globalThis.fetch
     return 1;
   }
   const options = dormirImpl ? { dormirImpl } : {};
+
+  if (modeSonde) {
+    const api = creerClientApi({ cle: env.LIVETENNIS_API_KEY, fetchImpl, ...options });
+    await sonde({ api, ecrire });
+    return 0;
+  }
 
   if (modeDiagnostic) {
     const api = creerClientApi({ cle: env.LIVETENNIS_API_KEY, fetchImpl, ...options });

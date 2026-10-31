@@ -4,6 +4,7 @@
 #      diagnostic : quelques appels à l'API pour en découvrir la forme réelle (aucune écriture dans la base)
 #      simulation : comme un vrai passage, mais n'écrit rien dans la base
 #      normal     : vrai passage
+#      sonde      : exploration de l'API pour retrouver les tournois déjà joués (lecture seule)
 # Secrets nécessaires (Settings > Secrets and variables > Actions > Secrets) :
 #   LIVETENNIS_API_KEY, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
 # Le programme (src/sync/) n'a aucune dépendance à installer ; les fenêtres horaires (7 h – 1 h, heure de Paris) sont gérées par le programme.
@@ -18,7 +19,7 @@ on:
         description: 'Mode'
         type: choice
         default: diagnostic
-        options: [diagnostic, simulation, normal]
+        options: [diagnostic, simulation, normal, sonde]
 
 permissions:
   contents: read
@@ -48,5 +49,6 @@ jobs:
           case "$MODE" in
             diagnostic) node src/sync/cli.js --diagnostic ;;
             simulation) node src/sync/cli.js --simulation ;;
+            sonde)      node src/sync/cli.js --sonde ;;
             *)          node src/sync/cli.js ;;
           esac
