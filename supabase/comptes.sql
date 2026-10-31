@@ -7,7 +7,9 @@
 -- Si Supabase refuse l'extension « .invalid », utiliser une autre adresse (par ex. pierre@example.com)
 -- dans l'écran « Add user » ET ici, à l'identique.
 --
---   pierre@pronos.invalid  -> administrateur ET vrai joueur (groupe réel)
+--   pit@pronos.invalid     -> administrateur ET vrai joueur (groupe réel) ; s'appelait « Pierre » (pierre@pronos.invalid) jusqu'au 31 oct. 2026
+--   felix@pronos.invalid   -> vrai joueur « Félix » (groupe réel, ajouté le 31 oct. 2026)
+--   come@pronos.invalid    -> vrai joueur « Côme » (groupe réel, ajouté le 31 oct. 2026)
 --   andre@pronos.invalid   -> faux compte « André »   (groupe test)
 --   paul@pronos.invalid    -> faux compte « Paul »    (groupe test)
 --   jacques@pronos.invalid -> faux compte « Jacques » (groupe test)
@@ -18,7 +20,9 @@ insert into public.profiles (id, prenom, is_admin, is_test, couleur)
 select u.id, v.prenom, v.is_admin, v.is_test, v.couleur
 from auth.users u
 join (values
-  ('pierre@pronos.invalid',  'Pierre',  true,  false, '#2F6CC2'),
+  ('pit@pronos.invalid',     'Pit',     true,  false, '#2F6CC2'),
+  ('felix@pronos.invalid',   'Félix',   false, false, '#0F766E'),
+  ('come@pronos.invalid',    'Côme',    false, false, '#BE185D'),
   ('andre@pronos.invalid',   'André',   false, true,  '#D8A21E'),
   ('paul@pronos.invalid',    'Paul',    false, true,  '#C2452F'),
   ('jacques@pronos.invalid', 'Jacques', false, true,  '#7A4FC2'),
@@ -26,5 +30,5 @@ join (values
 ) as v (email, prenom, is_admin, is_test, couleur) on u.email = v.email
 on conflict (id) do nothing;
 
--- Contrôle : doit afficher 5 lignes (Pierre administrateur non test ; André, Jacques, Jean, Paul test).
+-- Contrôle : 7 lignes (Pit administrateur, Félix et Côme joueurs réels ; André, Jacques, Jean, Paul test).
 select prenom, is_admin, is_test, actif from public.profiles order by is_test, prenom;

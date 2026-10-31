@@ -25,7 +25,7 @@ export function messageService(erreur, contexte) {
     case 'indisponible':
       return {
         titre: 'Le service est indisponible',
-        texte: 'Les données ne répondent pas pour le moment (le service est peut-être en veille). Réessaie dans quelques minutes ; si cela dure, préviens Pierre.',
+        texte: 'Les données ne répondent pas pour le moment (le service est peut-être en veille). Réessaie dans quelques minutes ; si cela dure, préviens Pit.',
       };
     default:
       return null;

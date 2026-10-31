@@ -761,7 +761,7 @@ async function afficherRoute({ silencieux = false } = {}) {
     const probleme = messageService(erreur, { enLigne: navigator.onLine });
     contenu.innerHTML = probleme
       ? htmlServiceIndisponible(probleme)
-      : htmlErreur('Impossible de charger les données. Réessaie dans un instant ; si cela continue, préviens Pierre.');
+      : htmlErreur('Impossible de charger les données. Réessaie dans un instant ; si cela continue, préviens Pit.');
   }
 }
 
@@ -794,12 +794,12 @@ async function demarrer() {
   if (probleme) { afficherServiceIndisponiblePleinePage(probleme); return; }
   if (error || !profil) {
     await supabase.auth.signOut();
-    afficherConnexion('Ce compte n’a pas de profil : préviens Pierre.');
+    afficherConnexion('Ce compte n’a pas de profil : préviens Pit.');
     return;
   }
   if (!profil.actif) {
     await supabase.auth.signOut();
-    afficherConnexion('Ce compte est désactivé : préviens Pierre.');
+    afficherConnexion('Ce compte est désactivé : préviens Pit.');
     return;
   }
   profilCourant = profil;

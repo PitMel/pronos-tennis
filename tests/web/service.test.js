@@ -23,7 +23,7 @@ test('messageService : messages clairs, null pour les autres erreurs', () => {
   assert.match(messageService(new Error('x'), { enLigne: false }).texte, /pas connecté/);
   const m = messageService({ message: 'Failed to fetch' }, { enLigne: true });
   assert.match(m.titre, /indisponible/);
-  assert.match(m.texte, /préviens Pierre/);
+  assert.match(m.texte, /préviens Pit/);
   assert.equal(messageService({ message: 'permission denied', status: 403 }), null);
 });
 
