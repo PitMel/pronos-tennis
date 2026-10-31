@@ -134,7 +134,10 @@ export async function lancer({ argv = [], env = {}, fetchImpl = globalThis.fetch
 
   if (modeSonde) {
     const api = creerClientApi({ cle: env.LIVETENNIS_API_KEY, fetchImpl, ...options });
-    await sonde({ api, ecrire });
+    // Les journaux de GitHub ne sont lisibles que sur le site : on publie aussi le résultat en une « annotation » (lisible par l'API).
+    const lignes = [];
+    await sonde({ api, ecrire: (t) => { lignes.push(masquer(t, secrets)); ecrire(t); } });
+    ecrire(`::notice title=Sonde::${lignes.join('\n').replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A').slice(0, 60000)}`);
     return 0;
   }
 
