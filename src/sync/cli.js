@@ -137,7 +137,11 @@ export async function lancer({ argv = [], env = {}, fetchImpl = globalThis.fetch
     // Les journaux de GitHub ne sont lisibles que sur le site : on publie aussi le résultat en une « annotation » (lisible par l'API).
     const lignes = [];
     await sonde({ api, ecrire: (t) => { lignes.push(masquer(t, secrets)); ecrire(t); } });
-    ecrire(`::notice title=Sonde::${lignes.join('\n').replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A').slice(0, 60000)}`);
+    // (une annotation est tronquée vers 4 000 caractères : on publie par morceaux)
+    const texte = lignes.join('\n');
+    for (let i = 0, n = 1; i < texte.length && n <= 10; i += 3500, n += 1) {
+      ecrire(`::notice title=Sonde ${n}::${texte.slice(i, i + 3500).replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A')}`);
+    }
     return 0;
   }
 
