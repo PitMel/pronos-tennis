@@ -194,6 +194,7 @@ test('vues : page Race — joueur du compte en 1re colonne, médailles, évoluti
   assert.deepEqual(entetes, ['André', 'Paul', 'Jacques']);
   assert.match(html, /aria-label="3e place">🥉/);
   assert.match(htmlTrophee('masters_1000', 'Miami <b>'), /data-nom="Miami &lt;b&gt;"/);
+  assert.match(html, /<section class="carte carte-race race-saison"><h3>Classement<\/h3>/);
   assert.match(html, /<h3>Évolution<\/h3>/);
   assert.match(html, /<svg class="evo-svg"/);
   assert.equal((html.match(/<polyline /g) ?? []).length, 3);

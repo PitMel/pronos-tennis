@@ -211,7 +211,7 @@ export function htmlPageRace(detail, { moi = null } = {}) {
       <h2 class="hero-titre">Race ${echapper(detail.annee)}</h2>
       <p class="hero-details">${detail.tournoisClos === 0 ? 'Aucun tournoi terminé pour l’instant.' : `Somme des scores finaux de ${detail.tournoisClos} tournoi${detail.tournoisClos > 1 ? 's' : ''} terminé${detail.tournoisClos > 1 ? 's' : ''}.`}</p>
     </section>
-    <section class="carte carte-race"><h3>Classement</h3><ol class="liste-race">${classement}</ol></section>
+    <section class="carte carte-race race-saison"><h3>Classement</h3><ol class="liste-race">${classement}</ol></section>
     ${detail.tournoisClos === 0 ? '<p class="vide">La Race bouge à la clôture de chaque tournoi.</p>' : `
     <section class="carte carte-detail-race">
       <h3>Détail par tournoi</h3>
