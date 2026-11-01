@@ -107,7 +107,7 @@ button.discret:hover { background: rgba(255, 255, 255, .15); }
 .chargement-court { color: var(--gris); text-align: center; margin: 40px 0; }
 
 .titre-annee { font-size: 1.3rem; color: var(--vert-fonce); margin: 24px 0 10px; }
-.titre-annee.titre-saison { font-size: 1.15rem; text-align: center; }
+.titre-annee.titre-saison { font-size: 1.7rem; text-align: center; }
 
 a.carte-tournoi { display: block; color: inherit; text-decoration: none; border-left: 6px solid var(--vert); position: relative; }
 a.carte-tournoi:hover { box-shadow: 0 4px 16px rgba(31, 77, 67, .18); }
