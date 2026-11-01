@@ -1,6 +1,6 @@
 -- =====================================================================================
 -- Pronos Tennis — fiches des 14 tournois suivis en 2027 (4 Grands Chelems, 9 Masters 1000, ATP Finals)
--- À exécuter UNE FOIS, en JANVIER 2027 (SQL Editor ou connecteur), pas avant. Sans secret. Peut être rejoué sans danger.
+-- Exécuté dans la vraie base le 1er nov. 2026, à la demande de Pierre (sans dates, donc sans effet sur la synchronisation). Sans secret. Peut être rejoué sans danger.
 --
 -- POURQUOI PAS MAINTENANT : la synchronisation suit les tournois de la base ; sans dates elle ne sait pas quand les interroger
 -- et pourrait consommer le quota de l'API pour rien. Les dates se saisissent ensuite dans l'application
