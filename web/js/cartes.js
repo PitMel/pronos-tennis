@@ -146,6 +146,11 @@ function htmlPilules(ctx, match, confiance) {
     + `<span class="pill ${negatif ? 'neg' : 'pos'}">perdu ${echapper(fmt(ctx, g.perdu))}</span></div>`;
 }
 
+/** Match terminé en Grand Chelem : le parieur avait annoncé le bon nombre de sets (même si son vainqueur est faux). */
+function bonNombreDeSets(bet, match) {
+  return Boolean(bet?.sets) && match.fin_match !== 'forfait' && Number(match.sets_joues) === Number(bet.sets);
+}
+
 function setsTexte(bet) {
   return bet?.sets ? ` · ${bet.sets} sets` : '';
 }
@@ -243,7 +248,7 @@ export function htmlCarteMatch(match, ctx = {}) {
       const v = points?.[p.id];
       const perdu = match.vainqueur && pari.choix !== match.vainqueur;
       return `<div class="${p.id === moi ? 'isme' : ''}"><u>${echapper(p.prenom)}</u>`
-        + `<s>${echapper(nomCourt(pari.choix === 1 ? p1 : p2))}${NBSP}${pari.confiance}${echapper(setsTexte(pari))}</s>`
+        + `<s>${echapper(nomCourt(pari.choix === 1 ? p1 : p2))}${NBSP}${pari.confiance}${echapper(setsTexte(pari))}${bonNombreDeSets(pari, match) ? ' <span class="etoile-sets" role="img" aria-label="Bon nombre de sets">⭐️</span>' : ''}</s>`
         + `<strong class="${perdu ? 'neg' : 'pos'}">${v ? echapper(fmt(ctx, v)) : '—'}</strong></div>`;
     }).join('');
     dessous = `<div class="under"><div class="t">${titre}</div><div class="four" style="--n:${Math.max(1, profils.length)}">${cases}</div></div>`;

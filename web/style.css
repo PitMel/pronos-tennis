@@ -536,3 +536,9 @@ svg.filet[data-edition="1"] { cursor: pointer; }
 .evo-axe { fill: var(--gris); font-size: 15px; }
 .evo-legende { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 18px; }
 .evo-legende li { display: flex; align-items: center; gap: 6px; font-weight: 600; }
+
+/* ---------- Cadre Race : appui sur un trophée = nom du tournoi (téléphone) ---------- */
+.trophees-race { position: relative; }
+.trophees-race .trophee { cursor: pointer; }
+.bulle-trophee { position: absolute; z-index: 5; left: 0; top: calc(100% + 4px); padding: 5px 10px; border-radius: 8px; background: var(--vert-fonce); color: #fff; font-size: .9rem; font-weight: 600; line-height: 1.2; white-space: nowrap; box-shadow: 0 2px 8px rgba(0,0,0,.25); pointer-events: none; }
+.etoile-sets { font-size: .95em; }

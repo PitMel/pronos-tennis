@@ -53,6 +53,19 @@ test('phraseQui : qui a parié, ou avertissement si l’on est seul', () => {
   assert.equal(phraseQui(profils, 'p', null), '');
 });
 
+test('Grand Chelem terminé : ⭐️ après les sets si le parieur avait le bon nombre de sets (même avec un mauvais vainqueur)', () => {
+  const paris = new Map([bet('p', 2, 8, 4), bet('l', 2, 7, 3), bet('m', 1, 9, 4), bet('t', 2, 6, null)]);
+  const m = match({
+    statut: 'termine', resultat_visible: true, paris_reveles: true, vainqueur: 2, fin_match: 'normal', sets_joues: 4,
+    score: { games: [[6, 7], [4, 6], [6, 3], [2, 6]] },
+  });
+  const html = htmlCarteMatch(m, ctxBase({ categorie: 'grand_slam', paris: new Map([[10, paris]]) }));
+  assert.match(html, /Fritz\u00a08 · 4 sets <span class="etoile-sets" role="img" aria-label="Bon nombre de sets">⭐️<\/span>/);
+  assert.match(html, /Alcaraz\u00a09 · 4 sets <span class="etoile-sets"/);
+  assert.match(html, /Fritz\u00a07 · 3 sets<\/s>/);
+  assert.equal((html.match(/etoile-sets"/g) ?? []).length, 2);
+});
+
 test('exemple A : Fritz gagne en quart (×1,5) → Pierre −1,5, Léa +3, Marc −9, Thomas +9', () => {
   const paris = new Map([bet('p', 1, 8), bet('l', 1, 7), bet('m', 1, 9), bet('t', 2, 6)]);
   const m = match({

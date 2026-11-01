@@ -772,6 +772,24 @@ document.addEventListener('click', (e) => {
   else { racine.innerHTML = '<p class="chargement">Chargement…</p>'; demarrerSansPlanter(); }
 });
 
+// Téléphone : un appui sur un trophée d'un cadre Race affiche le nom du tournoi (il n'y a pas d'infobulle au toucher).
+let minuteurBulle = null;
+document.addEventListener('click', (e) => {
+  const trophee = e.target.closest?.('.trophees-race .trophee');
+  const ancienne = document.querySelector('.bulle-trophee');
+  const memeTrophee = ancienne && trophee && ancienne.dataset.pour === trophee.getAttribute('data-nom') && ancienne.parentElement === trophee.parentElement;
+  clearTimeout(minuteurBulle);
+  ancienne?.remove();
+  if (!trophee || memeTrophee || !trophee.getAttribute('data-nom')) return;
+  const bulle = document.createElement('span');
+  bulle.className = 'bulle-trophee';
+  bulle.setAttribute('role', 'status');
+  bulle.dataset.pour = trophee.getAttribute('data-nom');
+  bulle.textContent = trophee.getAttribute('data-nom');
+  trophee.parentElement.appendChild(bulle);
+  minuteurBulle = setTimeout(() => bulle.remove(), 3500);
+});
+
 window.addEventListener('hashchange', () => afficherRoute());
 
 /* ---------- Démarrage ---------- */
