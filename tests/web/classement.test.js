@@ -208,7 +208,8 @@ test('vues : Saison et Accueil — Race 2026 en classe race-saison, titre de sai
   const html = htmlListeTournois([{ id: 1, annee: 2026, nom: 'Miami', categorie: 'masters_1000', etat: 'clos' }], { race, anneeCourante: 2026, anneeAffichee: 2026 });
   assert.match(html, /<section class="carte carte-race race-saison">/);
   assert.match(html, /<h2 class="titre-annee titre-saison">Saison 2026<\/h2>/);
-  assert.match(html, /Palmarès de la saison ›/);
+  assert.match(html, /Détail par tournoi ›<\/a>\s*<a class="lien-detail lien-palmares" href="#\/palmares">Palmarès de la saison ›<\/a>\s*<\/section>/);
+  assert.equal((html.match(/Palmarès de la saison/g) ?? []).length, 1);
   assert.doesNotMatch(html, /Palmarès des saisons/);
 });
 

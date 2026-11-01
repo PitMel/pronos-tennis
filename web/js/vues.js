@@ -26,7 +26,7 @@ const SVG_COCHE = '<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="
 /* ---------- Classement de l'année (Race) ---------- */
 const htmlTropheesRace = (l) => (l.trophees?.length ? `<span class="trophees-race">${l.trophees.map((t) => htmlTrophee(t.categorie, t.nom)).join('')}</span>` : '');
 
-export function htmlRace(race) {
+export function htmlRace(race, { lienPalmares = false } = {}) {
   const lignes = race.lignes.map((l) => `
     <li class="ligne-race">
       <span class="rang">${echapper(l.rang)}</span>
@@ -43,6 +43,7 @@ export function htmlRace(race) {
       <p class="sous-race">${echapper(etat)}</p>
       <ol class="liste-race">${lignes}</ol>
       <a class="lien-detail" href="#/race/${encodeURIComponent(race.annee)}">Détail par tournoi ›</a>
+      ${lienPalmares ? '<a class="lien-detail lien-palmares" href="#/palmares">Palmarès de la saison ›</a>' : ''}
     </section>`;
 }
 
@@ -111,10 +112,10 @@ export function htmlListeTournois(tournois, { race = null, anneeCourante = null,
   }
   const choisie = anneeAffichee !== null && annees.some((a) => a.annee === anneeAffichee) ? anneeAffichee : null;
   const visibles = choisie === null ? annees : annees.filter((a) => a.annee === choisie);
-  return `${anneeAffichee !== null ? `<p class="lien-archive lien-palmares"><a href="#/palmares">Palmarès de la saison ›</a></p>` : ''}${anneeAffichee !== null ? htmlOngletsSaisons(annees.map((a) => a.annee), choisie ?? anneeCourante) : ''}${visibles.map(({ annee, tournois: liste }) => `
+  return `${anneeAffichee !== null ? htmlOngletsSaisons(annees.map((a) => a.annee), choisie ?? anneeCourante) : ''}${visibles.map(({ annee, tournois: liste }) => `
     <section>
       <h2 class="titre-annee titre-saison">Saison ${echapper(annee)}</h2>
-      ${race && annee === anneeCourante ? htmlRace(race) : ''}
+      ${race && annee === anneeCourante ? htmlRace(race, { lienPalmares: anneeAffichee !== null }) : ''}
       ${race && annee !== anneeCourante && liste.some((t) => t.etat === 'clos') ? `<p class="lien-archive"><a href="#/race/${encodeURIComponent(annee)}">Race ${echapper(annee)} : classement final ›</a></p>` : ''}
       ${liste.length ? liste.map((t) => htmlCarteTournoi(t, classements.get(t.id) ?? null, joueurs, moi)).join('') : '<p class="vide">Aucun tournoi pour cette saison.</p>'}
     </section>`).join('')}`;

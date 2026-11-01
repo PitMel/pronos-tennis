@@ -500,6 +500,7 @@ svg.filet[data-edition="1"] { cursor: pointer; }
 .meilleur-pronos { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .meilleur-pronos small { display: inline; }
 .lien-palmares { text-align: right; }
+.lien-detail.lien-palmares { margin-top: 6px; }
 .champion-race a { color: var(--vert-fonce); font-weight: 700; }
 
 /* Aide à l'installation (page Profil) */
