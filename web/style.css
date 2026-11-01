@@ -107,6 +107,7 @@ button.discret:hover { background: rgba(255, 255, 255, .15); }
 .chargement-court { color: var(--gris); text-align: center; margin: 40px 0; }
 
 .titre-annee { font-size: 1.3rem; color: var(--vert-fonce); margin: 24px 0 10px; }
+.titre-annee.titre-saison { font-size: 1.15rem; text-align: center; }
 
 a.carte-tournoi { display: block; color: inherit; text-decoration: none; border-left: 6px solid var(--vert); position: relative; }
 a.carte-tournoi:hover { box-shadow: 0 4px 16px rgba(31, 77, 67, .18); }
@@ -511,3 +512,27 @@ svg.filet[data-edition="1"] { cursor: pointer; }
 .service-pleine-page h1 span { color: var(--terrain); }
 .carte-service { text-align: center; }
 .carte-service h2 { margin-top: 0; }
+
+/* ---------- Saison / Accueil : Race 2026 à la taille du texte du vainqueur (1,15 rem), trophées à la taille des autres ---------- */
+.race-saison .nom-race, .race-saison .points-race { font-size: 1.15rem; }
+.race-saison .trophees-race .trophee { width: 46px; height: 46px; }
+.race-saison .ligne-race { grid-template-columns: 28px 30px 1fr auto; }
+
+/* ---------- Page Race : détail par tournoi (photos plus grandes, nom dessous, médailles, score du vainqueur encadré) ---------- */
+.pastille-detail { width: 48px; height: 48px; font-size: 1.3rem; flex: none; }
+.detail-race thead th.col-joueur { text-align: center; vertical-align: bottom; }
+.detail-race thead th.col-joueur .pastille { display: flex; margin: 0 auto 4px; }
+.detail-race thead th.col-joueur span:not(.pastille) { display: block; margin-left: 0; }
+.detail-race td { text-align: center; }
+.cellule-score { display: inline-flex; align-items: center; justify-content: center; gap: 4px; }
+.medaille { font-size: 1.05rem; line-height: 1; }
+.cadre-gagnant { display: inline-block; padding: 2px 7px; border: 2px solid #14562F; border-radius: 8px; }
+.detail-race tfoot td { text-align: center; }
+
+/* ---------- Page Race : évolution ---------- */
+.carte-evolution h3 { margin: 0 0 4px; font-size: 1.1rem; color: var(--vert-fonce); }
+.evo-svg { display: block; width: 100%; height: auto; margin-top: 8px; }
+.evo-grille { stroke: #E3E9E3; stroke-width: 1; }
+.evo-axe { fill: var(--gris); font-size: 15px; }
+.evo-legende { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px 18px; }
+.evo-legende li { display: flex; align-items: center; gap: 6px; font-weight: 600; }

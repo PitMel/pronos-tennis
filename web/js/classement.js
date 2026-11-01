@@ -137,13 +137,35 @@ export function detailRace({ moteur, annee, tournois, resultats, profils }) {
     let meilleur = null;
     for (const v of scores.values()) if (meilleur === null || v.comparer(meilleur) > 0) meilleur = v;
     const cellules = {};
+    // place dans le tournoi (les ex aequo partagent le rang) : sert à la médaille affichée avant le score
+    const rangsTournoi = moteur.rangs(Object.fromEntries([...scores].map(([id, v]) => [id, v])));
     for (const c of colonnes) {
       const v = scores.get(c.id);
       cellules[c.id] = v
-        ? { ...cellule(moteur, v, { signe: false }), gagnant: meilleur !== null && v.comparer(meilleur) === 0 }
-        : { texte: '—', negatif: false, positif: false, gagnant: false };
+        ? { ...cellule(moteur, v, { signe: false }), gagnant: meilleur !== null && v.comparer(meilleur) === 0, rang: rangsTournoi[c.id] }
+        : { texte: '—', negatif: false, positif: false, gagnant: false, rang: null };
     }
     return { id: t.id, nom: t.nom, categorie: t.categorie, date_debut: t.date_debut ?? null, cellules };
   });
-  return { annee, tournoisClos: clos.length, colonnes: colonnes.sort((a, b) => ordre.get(a.id) - ordre.get(b.id)), tournois: lignes };
+  colonnes.sort((a, b) => ordre.get(a.id) - ordre.get(b.id));
+  return { annee, tournoisClos: clos.length, colonnes, tournois: lignes, evolution: evolutionRace({ moteur, clos, resultats, colonnes, ids }) };
+}
+
+/**
+ * Évolution de la Race : après chaque tournoi terminé (ordre chronologique), écart de chaque joueur au joueur
+ * le moins bien classé de la Race à ce moment-là (celui qui a le plus petit total, donc écart 0).
+ * @returns {{tournois:Array<{id, nom}>, series:Array<{id, prenom, couleur, ecarts:number[]}>}}
+ */
+export function evolutionRace({ moteur, clos, resultats, colonnes, ids }) {
+  const totaux = new Map(colonnes.map((c) => [c.id, moteur.ZERO]));
+  const series = colonnes.map((c) => ({ id: c.id, prenom: c.prenom, couleur: c.couleur ?? null, photo_url: c.photo_url ?? null, ecarts: [] }));
+  for (const t of clos) {
+    for (const r of resultats) {
+      if (r.tournament_id === t.id && ids.has(r.joueur_id)) totaux.set(r.joueur_id, totaux.get(r.joueur_id).plus(moteur.Fraction.de(r.score_final)));
+    }
+    let plusPetit = null;
+    for (const v of totaux.values()) if (plusPetit === null || v.comparer(plusPetit) < 0) plusPetit = v;
+    for (const serie of series) serie.ecarts.push(totaux.get(serie.id).moins(plusPetit).versNombre());
+  }
+  return { tournois: clos.map((t) => ({ id: t.id, nom: t.nom })), series };
 }

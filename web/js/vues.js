@@ -24,19 +24,21 @@ const SVG_BALLE = '<svg viewBox="0 0 28 28" width="26" height="26" aria-hidden="
 const SVG_COCHE = '<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M3 8.5 l3.2 3.2 l6.8 -7" fill="none" stroke="#1F4D43" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
 /* ---------- Classement de l'année (Race) ---------- */
+const htmlTropheesRace = (l) => (l.trophees?.length ? `<span class="trophees-race">${l.trophees.map((t) => htmlTrophee(t.categorie, t.nom)).join('')}</span>` : '');
+
 export function htmlRace(race) {
   const lignes = race.lignes.map((l) => `
     <li class="ligne-race">
       <span class="rang">${echapper(l.rang)}</span>
       ${htmlPastille(l, 'pastille pastille-petite')}
-      <span class="nom-race">${echapper(l.prenom)}${l.trophees?.length ? `<span class="trophees-race">${l.trophees.map((t) => htmlTrophee(t.categorie, t.nom)).join('')}</span>` : ''}</span>
+      <span class="nom-race">${echapper(l.prenom)}${htmlTropheesRace(l)}</span>
       <span class="points-race">${echapper(l.points)}</span>
     </li>`).join('');
   const etat = race.tournoisClos === 0
     ? 'Aucun tournoi terminé pour l’instant : la Race bouge à la clôture de chaque tournoi.'
     : `${race.tournoisClos} tournoi${race.tournoisClos > 1 ? 's' : ''} terminé${race.tournoisClos > 1 ? 's' : ''}`;
   return `
-    <section class="carte carte-race">
+    <section class="carte carte-race race-saison">
       <h3>Race ${echapper(race.annee)}</h3>
       <p class="sous-race">${echapper(etat)}</p>
       <ol class="liste-race">${lignes}</ol>
@@ -109,9 +111,9 @@ export function htmlListeTournois(tournois, { race = null, anneeCourante = null,
   }
   const choisie = anneeAffichee !== null && annees.some((a) => a.annee === anneeAffichee) ? anneeAffichee : null;
   const visibles = choisie === null ? annees : annees.filter((a) => a.annee === choisie);
-  return `${anneeAffichee !== null ? `<p class="lien-archive lien-palmares"><a href="#/palmares">Palmarès des saisons ›</a></p>` : ''}${anneeAffichee !== null ? htmlOngletsSaisons(annees.map((a) => a.annee), choisie ?? anneeCourante) : ''}${visibles.map(({ annee, tournois: liste }) => `
+  return `${anneeAffichee !== null ? `<p class="lien-archive lien-palmares"><a href="#/palmares">Palmarès de la saison ›</a></p>` : ''}${anneeAffichee !== null ? htmlOngletsSaisons(annees.map((a) => a.annee), choisie ?? anneeCourante) : ''}${visibles.map(({ annee, tournois: liste }) => `
     <section>
-      <h2 class="titre-annee">Saison ${echapper(annee)}</h2>
+      <h2 class="titre-annee titre-saison">Saison ${echapper(annee)}</h2>
       ${race && annee === anneeCourante ? htmlRace(race) : ''}
       ${race && annee !== anneeCourante && liste.some((t) => t.etat === 'clos') ? `<p class="lien-archive"><a href="#/race/${encodeURIComponent(annee)}">Race ${echapper(annee)} : classement final ›</a></p>` : ''}
       ${liste.length ? liste.map((t) => htmlCarteTournoi(t, classements.get(t.id) ?? null, joueurs, moi)).join('') : '<p class="vide">Aucun tournoi pour cette saison.</p>'}
@@ -146,20 +148,63 @@ export function htmlClassementTournoi(classement, { moi = null, tournoi = null }
     </section>`;
 }
 
-/* ---------- Page « Race » : classement de l'année et détail par tournoi ---------- */
+/* ---------- Page « Race » : classement de l'année, détail par tournoi et évolution ---------- */
+const MEDAILLES = { 1: ['🥇', '1re place'], 2: ['🥈', '2e place'], 3: ['🥉', '3e place'] };
+
+/** Graphe « Évolution » : une courbe par joueur, écart (en points) au dernier de la Race après chaque tournoi. */
+export function htmlEvolutionRace(evolution) {
+  const n = evolution.tournois.length;
+  if (n === 0 || evolution.series.length === 0) return '';
+  const L = 88; const R = 20; const H = 360; const haut = 16; const bas = 150; const largeur = 640;
+  const plusGrand = Math.max(0, ...evolution.series.flatMap((s) => s.ecarts));
+  const pas = [1, 2, 5, 10, 20, 25, 50, 100, 200, 500, 1000].find((p) => Math.ceil(plusGrand / p) <= 5) ?? 1000;
+  const ymax = Math.max(pas, Math.ceil(plusGrand / pas) * pas);
+  const X = (i) => (n === 1 ? L + (largeur - L - R) / 2 : L + ((largeur - L - R) * i) / (n - 1));
+  const Y = (v) => haut + (H - haut - bas) * (1 - v / ymax);
+  const nb = (x) => Math.round(x * 10) / 10;
+  const graduations = [];
+  for (let v = 0; v <= ymax; v += pas) graduations.push(v);
+  const grille = graduations.map((v) => `<line class="evo-grille" x1="${L}" x2="${largeur - R}" y1="${nb(Y(v))}" y2="${nb(Y(v))}"/><text class="evo-axe" x="${L - 6}" y="${nb(Y(v) + 4)}" text-anchor="end">${v}</text>`).join('');
+  const court = (nom) => (nom.length > 20 ? `${nom.slice(0, 19)}…` : nom);
+  const etiquettes = evolution.tournois.map((t, i) => `<text class="evo-axe" transform="translate(${nb(X(i))} ${H - bas + 12}) rotate(-45)" text-anchor="end">${echapper(court(t.nom))}</text>`).join('');
+  const courbes = evolution.series.map((s) => {
+    const couleur = /^#[0-9A-Fa-f]{6}$/.test(s.couleur ?? '') ? s.couleur : '#2F6CC2';
+    const points = s.ecarts.map((v, i) => `${nb(X(i))},${nb(Y(v))}`).join(' ');
+    const ronds = s.ecarts.map((v, i) => `<circle cx="${nb(X(i))}" cy="${nb(Y(v))}" r="4" fill="${couleur}"><title>${echapper(s.prenom)} · ${echapper(evolution.tournois[i].nom)} : +${nb(v).toString().replace('.', ',')} point${v > 1 ? 's' : ''} sur le dernier</title></circle>`).join('');
+    return `<g class="evo-courbe">${n > 1 ? `<polyline points="${points}" fill="none" stroke="${couleur}" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>` : ''}${ronds}</g>`;
+  }).join('');
+  const legende = evolution.series.map((s) => `<li>${htmlPastille(s, 'pastille pastille-petite')}<span>${echapper(s.prenom)}</span></li>`).join('');
+  return `
+    <section class="carte carte-evolution">
+      <h3>Évolution</h3>
+      <p class="small">Écart de chaque joueur, en points, avec le joueur qui a le plus petit score à la Race après chaque tournoi.</p>
+      <svg class="evo-svg" viewBox="0 0 ${largeur} ${H}" role="img" aria-label="Évolution de la Race ${echapper(evolution.tournois.length)} tournoi${n > 1 ? 's' : ''}">
+        ${grille}${etiquettes}${courbes}
+      </svg>
+      <ul class="evo-legende">${legende}</ul>
+    </section>`;
+}
+
 export function htmlPageRace(detail, { moi = null } = {}) {
   const classement = detail.colonnes.map((c) => `
       <li class="ligne-race${c.id === moi ? ' isme' : ''}">
         <span class="rang">${echapper(c.rang)}</span>
         ${htmlPastille(c, 'pastille pastille-petite')}
-        <span class="nom-race">${echapper(c.prenom)}</span>
+        <span class="nom-race">${echapper(c.prenom)}${htmlTropheesRace(c)}</span>
         <span class="points-race">${echapper(c.points)}</span>
       </li>`).join('');
-  const entetes = detail.colonnes.map((c) => `<th scope="col">${htmlPastille(c, 'pastille pastille-petite')}<span>${echapper(c.prenom)}</span></th>`).join('');
+  // dans le tableau détaillé, le joueur du compte est toujours en première colonne
+  const colonnes = [...detail.colonnes.filter((c) => c.id === moi), ...detail.colonnes.filter((c) => c.id !== moi)];
+  const entetes = colonnes.map((c) => `<th scope="col" class="col-joueur">${htmlPastille(c, 'pastille pastille-detail')}<span>${echapper(c.prenom)}</span></th>`).join('');
+  const cellule = (x) => {
+    const medaille = x.rang && MEDAILLES[x.rang] ? `<span class="medaille" role="img" aria-label="${MEDAILLES[x.rang][1]}">${MEDAILLES[x.rang][0]}</span>` : '';
+    const score = x.gagnant ? `<span class="cadre-gagnant">${echapper(x.texte)}</span>` : echapper(x.texte);
+    return `<td class="${[x.negatif ? 'neg' : '', x.gagnant ? 'gagnant' : ''].filter(Boolean).join(' ')}"><span class="cellule-score">${medaille}${score}</span></td>`;
+  };
   const lignes = detail.tournois.map((t) => `
       <tr><th scope="row"><a class="nom-tournoi" href="#/tournoi/${encodeURIComponent(t.id)}">${htmlTrophee(t.categorie, t.nom)}${echapper(t.nom)}</a><small>${echapper(CATEGORIES[t.categorie] ?? t.categorie)}</small></th>
-        ${detail.colonnes.map((c) => { const x = t.cellules[c.id]; return `<td class="${[x.negatif ? 'neg' : '', x.gagnant ? 'gagnant' : ''].filter(Boolean).join(' ')}">${echapper(x.texte)}</td>`; }).join('')}</tr>`).join('');
-  const total = detail.colonnes.map((c) => `<td>${echapper(c.points)}</td>`).join('');
+        ${colonnes.map((c) => cellule(t.cellules[c.id])).join('')}</tr>`).join('');
+  const total = colonnes.map((c) => `<td>${echapper(c.points)}</td>`).join('');
   return `
     <section class="hero hero-race">
       <a class="retour retour-clair" href="#/saison">← Saison ${echapper(detail.annee)}</a>
@@ -175,8 +220,9 @@ export function htmlPageRace(detail, { moi = null } = {}) {
         <tbody>${lignes}</tbody>
         <tfoot><tr><th scope="row">Total Race ${echapper(detail.annee)}</th>${total}</tr></tfoot>
       </table></div>
-      <p class="small">Score final de chaque tournoi (après pari tournoi et bonus de classement) ; le meilleur de chaque tournoi est en vert.</p>
-    </section>`}`;
+      <p class="small">Score final de chaque tournoi (après pari tournoi et bonus de classement), précédé d’une médaille pour les trois premières places ; le score du vainqueur est encadré.</p>
+    </section>
+    ${htmlEvolutionRace(detail.evolution)}`}`;
 }
 
 /* ---------- Page d'un tournoi ---------- */

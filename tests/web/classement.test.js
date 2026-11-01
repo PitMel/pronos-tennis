@@ -163,8 +163,8 @@ test('vues : page Race (classement, détail par tournoi, total, vert pour le mei
   const html = htmlPageRace(detailRace({ moteur, annee: 2026, tournois: ts, resultats: rs, profils }), { moi: 'p' });
   assert.match(html, /Race 2026/);
   assert.match(html, /Somme des scores finaux de 1 tournoi terminé\./);
-  assert.match(html, /<td class="gagnant">20<\/td>/);
-  assert.match(html, /<td class="neg">−4<\/td>/);
+  assert.match(html, /<td class="gagnant"><span class="cellule-score"><span class="medaille" role="img" aria-label="1re place">🥇<\/span><span class="cadre-gagnant">20<\/span><\/span><\/td>/);
+  assert.match(html, /<td class="neg"><span class="cellule-score"><span class="medaille" role="img" aria-label="2e place">🥈<\/span>−4<\/span><\/td>/);
   assert.match(html, /Total Race 2026/);
   assert.match(html, /Miami &lt;b&gt;/);
   assert.match(html, /<a class="nom-tournoi" href="#\/tournoi\/1">/);
@@ -172,6 +172,42 @@ test('vues : page Race (classement, détail par tournoi, total, vert pour le mei
   const vide = htmlPageRace(detailRace({ moteur, annee: 2030, tournois: ts, resultats: rs, profils }));
   assert.match(vide, /Aucun tournoi terminé pour l’instant/);
   assert.doesNotMatch(vide, /detail-race/);
+});
+
+test('vues : page Race — joueur du compte en 1re colonne, médailles, évolution (écart au dernier), trophées après les noms', () => {
+  const ts = [
+    { id: 1, annee: 2026, nom: 'Miami', categorie: 'masters_1000', etat: 'clos', date_debut: '2026-03-18', vainqueur_id: 5 },
+    { id: 2, annee: 2026, nom: 'Roland-Garros', categorie: 'grand_slam', etat: 'clos', date_debut: '2026-05-24', vainqueur_id: 6 },
+  ];
+  const rs = [
+    { tournament_id: 1, joueur_id: 'a', score_final: '20' }, { tournament_id: 1, joueur_id: 'p', score_final: '12' }, { tournament_id: 1, joueur_id: 'j', score_final: '5' },
+    { tournament_id: 2, joueur_id: 'a', score_final: '-5' }, { tournament_id: 2, joueur_id: 'p', score_final: '30' }, { tournament_id: 2, joueur_id: 'j', score_final: '10' },
+  ];
+  const d = detailRace({ moteur, annee: 2026, tournois: ts, resultats: rs, profils });
+  // totaux : Paul 42, Jacques 15, André 15 → écart au dernier : Paul 7 puis 27
+  assert.deepEqual(d.evolution.tournois.map((t) => t.nom), ['Miami', 'Roland-Garros']);
+  assert.deepEqual(d.evolution.series.find((x) => x.id === 'p').ecarts, [7, 27]);
+  assert.deepEqual(d.evolution.series.find((x) => x.id === 'a').ecarts, [15, 0]);
+  assert.deepEqual(d.evolution.series.find((x) => x.id === 'j').ecarts, [0, 0]);
+  const html = htmlPageRace(d, { moi: 'a' });
+  const entetes = [...html.matchAll(/<th scope="col" class="col-joueur">.*?<span>(.*?)<\/span><\/th>/g)].map((m) => m[1]);
+  assert.deepEqual(entetes, ['André', 'Paul', 'Jacques']);
+  assert.match(html, /aria-label="3e place">🥉/);
+  assert.match(html, /<h3>Évolution<\/h3>/);
+  assert.match(html, /<svg class="evo-svg"/);
+  assert.equal((html.match(/<polyline /g) ?? []).length, 3);
+  assert.match(html, /pastille-detail/);
+  const sansTournoi = htmlPageRace(detailRace({ moteur, annee: 2030, tournois: ts, resultats: rs, profils }));
+  assert.doesNotMatch(sansTournoi, /Évolution/);
+});
+
+test('vues : Saison et Accueil — Race 2026 en classe race-saison, titre de saison centré, « Palmarès de la saison »', () => {
+  const race = { annee: 2026, tournoisClos: 1, lignes: [{ id: 'a', prenom: 'André', rang: 1, points: '20', trophees: [{ categorie: 'masters_1000', nom: 'Miami' }] }] };
+  const html = htmlListeTournois([{ id: 1, annee: 2026, nom: 'Miami', categorie: 'masters_1000', etat: 'clos' }], { race, anneeCourante: 2026, anneeAffichee: 2026 });
+  assert.match(html, /<section class="carte carte-race race-saison">/);
+  assert.match(html, /<h2 class="titre-annee titre-saison">Saison 2026<\/h2>/);
+  assert.match(html, /Palmarès de la saison ›/);
+  assert.doesNotMatch(html, /Palmarès des saisons/);
 });
 
 test('vues : trophée différent par catégorie ; saison avec vainqueur du groupe, lien Race et archive des années passées', () => {
