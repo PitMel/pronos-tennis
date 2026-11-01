@@ -260,17 +260,23 @@ test('saison : l’étiquette d’état est sous l’étiquette de catégorie, �
   assert.equal(html.match(/badge-etat/g).length, 1); // plus d'étiquette d'état en bas de la carte
 });
 
-test('trophées : un par Grand Chelem (reconnu par le nom), un pour tous les Masters 1000, un pour les ATP Finals', () => {
+test('trophées : un par Grand Chelem et un par Masters 1000 (reconnus par le nom), un pour les ATP Finals', () => {
   const cles = [
     ['grand_slam', "Open d'Australie"], ['grand_slam', 'Australian Open'], ['grand_slam', 'Roland-Garros'], ['grand_slam', 'Roland Garros'],
     ['grand_slam', 'Wimbledon'], ['grand_slam', 'US Open'], ['grand_slam', 'Tournoi inconnu'],
     ['masters_1000', 'Rolex Paris Masters'], ['masters_1000', 'Miami Open'], ['atp_finals', 'Nitto ATP Finals'],
   ].map(([c, n]) => cleTrophee(c, n));
-  assert.deepEqual(cles, ['ao', 'ao', 'rg', 'rg', 'wi', 'us', 'gs', 'm1000', 'm1000', 'atpf']);
+  assert.deepEqual(cles, ['ao', 'ao', 'rg', 'rg', 'wi', 'us', 'gs', 'pa', 'mi', 'atpf']);
   const dessins = new Set(['ao', 'rg', 'wi', 'us', 'gs', 'm1000', 'atpf'].map((k) => htmlTrophee(k === 'm1000' ? 'masters_1000' : k === 'atpf' ? 'atp_finals' : 'grand_slam', { ao: "Open d'Australie", rg: 'Roland-Garros', wi: 'Wimbledon', us: 'US Open', gs: 'Autre' }[k])));
   assert.equal(dessins.size, 7); // sept dessins différents
   assert.match(htmlTrophee('grand_slam', 'Wimbledon'), /aria-label="Trophée : Wimbledon"/);
   assert.match(htmlTrophee('masters_1000'), /aria-label="Trophée Masters 1000"/);
+  // une coupe différente pour chacun des 9 Masters 1000 ; un nom inconnu garde la coupe « 1000 »
+  const masters = ['Indian Wells Masters', 'Miami Open', 'Monte-Carlo Masters', 'Madrid Open', 'Masters de Rome', 'Masters du Canada', 'Cincinnati Masters', 'Rolex Shanghai Masters', 'Rolex Paris Masters'];
+  assert.equal(new Set(masters.map((n) => cleTrophee('masters_1000', n))).size, 9);
+  assert.equal(new Set(masters.map((n) => htmlTrophee('masters_1000', n).replace(/aria-label="[^"]*"|data-nom="[^"]*"|<title>[^<]*<\/title>/g, ''))).size, 9);
+  assert.equal(cleTrophee('masters_1000', 'Tournoi inconnu'), 'm1000');
+  assert.doesNotMatch(htmlTrophee('masters_1000', 'Miami Open'), />1000</);
 });
 
 test('Race : les trophées gagnés suivent le nom du joueur — Grand Chelem, puis Masters 1000, puis ATP Finals, chacun dans l’ordre chronologique', () => {
