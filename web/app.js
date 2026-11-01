@@ -775,6 +775,12 @@ document.addEventListener('click', (e) => {
 // Téléphone : un appui sur un trophée d'un cadre Race affiche le nom du tournoi (il n'y a pas d'infobulle au toucher).
 let minuteurBulle = null;
 document.addEventListener('click', (e) => {
+  // Ordinateur (souris) : un clic sur une coupe mène à la page du tournoi
+  const coupe = e.target.closest?.('.trophee[data-tournoi]');
+  if (coupe && window.matchMedia?.('(hover: hover) and (pointer: fine)').matches) {
+    location.hash = `#/tournoi/${encodeURIComponent(coupe.getAttribute('data-tournoi'))}`;
+    return;
+  }
   const trophee = e.target.closest?.('.trophees-race .trophee');
   const ancienne = document.querySelector('.bulle-trophee');
   const memeTrophee = ancienne && trophee && ancienne.dataset.pour === trophee.getAttribute('data-nom') && ancienne.parentElement === trophee.parentElement;

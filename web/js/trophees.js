@@ -50,8 +50,11 @@ export function cleTrophee(categorie, nom = null) {
 }
 
 /** Miniature de trophée (22 px par défaut). Le libellé accessible nomme le tournoi quand on le connaît. */
-export function htmlTrophee(categorie, nom = null) {
+export function htmlTrophee(categorie, nom = null, tournoi = null) {
   const d = DESSINS[cleTrophee(categorie, nom)];
-  const titre = nom ? `Trophée : ${nom}` : `Trophée ${d.titre}`;
-  return `<svg class="trophee" viewBox="0 0 64 64" width="22" height="22" role="img" aria-label="${echapper(titre)}"${nom ? ` data-nom="${echapper(nom)}"` : ''}><title>${echapper(nom ?? d.titre)}</title>${d.dessin}</svg>`;
+  const annee = tournoi?.annee ?? (tournoi?.date_debut ? Number(String(tournoi.date_debut).slice(0, 4)) : null);
+  const libelle = nom ? (annee ? `${nom} ${annee}` : nom) : null;
+  const titre = libelle ? `Trophée : ${libelle}` : `Trophée ${d.titre}`;
+  const lien = nom && tournoi?.id != null ? ` data-tournoi="${echapper(tournoi.id)}"` : '';
+  return `<svg class="trophee" viewBox="0 0 64 64" width="22" height="22" role="img" aria-label="${echapper(titre)}"${libelle ? ` data-nom="${echapper(libelle)}"` : ''}${lien}><title>${echapper(libelle ?? d.titre)}</title>${d.dessin}</svg>`;
 }

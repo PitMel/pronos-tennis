@@ -17,7 +17,7 @@ function tropheesParJoueur(tournoisClos, resultats, idsGroupe) {
     const t = parTournoi.get(r.tournament_id);
     if (!t || !idsGroupe.has(r.joueur_id) || Number(r.rang) !== 1) continue;
     if (!gagnes.has(r.joueur_id)) gagnes.set(r.joueur_id, []);
-    gagnes.get(r.joueur_id).push({ id: t.id, nom: t.nom ?? '', categorie: t.categorie, date_debut: t.date_debut ?? null });
+    gagnes.get(r.joueur_id).push({ id: t.id, nom: t.nom ?? '', categorie: t.categorie, date_debut: t.date_debut ?? null, annee: t.annee });
   }
   for (const liste of gagnes.values()) {
     liste.sort((a, b) => (ORDRE_CATEGORIES[a.categorie] ?? 9) - (ORDRE_CATEGORIES[b.categorie] ?? 9)

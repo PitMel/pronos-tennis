@@ -270,6 +270,7 @@ test('trophées : un par Grand Chelem et un par Masters 1000 (reconnus par le no
   const dessins = new Set(['ao', 'rg', 'wi', 'us', 'gs', 'm1000', 'atpf'].map((k) => htmlTrophee(k === 'm1000' ? 'masters_1000' : k === 'atpf' ? 'atp_finals' : 'grand_slam', { ao: "Open d'Australie", rg: 'Roland-Garros', wi: 'Wimbledon', us: 'US Open', gs: 'Autre' }[k])));
   assert.equal(dessins.size, 7); // sept dessins différents
   assert.match(htmlTrophee('grand_slam', 'Wimbledon'), /aria-label="Trophée : Wimbledon"/);
+  assert.match(htmlTrophee('grand_slam', 'Wimbledon', { id: 9, annee: 2026 }), /aria-label="Trophée : Wimbledon 2026"[^>]*data-nom="Wimbledon 2026" data-tournoi="9"/);
   assert.match(htmlTrophee('masters_1000'), /aria-label="Trophée Masters 1000"/);
   // une coupe différente pour chacun des 9 Masters 1000 ; un nom inconnu garde la coupe « 1000 »
   const masters = ['Indian Wells Masters', 'Miami Open', 'Monte-Carlo Masters', 'Madrid Open', 'Masters de Rome', 'Masters du Canada', 'Cincinnati Masters', 'Rolex Shanghai Masters', 'Rolex Paris Masters'];
@@ -302,7 +303,8 @@ test('Race : les trophées gagnés suivent le nom du joueur — Grand Chelem, pu
   const html = htmlRace(race);
   const ligne = (prenom) => new RegExp(`<span class="nom-race">${prenom}<span class="trophees-race">([\\s\\S]*?)</span></span>`).exec(html)[1];
   const labels = (prenom) => [...ligne(prenom).matchAll(/aria-label="Trophée : ([^"]+)"/g)].map((m) => m[1]);
-  assert.deepEqual(labels('Paul'), ["Open d&#39;Australie", 'Wimbledon', 'Miami Open', 'Nitto ATP Finals']);
+  assert.deepEqual(labels('Paul'), ["Open d&#39;Australie 2026", 'Wimbledon 2026', 'Miami Open 2026', 'Nitto ATP Finals 2026']); // le nom est suivi de l'année
+  assert.match(ligne('Paul'), /data-tournoi="3"/); // clic sur ordinateur : page du tournoi
   assert.doesNotMatch(html, /<span class="nom-race">Jacques<span class="trophees-race">/); // aucun trophée : rien d'affiché
 });
 
@@ -321,7 +323,7 @@ test('classement du tournoi : une fois terminé, le trophée suit le nom du vain
   ];
   const c = classementTournoi({ moteur, tournoi: t, matchs: [], paris: new Map(), archives, profils });
   const html = htmlClassementTournoi(c, { tournoi: t });
-  assert.match(html, /<span>Paul<\/span><span class="trophee-vainqueur"><svg class="trophee"[^>]*aria-label="Trophée : Wimbledon"/);
+  assert.match(html, /<span>Paul<\/span><span class="trophee-vainqueur"><svg class="trophee"[^>]*aria-label="Trophée : Wimbledon 2026"[^>]*data-tournoi="9"/);
   assert.equal(html.match(/trophee-vainqueur/g).length, 1); // André n'en a pas
   // tournoi en cours : aucun trophée
   const enCours = classementTournoi({ moteur, tournoi: { ...t, etat: 'en_cours' }, matchs: [], paris: new Map(), archives: [], profils });

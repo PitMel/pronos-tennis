@@ -24,7 +24,7 @@ const SVG_BALLE = '<svg viewBox="0 0 28 28" width="26" height="26" aria-hidden="
 const SVG_COCHE = '<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="true"><path d="M3 8.5 l3.2 3.2 l6.8 -7" fill="none" stroke="#1F4D43" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
 
 /* ---------- Classement de l'année (Race) ---------- */
-const htmlTropheesRace = (l) => (l.trophees?.length ? `<span class="trophees-race">${l.trophees.map((t) => htmlTrophee(t.categorie, t.nom)).join('')}</span>` : '');
+const htmlTropheesRace = (l) => (l.trophees?.length ? `<span class="trophees-race">${l.trophees.map((t) => htmlTrophee(t.categorie, t.nom, t)).join('')}</span>` : '');
 
 export function htmlRace(race, { lienPalmares = false } = {}) {
   const lignes = race.lignes.map((l) => `
@@ -59,7 +59,7 @@ function htmlCarteTournoi(t, classement = null, joueurs = new Map(), moi = null)
     // « | Moi · score » : mon score final, sauf si je suis le (ou l'un des) vainqueur(s) des pronos
     const mienne = moi ? classement.lignes.find((l) => l.id === moi) : null;
     const lienMoi = mienne && mienne.rang !== 1 ? `<span class="sep-moi" aria-hidden="true">|</span><span><b>Moi</b> · ${echapper(mienne.final.texte)}</span>` : '';
-    palmares = `<p class="palmares-groupe">${htmlTrophee(t.categorie, t.nom)}<span><b>${echapper(premiers.map((l) => l.prenom).join(' et '))}</b>`
+    palmares = `<p class="palmares-groupe">${htmlTrophee(t.categorie, t.nom, t)}<span><b>${echapper(premiers.map((l) => l.prenom).join(' et '))}</b>`
       + ` · ${echapper(premiers[0].final.texte)}</span>${lienMoi}</p>`
       + `<p class="scores-groupe">${classement.lignes.map((l) => {
         // score avant bonification (matchs + pari tournoi), puis la bonification du 1er et du 2e entre parenthèses : « Paul 112 (+12) »
@@ -128,7 +128,7 @@ export function htmlClassementTournoi(classement, { moi = null, tournoi = null }
   if (!classement || classement.lignes.length === 0) return '';
   const clos = classement.cloture;
   // tournoi terminé : le trophée suit le nom du (ou des) premier(s) du classement
-  const trophee = tournoi && clos ? htmlTrophee(tournoi.categorie, tournoi.nom) : '';
+  const trophee = tournoi && clos ? htmlTrophee(tournoi.categorie, tournoi.nom, tournoi) : '';
   const nom = (l) => `${htmlPastille(l, 'pastille pastille-petite')}<span>${echapper(l.prenom)}</span>${trophee && l.rang === 1 ? `<span class="trophee-vainqueur">${trophee}</span>` : ''}`;
   const lignes = classement.lignes.map((l) => `
       <tr class="${l.id === moi ? 'isme' : ''}"><td class="rang">${echapper(l.rang)}</td><th scope="row">${nom(l)}</th>
@@ -203,7 +203,7 @@ export function htmlPageRace(detail, { moi = null } = {}) {
     return `<td class="${[x.negatif ? 'neg' : '', x.gagnant ? 'gagnant' : ''].filter(Boolean).join(' ')}"><span class="cellule-score">${medaille}${score}</span></td>`;
   };
   const lignes = detail.tournois.map((t) => `
-      <tr><th scope="row"><a class="nom-tournoi" href="#/tournoi/${encodeURIComponent(t.id)}">${htmlTrophee(t.categorie, t.nom)}${echapper(t.nom)}</a><small>${echapper(CATEGORIES[t.categorie] ?? t.categorie)}</small></th>
+      <tr><th scope="row"><a class="nom-tournoi" href="#/tournoi/${encodeURIComponent(t.id)}">${htmlTrophee(t.categorie, t.nom, t)}${echapper(t.nom)}</a><small>${echapper(CATEGORIES[t.categorie] ?? t.categorie)}</small></th>
         ${colonnes.map((c) => cellule(t.cellules[c.id])).join('')}</tr>`).join('');
   const total = colonnes.map((c) => `<td>${echapper(c.points)}</td>`).join('');
   return `
@@ -269,7 +269,7 @@ export function htmlPageTournoi({ tournoi, matchs, joueurs, ctx = {} }) {
   return `
     <section class="hero categorie-${echapper(tournoi.categorie)}">
       <a class="retour retour-clair" href="#/saison">← Saison ${echapper(tournoi.annee)}</a>
-      <h2 class="hero-titre">${echapper(tournoi.nom)}${htmlTrophee(tournoi.categorie, tournoi.nom)}</h2>
+      <h2 class="hero-titre">${echapper(tournoi.nom)}${htmlTrophee(tournoi.categorie, tournoi.nom, tournoi)}</h2>
       <p class="hero-details">${echapper(details)}</p>
       <span class="badge badge-etat etat-${echapper(tournoi.etat)}">${echapper(ETATS[tournoi.etat] ?? tournoi.etat)}</span>
       ${vainqueur ? `<p class="palmares">Vainqueur : <strong>${echapper(vainqueur.nom)}</strong>${finaliste ? ` · finaliste : ${echapper(finaliste.nom)}` : ''}</p>` : ''}

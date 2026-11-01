@@ -543,3 +543,5 @@ svg.filet[data-edition="1"] { cursor: pointer; }
 .trophees-race .trophee { cursor: pointer; }
 .bulle-trophee { position: absolute; z-index: 5; left: 0; top: calc(100% + 4px); padding: 5px 10px; border-radius: 8px; background: var(--vert-fonce); color: #fff; font-size: .9rem; font-weight: 600; line-height: 1.2; white-space: nowrap; box-shadow: 0 2px 8px rgba(0,0,0,.25); pointer-events: none; }
 .etoile-sets { font-size: .95em; }
+
+@media (hover: hover) and (pointer: fine) { .trophee[data-tournoi] { cursor: pointer; } }
