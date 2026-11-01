@@ -157,7 +157,7 @@ export function htmlPageRace(detail, { moi = null } = {}) {
       </li>`).join('');
   const entetes = detail.colonnes.map((c) => `<th scope="col">${htmlPastille(c, 'pastille pastille-petite')}<span>${echapper(c.prenom)}</span></th>`).join('');
   const lignes = detail.tournois.map((t) => `
-      <tr><th scope="row"><span class="nom-tournoi">${htmlTrophee(t.categorie, t.nom)}${echapper(t.nom)}</span><small>${echapper(CATEGORIES[t.categorie] ?? t.categorie)}</small></th>
+      <tr><th scope="row"><a class="nom-tournoi" href="#/tournoi/${encodeURIComponent(t.id)}">${htmlTrophee(t.categorie, t.nom)}${echapper(t.nom)}</a><small>${echapper(CATEGORIES[t.categorie] ?? t.categorie)}</small></th>
         ${detail.colonnes.map((c) => { const x = t.cellules[c.id]; return `<td class="${[x.negatif ? 'neg' : '', x.gagnant ? 'gagnant' : ''].filter(Boolean).join(' ')}">${echapper(x.texte)}</td>`; }).join('')}</tr>`).join('');
   const total = detail.colonnes.map((c) => `<td>${echapper(c.points)}</td>`).join('');
   return `

@@ -319,7 +319,8 @@ svg.filet[data-edition="1"] { cursor: pointer; }
 .detail-race thead th:first-child { width: 36%; }
 .detail-race tbody th, .detail-race tfoot th { text-align: left; font-weight: 700; }
 .detail-race tbody th small { display: block; color: var(--gris); font-weight: 400; font-size: .72rem; margin-left: 28px; }
-.detail-race .nom-tournoi { display: flex; align-items: center; gap: 6px; }
+.detail-race .nom-tournoi { display: flex; align-items: center; gap: 6px; color: inherit; text-decoration: none; }
+.detail-race a.nom-tournoi:hover, .detail-race a.nom-tournoi:focus-visible { color: var(--vert-fonce); text-decoration: underline; }
 .detail-race td { font-weight: 600; }
 .detail-race tfoot th, .detail-race tfoot td { border-top: 2px solid var(--vert-fonce); font-weight: 800; }
 .lien-detail { display: block; margin-top: 8px; text-align: right; font-weight: 700; color: var(--vert-fonce); text-decoration: none; }

@@ -167,6 +167,7 @@ test('vues : page Race (classement, détail par tournoi, total, vert pour le mei
   assert.match(html, /<td class="neg">−4<\/td>/);
   assert.match(html, /Total Race 2026/);
   assert.match(html, /Miami &lt;b&gt;/);
+  assert.match(html, /<a class="nom-tournoi" href="#\/tournoi\/1">/);
   assert.doesNotMatch(html, /Miami <b>/);
   const vide = htmlPageRace(detailRace({ moteur, annee: 2030, tournois: ts, resultats: rs, profils }));
   assert.match(vide, /Aucun tournoi terminé pour l’instant/);
