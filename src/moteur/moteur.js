@@ -13,7 +13,7 @@
 import { Fraction, ZERO } from './fraction.js';
 import {
   BAREME,
-  BONUS_CLASSEMENT,
+  baremeBonusClassement,
   BONUS_SETS_BON_VAINQUEUR,
   BONUS_SETS_CINQ_SETS_MAUVAIS_VAINQUEUR,
   CATEGORIES,
@@ -191,11 +191,12 @@ export function rangs(scores) {
  *   Premier seul : bonus du 1er ; le(s) 2e(s) se partagent le bonus de la 2e place.
  *   Ex aequo pour la 1re place (2 ou plus) : le bonus de la 1re place est partagé entre eux,
  *   et personne ne touche le bonus de la 2e place.
+ * @param {number} [annee]  saison du tournoi (barème particulier de la saison, sinon barème général)
  * @param {Object<string, Fraction|string>} scores  scores APRÈS pari tournoi, des seuls joueurs du groupe concerné
  */
-export function bonusClassement(scores, categorie) {
+export function bonusClassement(scores, categorie, annee) {
   verifierCategorie(categorie);
-  const [bonus1, bonus2] = BONUS_CLASSEMENT[categorie];
+  const [bonus1, bonus2] = baremeBonusClassement(categorie, annee);
   const entrees = Object.entries(scores).map(([joueur, s]) => [joueur, Fraction.de(s)]);
   const bonus = Object.fromEntries(entrees.map(([joueur]) => [joueur, ZERO]));
   if (entrees.length === 0) return bonus;
@@ -233,12 +234,13 @@ function additionner(a, b) {
  *
  * @param {object} p
  * @param {string} p.categorie
+ * @param {number} [p.annee]  saison du tournoi (pour le barème du bonus de classement)
  * @param {string[]} p.joueurs
  * @param {Array<{match: object, paris: Object<string, object>}>} p.matchs
  * @param {boolean} [p.cloture]
  * @param {{paris: Object<string, object>, resultat: {vainqueur: string, finaliste: string}|null}} [p.pariTournoi]
  */
-export function calculerTournoi({ categorie, joueurs, matchs, cloture = false, pariTournoi = null }) {
+export function calculerTournoi({ categorie, joueurs, matchs, cloture = false, pariTournoi = null, annee }) {
   verifierCategorie(categorie);
   const groupe = new Set(joueurs);
   let pointsMatchs = Object.fromEntries(joueurs.map((j) => [j, ZERO]));
@@ -275,7 +277,7 @@ export function calculerTournoi({ categorie, joueurs, matchs, cloture = false, p
     if (groupe.has(joueur)) pointsPari[joueur] = pointsPariTournoi(pari, pariTournoi.resultat, categorie);
   }
   const apres = additionner(pointsMatchs, pointsPari);
-  const bonus = bonusClassement(apres, categorie);
+  const bonus = bonusClassement(apres, categorie, annee);
   const final = additionner(apres, bonus);
 
   return {

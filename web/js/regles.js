@@ -31,6 +31,7 @@ export function htmlPageRegles({ moteur }) {
     ['Le vainqueur choisi gagne le tournoi', `+${pari('grand_slam')}`, `+${pari('masters_1000')}`],
     ['Maximum', fmt(moteur.POINTS_PARI_TOURNOI.grand_slam.fois(3)), fmt(moteur.POINTS_PARI_TOURNOI.masters_1000.fois(3))],
   ]);
+  const bonus26 = (cat) => moteur.baremeBonusClassement(cat, 2026).map(fmt);
   const tableBonus = tableau(['', '1er', '2e'], [
     ['Grand Chelem', `+${bonus('grand_slam')[0]}`, `+${bonus('grand_slam')[1]}`],
     ['Masters 1000', `+${bonus('masters_1000')[0]}`, `+${bonus('masters_1000')[1]}`],
@@ -107,6 +108,7 @@ export function htmlPageRegles({ moteur }) {
       <p>Le score d’un tournoi est la somme des points de ses matchs et du pari tournoi. Il s’affiche en trois temps : <b>matchs</b>, puis <b>+ pari tournoi</b>, puis <b>+ bonus de classement = score final</b>.</p>
       <p>À la clôture, les deux premiers du tournoi touchent un bonus :</p>
       ${tableBonus}
+      <p class="small"><b>Saison 2026 uniquement :</b> le bonus de la 2ᵉ place est relevé à <b>+${echapper(bonus26('grand_slam')[1])}</b> en Grand Chelem, <b>+${echapper(bonus26('masters_1000')[1])}</b> en Masters 1000 et <b>+${echapper(bonus26('atp_finals')[1])}</b> aux ATP Finals (le bonus du 1er ne change pas). Le tableau ci-dessus s’applique aux autres saisons.</p>
       <p><b>Égalités :</b></p>
       <ul>
         <li>Deux joueurs à égalité pour une place : le bonus de la place est partagé (divisé par 2).</li>

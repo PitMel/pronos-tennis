@@ -53,3 +53,20 @@ export const BONUS_CLASSEMENT = Object.freeze({
   [GRAND_CHELEM]: Object.freeze([f(24), f(10)]),
   [ATP_FINALS]: Object.freeze([f(10), f(4)]),
 });
+
+/**
+ * 7 — barèmes particuliers d'une saison : { année: { catégorie: [1er, 2e] } }. Une saison absente de ce tableau
+ * utilise BONUS_CLASSEMENT. Saison 2026 (instruction de Pierre, 1er nov. 2026) : 2e place relevée à 12 / 6 / 5.
+ */
+export const BONUS_CLASSEMENT_PAR_ANNEE = Object.freeze({
+  2026: Object.freeze({
+    [MASTERS_1000]: Object.freeze([f(12), f(6)]),
+    [GRAND_CHELEM]: Object.freeze([f(24), f(12)]),
+    [ATP_FINALS]: Object.freeze([f(10), f(5)]),
+  }),
+});
+
+/** Barème [1er, 2e] du bonus de classement pour une catégorie et une saison (barème général si la saison n'a pas le sien). */
+export function baremeBonusClassement(categorie, annee) {
+  return BONUS_CLASSEMENT_PAR_ANNEE[annee]?.[categorie] ?? BONUS_CLASSEMENT[categorie];
+}

@@ -29,7 +29,7 @@ export function calculerCloture(d, imposes = {}) {
     }));
     const parisTournoi = Object.fromEntries(g.paris_tournoi.map((p) => [p.joueur_id, { vainqueur: texte(p.vainqueur_id), finaliste: texte(p.finaliste_id) }]));
     const r = calculerTournoi({
-      categorie: d.categorie, joueurs: g.joueurs, matchs, cloture: true, pariTournoi: { paris: parisTournoi, resultat },
+      categorie: d.categorie, annee: d.annee, joueurs: g.joueurs, matchs, cloture: true, pariTournoi: { paris: parisTournoi, resultat },
     });
     for (const j of g.joueurs) {
       resultats.push({

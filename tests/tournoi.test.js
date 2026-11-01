@@ -115,6 +115,21 @@ test('bonus de classement : barèmes Grand Chelem (24 / 10) et ATP Finals (10 / 
   egalObjet(bonusClassement(scores, MASTERS_1000), { A: 12, B: 5, C: 0 }, 'Masters 1000');
 });
 
+test('bonus de classement : saison 2026 — 2e place à 12 / 6 / 5, 1er inchangé', () => {
+  const scores = { A: 50, B: 40, C: 30 };
+  egalObjet(bonusClassement(scores, GRAND_CHELEM, 2026), { A: 24, B: 12, C: 0 }, 'Grand Chelem 2026');
+  egalObjet(bonusClassement(scores, MASTERS_1000, 2026), { A: 12, B: 6, C: 0 }, 'Masters 2026');
+  egalObjet(bonusClassement(scores, ATP_FINALS, 2026), { A: 10, B: 5, C: 0 }, 'Finals 2026');
+  egalObjet(bonusClassement({ A: 50, B: 30, C: 30 }, MASTERS_1000, 2026), { A: 12, B: 3, C: 3 }, 'seconds ex aequo 2026');
+});
+
+test('bonus de classement : les autres saisons gardent le barème général (10 / 5 / 4)', () => {
+  const scores = { A: 50, B: 40, C: 30 };
+  egalObjet(bonusClassement(scores, GRAND_CHELEM, 2027), { A: 24, B: 10, C: 0 }, 'GC 2027');
+  egalObjet(bonusClassement(scores, MASTERS_1000, 2025), { A: 12, B: 5, C: 0 }, 'Masters 2025');
+  egalObjet(bonusClassement(scores, ATP_FINALS, 2027), { A: 10, B: 4, C: 0 }, 'Finals 2027');
+});
+
 test('bonus de classement : égalités Grand Chelem et ATP Finals', () => {
   egalObjet(bonusClassement({ A: 50, B: 50, C: 30 }, GRAND_CHELEM), { A: 12, B: 12, C: 0 }, 'GC 2 premiers');
   egalObjet(bonusClassement({ A: 50, B: 30, C: 30 }, GRAND_CHELEM), { A: 24, B: 5, C: 5 }, 'GC 2 seconds');
