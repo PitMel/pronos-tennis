@@ -116,6 +116,8 @@ test('records « paris » : sniper, contradicteur, strike, bérézina, confiance
   const html = htmlPageRace(detailRace({ moteur, annee: 2026, tournois: [tournois[0]], resultats: rs, profils: trois }), { moi: 'a', stats: st });
   const ordre = ['Les amours impossibles', 'Le thermomètre de la confiance', 'Records en tournoi'].map((t) => html.indexOf(t));
   assert.ok(ordre.every((x) => x >= 0) && ordre[0] < ordre[1] && ordre[1] < ordre[2]);
+  assert.match(html, /<td><b>50&nbsp;%<\/b><small>2<\/small><\/td>/); // pourcentage en grand, nombre dessous
+  assert.equal((html.match(/<polyline /g) ?? []).length >= 3, true); // une courbe par parieur dans le thermomètre
   for (const t of ['Le sniper', 'Le contradicteur', 'Le strike', 'La bérézina']) assert.match(html, new RegExp(t));
 });
 

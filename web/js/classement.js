@@ -50,13 +50,21 @@ export function construireRace({ moteur, annee, tournois, resultats, profils }) 
   for (const p of profils) complets[p.id] = points[p.id] ?? moteur.ZERO;
   const rangs = moteur.rangs(complets);
   const trophees = tropheesParJoueur(clos, resultats, ids);
+  // saison terminée (tous ses tournois sont clos) : « Classement final », et trophées de champion et de vice-champion en tête
+  const deLAnnee = tournois.filter((t) => t.annee === annee);
+  const terminee = deLAnnee.length > 0 && deLAnnee.every((t) => t.etat === 'clos');
+  const troph = (categorie, nom) => ({ id: null, nom, categorie, date_debut: null, annee });
   const lignes = profils
     .map((p) => ({
       id: p.id, prenom: p.prenom, couleur: p.couleur ?? null, photo_url: p.photo_url ?? null, rang: rangs[p.id], points: moteur.formaterPoints(complets[p.id]),
-      trophees: trophees.get(p.id) ?? [],
+      trophees: [
+        ...(terminee && rangs[p.id] === 1 ? [troph('champion_saison', 'Champion de la saison')] : []),
+        ...(terminee && rangs[p.id] === 2 ? [troph('vice_champion_saison', 'Vice-champion de la saison')] : []),
+        ...(trophees.get(p.id) ?? []),
+      ],
     }))
     .sort((a, b) => a.rang - b.rang || a.prenom.localeCompare(b.prenom, 'fr'));
-  return { annee, tournoisClos: clos.length, lignes };
+  return { annee, tournoisClos: clos.length, terminee, lignes };
 }
 
 /** Cellule de points : texte français (virgule, vrai moins) et signe, pour la couleur. */
@@ -148,7 +156,7 @@ export function detailRace({ moteur, annee, tournois, resultats, profils }) {
     return { id: t.id, nom: t.nom, categorie: t.categorie, date_debut: t.date_debut ?? null, cellules };
   });
   colonnes.sort((a, b) => ordre.get(a.id) - ordre.get(b.id));
-  return { annee, tournoisClos: clos.length, colonnes, tournois: lignes, evolution: evolutionRace({ moteur, clos, resultats, colonnes, ids }) };
+  return { annee, tournoisClos: clos.length, terminee: race.terminee, colonnes, tournois: lignes, evolution: evolutionRace({ moteur, clos, resultats, colonnes, ids }) };
 }
 
 /**

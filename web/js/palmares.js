@@ -21,6 +21,7 @@ export function construirePalmares({ moteur, tournois, resultats, profils, joueu
     return {
       annee,
       champions: profils.length ? champions : [],
+      terminee: race.terminee,
       points: champions[0]?.points ?? null,
       tournois: clos.map((t) => {
         const lignes = resultats.filter((r) => r.tournament_id === t.id && parProfil.has(r.joueur_id));
@@ -46,7 +47,7 @@ export function htmlPalmares(palmares) {
     ${palmares.map((s) => `
     <section class="carte carte-palmares">
       <h2 class="titre-annee">Saison ${echapper(s.annee)}</h2>
-      ${s.champions.length ? `<p class="champion-race"><span>Champion${s.champions.length > 1 ? 's' : ''} de la Race</span>
+      ${s.champions.length ? `<p class="champion-race"><span>${s.terminee ? htmlTrophee('champion_saison', 'Champion de la saison', { annee: s.annee }) : ''}Champion${s.champions.length > 1 ? 's' : ''} de ${s.terminee ? 'la saison' : 'la Race'}</span>
         ${s.champions.map((c) => `<b class="nom-pastille">${htmlPastille(c, 'pastille pastille-petite')}${echapper(c.prenom)}</b>`).join(' ')}
         <small>${echapper(s.points)} pts · <a href="#/race/${encodeURIComponent(s.annee)}">détail ›</a></small></p>` : ''}
       <ul class="liste-palmares">${s.tournois.map((t) => `

@@ -26,6 +26,10 @@ const SVG_COCHE = '<svg viewBox="0 0 16 16" width="14" height="14" aria-hidden="
 /* ---------- Classement de l'année (Race) ---------- */
 const htmlTropheesRace = (l) => (l.trophees?.length ? `<span class="trophees-race">${l.trophees.map((t) => htmlTrophee(t.categorie, t.nom, t)).join('')}</span>` : '');
 
+/** Intitulé du classement de l'année : « Race 2026 » en cours de saison, « Classement final 2026 » une fois tous les tournois terminés. */
+export const intituleRace = (annee, terminee) => `${terminee ? 'Classement final' : 'Race'} ${annee}`;
+const saisonTerminee = (liste) => liste.length > 0 && liste.every((t) => t.etat === 'clos');
+
 export function htmlRace(race, { lienPalmares = false } = {}) {
   const lignes = race.lignes.map((l) => `
     <li class="ligne-race">
@@ -36,10 +40,11 @@ export function htmlRace(race, { lienPalmares = false } = {}) {
     </li>`).join('');
   const etat = race.tournoisClos === 0
     ? 'Aucun tournoi terminé pour l’instant : la Race bouge à la clôture de chaque tournoi.'
-    : `${race.tournoisClos} tournoi${race.tournoisClos > 1 ? 's' : ''} terminé${race.tournoisClos > 1 ? 's' : ''}`;
+    : race.terminee ? `Saison terminée · ${race.tournoisClos} tournoi${race.tournoisClos > 1 ? 's' : ''}`
+      : `${race.tournoisClos} tournoi${race.tournoisClos > 1 ? 's' : ''} terminé${race.tournoisClos > 1 ? 's' : ''}`;
   return `
     <section class="carte carte-race race-saison">
-      <h3>Race ${echapper(race.annee)}</h3>
+      <h3>${echapper(intituleRace(race.annee, race.terminee))}</h3>
       <p class="sous-race">${echapper(etat)}</p>
       <ol class="liste-race">${lignes}</ol>
       <a class="lien-detail" href="#/race/${encodeURIComponent(race.annee)}">Détail de la saison ›</a>
@@ -116,7 +121,7 @@ export function htmlListeTournois(tournois, { race = null, anneeCourante = null,
     <section>
       <h2 class="titre-annee titre-saison">Saison ${echapper(annee)}</h2>
       ${race && annee === anneeCourante ? htmlRace(race, { lienPalmares: anneeAffichee !== null }) : ''}
-      ${race && annee !== anneeCourante && liste.some((t) => t.etat === 'clos') ? `<p class="lien-archive"><a href="#/race/${encodeURIComponent(annee)}">Race ${echapper(annee)} : classement final ›</a></p>` : ''}
+      ${race && annee !== anneeCourante && liste.some((t) => t.etat === 'clos') ? `<p class="lien-archive"><a href="#/race/${encodeURIComponent(annee)}">${echapper(intituleRace(annee, saisonTerminee(liste)))} ›</a></p>` : ''}
       ${liste.length ? liste.map((t) => htmlCarteTournoi(t, classements.get(t.id) ?? null, joueurs, moi)).join('') : '<p class="vide">Aucun tournoi pour cette saison.</p>'}
     </section>`).join('')}`;
 }
@@ -153,7 +158,7 @@ export function htmlClassementTournoi(classement, { moi = null, tournoi = null }
 const MEDAILLES = { 1: ['🥇', '1re place'], 2: ['🥈', '2e place'], 3: ['🥉', '3e place'] };
 
 /** Graphe « Évolution » : une courbe par joueur, écart (négatif) avec le joueur en tête de la Race après chaque tournoi. */
-export function htmlEvolutionRace(evolution) {
+export function htmlEvolutionRace(evolution, { terminee = false } = {}) {
   const n = evolution.tournois.length;
   if (n === 0 || evolution.series.length === 0) return '';
   const L = 88; const R = 20; const H = 360; const haut = 16; const bas = 150; const largeur = 640;
@@ -173,15 +178,15 @@ export function htmlEvolutionRace(evolution) {
   const courbes = evolution.series.map((s) => {
     const couleur = /^#[0-9A-Fa-f]{6}$/.test(s.couleur ?? '') ? s.couleur : '#2F6CC2';
     const points = s.ecarts.map((v, i) => `${nb(X(i))},${nb(Y(v))}`).join(' ');
-    const ronds = s.ecarts.map((v, i) => `<circle cx="${nb(X(i))}" cy="${nb(Y(v))}" r="4" fill="${couleur}"><title>${echapper(s.prenom)} · ${echapper(evolution.tournois[i].nom)} : ${v === 0 ? 'en tête de la Race' : `${texte(v)} point${v < -1 ? 's' : ''} sur le premier`}</title></circle>`).join('');
+    const ronds = s.ecarts.map((v, i) => `<circle cx="${nb(X(i))}" cy="${nb(Y(v))}" r="4" fill="${couleur}"><title>${echapper(s.prenom)} · ${echapper(evolution.tournois[i].nom)} : ${v === 0 ? (terminee ? 'en tête du classement final' : 'en tête de la Race') : `${texte(v)} point${v < -1 ? 's' : ''} sur le premier`}</title></circle>`).join('');
     return `<g class="evo-courbe">${n > 1 ? `<polyline points="${points}" fill="none" stroke="${couleur}" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>` : ''}${ronds}</g>`;
   }).join('');
   const legende = evolution.series.map((s) => `<li>${htmlPastille(s, 'pastille pastille-petite')}<span>${echapper(s.prenom)}</span></li>`).join('');
   return `
     <section class="carte carte-evolution">
       <h3>Évolution</h3>
-      <p class="small">Retard de chaque joueur, en points, sur le premier de la Race après chaque tournoi (0 = en tête).</p>
-      <svg class="evo-svg" viewBox="0 0 ${largeur} ${H}" role="img" aria-label="Évolution de la Race ${echapper(evolution.tournois.length)} tournoi${n > 1 ? 's' : ''}">
+      <p class="small">Retard de chaque joueur, en points, sur le premier ${terminee ? 'du classement final' : 'de la Race'} après chaque tournoi (0 = en tête).</p>
+      <svg class="evo-svg" viewBox="0 0 ${largeur} ${H}" role="img" aria-label="Évolution ${terminee ? 'du classement final' : 'de la Race'} ${echapper(evolution.tournois.length)} tournoi${n > 1 ? 's' : ''}">
         ${grille}${etiquettes}${courbes}
       </svg>
       <ul class="evo-legende">${legende}</ul>
@@ -241,18 +246,47 @@ function htmlBerezina(b) {
   return `${lienTournoi(b.tournoi)} · ${echapper(b.tour)}<br><b>${echapper(b.vainqueur)}</b> bat ${echapper(b.perdant)}${b.score ? ` · ${echapper(b.score)}` : ''}<br><small>Total des parieurs : <span class="${b.total.startsWith('−') ? 'neg' : ''}">${echapper(b.total)}</span></small><ul class="detail-berezina">${lignes}</ul>`;
 }
 
-/** Section « Le thermomètre de la confiance » : pour chaque parieur, nombre de paris (et part) à 6, 7, 8, 9 et 10. */
+/** Courbes de la confiance : abscisse = valeur du pari (6 à 10), ordonnée = part des paris du parieur (%), une courbe par parieur. */
+function htmlCourbesConfiance(confiances) {
+  const W = 640; const H = 300; const L = 52; const R = 24; const haut = 16; const bas = 46;
+  const plusGrand = Math.max(0, ...confiances.flatMap((c) => c.repartition.map((r) => r.pourcentage)));
+  const pas = plusGrand <= 20 ? 5 : plusGrand <= 50 ? 10 : 20;
+  const ymax = Math.max(pas, Math.ceil(plusGrand / pas) * pas);
+  const X = (i) => L + ((W - L - R) * i) / 4;
+  const Y = (v) => haut + (H - haut - bas) * (1 - v / ymax);
+  const nb = (x) => Math.round(x * 10) / 10;
+  const grille = [];
+  for (let v = 0; v <= ymax; v += pas) grille.push(`<line class="evo-grille" x1="${L}" x2="${W - R}" y1="${nb(Y(v))}" y2="${nb(Y(v))}"/><text class="evo-axe" x="${L - 6}" y="${nb(Y(v) + 4)}" text-anchor="end">${v} %</text>`);
+  const abscisses = [6, 7, 8, 9, 10].map((v, i) => `<text class="evo-axe" x="${nb(X(i))}" y="${H - bas + 20}" text-anchor="middle">${v}</text>`).join('');
+  const courbes = confiances.map((c) => {
+    const couleur = /^#[0-9A-Fa-f]{6}$/.test(c.couleur ?? '') ? c.couleur : '#2F6CC2';
+    const points = c.repartition.map((r, i) => `${nb(X(i))},${nb(Y(r.pourcentage))}`).join(' ');
+    const ronds = c.repartition.map((r, i) => `<circle cx="${nb(X(i))}" cy="${nb(Y(r.pourcentage))}" r="4" fill="${couleur}"><title>${echapper(c.prenom)} · pari à ${r.confiance} : ${echapper(r.n)} fois (${echapper(r.pourcentage)} %)</title></circle>`).join('');
+    return `<g class="evo-courbe"><polyline points="${points}" fill="none" stroke="${couleur}" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>${ronds}</g>`;
+  }).join('');
+  const legende = confiances.map((c) => `<li>${htmlPastille(c, 'pastille pastille-petite')}<span>${echapper(c.prenom)}</span></li>`).join('');
+  return `
+      <svg class="evo-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="Part des paris à chaque niveau de confiance, une courbe par parieur">
+        ${grille.join('')}${abscisses}
+        <text class="evo-axe" x="${nb((L + W - R) / 2)}" y="${H - 6}" text-anchor="middle">Valeur du pari</text>
+        ${courbes}
+      </svg>
+      <ul class="evo-legende">${legende}</ul>`;
+}
+
+/** Section « Le thermomètre de la confiance » : pour chaque parieur, part des paris (en grand) et nombre (en petit) à 6, 7, 8, 9 et 10, puis courbes. */
 function htmlConfiances(confiances, moi) {
   if (!confiances?.length || confiances.every((c) => c.total === 0)) return '';
   const lignes = [...confiances.filter((c) => c.id === moi), ...confiances.filter((c) => c.id !== moi)];
   return `
     <section class="carte carte-stats carte-confiances">
       <h3><span class="icone-section" aria-hidden="true">🌡️</span>Le thermomètre de la confiance</h3>
-      <p class="small">Nombre de paris de match à chaque niveau de confiance (entre parenthèses : part de tous les paris du parieur).</p>
+      <p class="small">Part des paris de match à chaque niveau de confiance (en dessous : nombre de paris).</p>
       <div class="tableau-defilant"><table class="detail-points table-confiances">
         <thead><tr><th></th>${[6, 7, 8, 9, 10].map((c) => `<th scope="col">${c}</th>`).join('')}</tr></thead>
-        <tbody>${lignes.map((c) => `<tr class="${c.id === moi ? 'isme' : ''}"><th scope="row" class="col-nom">${htmlPastille(c, 'pastille pastille-petite')}<span>${echapper(c.prenom)}</span></th>${c.repartition.map((r) => `<td><b>${echapper(r.n)}</b><small>${echapper(r.pourcentage)}&nbsp;%</small></td>`).join('')}</tr>`).join('')}</tbody>
+        <tbody>${lignes.map((c) => `<tr class="${c.id === moi ? 'isme' : ''}"><th scope="row" class="col-nom">${htmlPastille(c, 'pastille pastille-petite')}<span>${echapper(c.prenom)}</span></th>${c.repartition.map((r) => `<td><b>${echapper(r.pourcentage)}&nbsp;%</b><small>${echapper(r.n)}</small></td>`).join('')}</tr>`).join('')}</tbody>
       </table></div>
+      ${htmlCourbesConfiance(lignes)}
     </section>`;
 }
 
@@ -330,7 +364,7 @@ export function htmlPageRace(detail, { moi = null, stats = null } = {}) {
   return `
     <section class="hero hero-race">
       <a class="retour retour-clair" href="#/saison">← Saison ${echapper(detail.annee)}</a>
-      <h2 class="hero-titre">Race ${echapper(detail.annee)}</h2>
+      <h2 class="hero-titre">${echapper(intituleRace(detail.annee, detail.terminee))}</h2>
       <p class="hero-details">${detail.tournoisClos === 0 ? 'Aucun tournoi terminé pour l’instant.' : `Somme des scores finaux de ${detail.tournoisClos} tournoi${detail.tournoisClos > 1 ? 's' : ''} terminé${detail.tournoisClos > 1 ? 's' : ''}.`}</p>
     </section>
     <section class="carte carte-race race-saison"><h3>Classement</h3><ol class="liste-race">${classement}</ol></section>
@@ -341,11 +375,11 @@ export function htmlPageRace(detail, { moi = null, stats = null } = {}) {
       <div class="tableau-defilant"><table class="detail-race">
         <thead><tr><th></th>${entetes}</tr></thead>
         <tbody>${lignes}</tbody>
-        <tfoot><tr><th scope="row">Total Race ${echapper(detail.annee)}</th>${total}</tr></tfoot>
+        <tfoot><tr><th scope="row">${detail.terminee ? 'Total du classement final' : 'Total Race'} ${echapper(detail.annee)}</th>${total}</tr></tfoot>
       </table></div>
       <p class="small">Score final de chaque tournoi (après pari tournoi et bonus de classement), précédé d’une médaille pour les trois premières places ; le score du vainqueur est encadré.</p>
     </section>
-    ${htmlEvolutionRace(detail.evolution)}
+    ${htmlEvolutionRace(detail.evolution, { terminee: detail.terminee })}
     ${htmlStatsRace(stats, moi)}`}`;
 }
 

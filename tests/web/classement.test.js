@@ -161,11 +161,12 @@ test('vues : page Race (classement, détail par tournoi, total, vert pour le mei
   const ts = [{ id: 1, annee: 2026, nom: 'Miami <b>', categorie: 'masters_1000', etat: 'clos', date_debut: '2026-03-18' }];
   const rs = [{ tournament_id: 1, joueur_id: 'a', score_final: '20' }, { tournament_id: 1, joueur_id: 'p', score_final: '-4' }];
   const html = htmlPageRace(detailRace({ moteur, annee: 2026, tournois: ts, resultats: rs, profils }), { moi: 'p' });
-  assert.match(html, /Race 2026/);
+  assert.match(html, /Classement final 2026/); // tous les tournois de la saison sont terminés
+  assert.doesNotMatch(html, /Race 2026/);
   assert.match(html, /Somme des scores finaux de 1 tournoi terminé\./);
   assert.match(html, /<td class="gagnant"><span class="cellule-score"><span class="medaille" role="img" aria-label="1re place">🥇<\/span><span class="cadre-gagnant">20<\/span><\/span><\/td>/);
   assert.match(html, /<td class="neg"><span class="cellule-score"><span class="medaille" role="img" aria-label="2e place">🥈<\/span>−4<\/span><\/td>/);
-  assert.match(html, /Total Race 2026/);
+  assert.match(html, /Total du classement final 2026/);
   assert.match(html, /Miami &lt;b&gt;/);
   assert.match(html, /<a class="nom-tournoi" href="#\/tournoi\/1">/);
   assert.doesNotMatch(html, /Miami <b>/);
@@ -228,7 +229,7 @@ test('vues : trophée différent par catégorie ; saison avec vainqueur du group
   assert.match(html, /palmares-groupe[\s\S]*<b>André<\/b> · 20/);
   assert.match(html, /Paul <b class="neg">−4<\/b>/);
   assert.match(html, /href="#\/race\/2026">Détail de la saison/);
-  assert.match(html, /href="#\/race\/2025">Race 2025 : classement final/);
+  assert.match(html, /href="#\/race\/2025">Classement final 2025 ›/);
 });
 
 test('vues : la page tournoi affiche le classement du tournoi quand il est fourni', () => {
@@ -365,4 +366,31 @@ test('saison : « | Moi · score » après le vainqueur des pronos, sauf si je s
   assert.match(h('a'), /<b>Paul<\/b> · 124<\/span><span class="sep-moi"[^>]*>\|<\/span><span><b>Moi<\/b> · 96,75<\/span>/);
   assert.doesNotMatch(h('p'), /Moi/);
   assert.doesNotMatch(h(null), /Moi/);
+});
+
+test('saison terminée : « Classement final », trophées Champion et Vice-champion de la saison en tête des trophées', () => {
+  const ts = [
+    { id: 1, annee: 2026, nom: 'Roland-Garros', categorie: 'grand_slam', etat: 'clos', date_debut: '2026-05-24' },
+    { id: 2, annee: 2026, nom: 'Miami Open', categorie: 'masters_1000', etat: 'clos', date_debut: '2026-03-18' },
+  ];
+  const rs = [
+    { tournament_id: 1, joueur_id: 'a', score_final: '30', rang: 1 }, { tournament_id: 1, joueur_id: 'p', score_final: '20', rang: 2 }, { tournament_id: 1, joueur_id: 'j', score_final: '5', rang: 3 },
+    { tournament_id: 2, joueur_id: 'a', score_final: '10', rang: 2 }, { tournament_id: 2, joueur_id: 'p', score_final: '12', rang: 1 }, { tournament_id: 2, joueur_id: 'j', score_final: '1', rang: 3 },
+  ];
+  const race = construireRace({ moteur, annee: 2026, tournois: ts, resultats: rs, profils });
+  assert.equal(race.terminee, true);
+  const [premier, deuxieme, troisieme] = race.lignes;
+  assert.deepEqual(premier.trophees.map((t) => t.categorie), ['champion_saison', 'grand_slam']); // le champion d'abord, puis le Grand Chelem
+  assert.deepEqual(deuxieme.trophees.map((t) => t.categorie), ['vice_champion_saison', 'masters_1000']);
+  assert.deepEqual(troisieme.trophees, []);
+  const html = htmlRace(race);
+  assert.match(html, /<h3>Classement final 2026<\/h3>/);
+  assert.match(html, /aria-label="Trophée : Champion de la saison 2026"[^>]*data-nom="Champion de la saison 2026"/);
+  assert.match(html, /aria-label="Trophée : Vice-champion de la saison 2026"/);
+  assert.notEqual(cleTrophee('champion_saison', 'Champion de la saison'), cleTrophee('vice_champion_saison', 'Vice-champion de la saison'));
+  // un tournoi pas encore terminé : on reste à « Race » et aucun trophée de saison
+  const enCours = construireRace({ moteur, annee: 2026, tournois: [...ts, { id: 3, annee: 2026, nom: 'Paris', categorie: 'masters_1000', etat: 'en_cours' }], resultats: rs, profils });
+  assert.equal(enCours.terminee, false);
+  assert.match(htmlRace(enCours), /<h3>Race 2026<\/h3>/);
+  assert.ok(enCours.lignes.every((l) => !l.trophees.some((t) => /champion/.test(t.categorie))));
 });
