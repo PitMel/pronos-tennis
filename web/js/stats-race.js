@@ -248,12 +248,22 @@ export function statsRace({ moteur, annee, tournois, resultats, profils, matchs,
     }
   }
   const formeStrike = (c) => ({ prenom: c.prenom, tournoi: infoTournoi(c.t), ok: c.ok, sur: c.sur, pourcentage: pct(c.ok, c.sur) });
-  const meilleurStrike = [...bonsParTournoi].sort((a, b) => b.ok - a.ok || b.ok * a.sur - a.ok * b.sur || parDate(a.t, b.t) || cmp(a.prenom, b.prenom))[0];
-  const strike = meilleurStrike && meilleurStrike.ok > 0 ? {
-    ...formeStrike(meilleurStrike),
-    autres: profils.filter((x) => x.id !== meilleurStrike.id).map((x) => bonsParTournoi.filter((c) => c.id === x.id)
-      .sort((a, b) => b.ok * a.sur - a.ok * b.sur || b.ok - a.ok || parDate(a.t, b.t))[0]).filter(Boolean).map(formeStrike),
-  } : null;
+  const memeScore = (a, b) => a.ok === b.ok && a.ok * b.sur === b.ok * a.sur;
+  const classe = [...bonsParTournoi].sort((a, b) => b.ok - a.ok || b.ok * a.sur - a.ok * b.sur || parDate(a.t, b.t) || cmp(a.prenom, b.prenom));
+  let strike = null;
+  if (classe.length && classe[0].ok > 0) {
+    // tous les (parieur, tournoi) à égalité parfaite avec le meilleur sont mis en avant
+    const tops = classe.filter((c) => memeScore(c, classe[0]));
+    const idsTops = new Set(tops.map((c) => c.id));
+    const autres = profils.filter((x) => !idsTops.has(x.id)).map((x) => {
+      const siens = bonsParTournoi.filter((c) => c.id === x.id)
+        .sort((a, b) => b.ok * a.sur - a.ok * b.sur || b.ok - a.ok || parDate(a.t, b.t));
+      if (siens.length === 0) return null;
+      const egaux = siens.filter((c) => memeScore(c, siens[0]));
+      return { prenom: x.prenom, ok: siens[0].ok, sur: siens[0].sur, pourcentage: pct(siens[0].ok, siens[0].sur), tournois: egaux.map((c) => infoTournoi(c.t)) };
+    }).filter(Boolean);
+    strike = { tops: tops.map(formeStrike), autres };
+  }
 
   // La bérézina : le match où le total des points des parieurs est le plus bas (au moins deux paris)
   let berezina = null;

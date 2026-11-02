@@ -103,8 +103,8 @@ test('records « paris » : sniper, contradicteur, strike, bérézina, confiance
   // contradicteur : Jacques seul contre tous aux matchs 1 et 2, raison une fois (match 2)
   assert.deepEqual([r.contradicteur.prenom, r.contradicteur.bons, r.contradicteur.solo], ['Jacques', 1, 2]);
   // strike : André a trouvé 3 vainqueurs sur les 4 matchs du tournoi
-  assert.deepEqual([r.strike.prenom, r.strike.ok, r.strike.sur, r.strike.pourcentage, r.strike.tournoi.nom], ['André', 3, 4, 75, 'Roland-Garros']);
-  assert.deepEqual(r.strike.autres.map((x) => [x.prenom, x.ok, x.sur, x.tournoi.nom]), [['Paul', 2, 4, 'Roland-Garros'], ['Jacques', 2, 4, 'Roland-Garros']]);
+  assert.deepEqual(r.strike.tops.map((x) => [x.prenom, x.ok, x.sur, x.pourcentage, x.tournoi.nom]), [['André', 3, 4, 75, 'Roland-Garros']]);
+  assert.deepEqual(r.strike.autres.map((x) => [x.prenom, x.ok, x.sur, x.tournois.map((t) => t.nom)]), [['Paul', 2, 4, ['Roland-Garros']], ['Jacques', 2, 4, ['Roland-Garros']]]);
   // bérézina : match 2, quart de finale ×1,5 (−25,5 −25,5 +10,5 avec le bonus de sets = −40,5), score vu du vainqueur (joueur 2)
   assert.equal(r.berezina.total, '−40,5');
   assert.deepEqual([r.berezina.tour, r.berezina.vainqueur, r.berezina.perdant, r.berezina.score], ['Quarts de finale', 'Bublik', 'Alcaraz', '6-3 6-4']);
@@ -116,4 +116,26 @@ test('records « paris » : sniper, contradicteur, strike, bérézina, confiance
   const ordre = ['Les amours impossibles', 'Le thermomètre de la confiance', 'Records en tournoi'].map((t) => html.indexOf(t));
   assert.ok(ordre.every((x) => x >= 0) && ordre[0] < ordre[1] && ordre[1] < ordre[2]);
   for (const t of ['Le sniper', 'Le contradicteur', 'Le strike', 'La bérézina']) assert.match(html, new RegExp(t));
+});
+
+test('strike : tous les ex æquo sont mis en avant (parieurs différents, ou même parieur dans plusieurs tournois)', () => {
+  const duo = [{ id: 'a', prenom: 'André', couleur: null }, { id: 'p', prenom: 'Paul', couleur: null }];
+  const ts = [
+    { id: 1, annee: 2026, nom: 'Open d’Australie', categorie: 'grand_slam', etat: 'clos', date_debut: '2026-01-18' },
+    { id: 2, annee: 2026, nom: 'Indian Wells', categorie: 'masters_1000', etat: 'clos', date_debut: '2026-03-04' },
+    { id: 3, annee: 2026, nom: 'Miami', categorie: 'masters_1000', etat: 'clos', date_debut: '2026-03-18' },
+  ];
+  const mk = (id, t) => ({ id, tournament_id: t, tour: 'R16', p1_id: 10, p2_id: 11, vainqueur: 1, sets_joues: 3, neutralise: false });
+  const ms = [mk(1, 1), mk(2, 1), mk(3, 2), mk(4, 2), mk(5, 3), mk(6, 3)];
+  const bet = (choix) => ({ choix, confiance: 6, sets: 3 });
+  const pr = new Map([
+    [1, new Map([['a', bet(1)], ['p', bet(2)]])], [2, new Map([['a', bet(1)], ['p', bet(2)]])], // Open d’Australie : André 2/2
+    [3, new Map([['a', bet(2)], ['p', bet(1)]])], [4, new Map([['a', bet(2)], ['p', bet(1)]])], // Indian Wells : Paul 2/2
+    [5, new Map([['a', bet(1)], ['p', bet(2)]])], [6, new Map([['a', bet(1)], ['p', bet(2)]])], // Miami : André 2/2 encore
+  ]);
+  const st = statsRace({ moteur, annee: 2026, tournois: ts, resultats: [], profils: duo, matchs: ms, paris: pr, parisTournoi: [], joueurs });
+  assert.deepEqual(st.records.strike.tops.map((x) => [x.prenom, x.tournoi.nom, `${x.ok}/${x.sur}`]), [['André', 'Open d’Australie', '2/2'], ['Paul', 'Indian Wells', '2/2'], ['André', 'Miami', '2/2']]);
+  assert.deepEqual(st.records.strike.autres, []); // tous les parieurs sont déjà en avant
+  const html = htmlPageRace(detailRace({ moteur, annee: 2026, tournois: ts, resultats: [], profils: duo }), { moi: 'a', stats: st });
+  assert.equal((html.match(/%\) bons vainqueurs/g) ?? []).length, 3);
 });
