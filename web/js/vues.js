@@ -232,6 +232,30 @@ function htmlSectionParParieur({ titre, icone, intro, lignes, moi, texteJoueur, 
     </section>`;
 }
 
+const taux = (x) => `${echapper(x.ok)}/${echapper(x.sur)} (${echapper(x.pourcentage)}&nbsp;%)`;
+
+function htmlBerezina(b) {
+  const lignes = b.parieurs.map((x) => (x.points === null
+    ? `<li>${echapper(x.prenom)} : n’a pas parié</li>`
+    : `<li>${echapper(x.prenom)} (${echapper(x.choix)}) : <span class="${x.negatif ? 'neg' : ''}">${echapper(x.points)}</span></li>`)).join('');
+  return `${lienTournoi(b.tournoi)} · ${echapper(b.tour)}<br><b>${echapper(b.vainqueur)}</b> bat ${echapper(b.perdant)}${b.score ? ` · ${echapper(b.score)}` : ''}<br><small>Total des parieurs : <span class="${b.total.startsWith('−') ? 'neg' : ''}">${echapper(b.total)}</span></small><ul class="detail-berezina">${lignes}</ul>`;
+}
+
+/** Section « Le thermomètre de la confiance » : pour chaque parieur, nombre de paris (et part) à 6, 7, 8, 9 et 10. */
+function htmlConfiances(confiances, moi) {
+  if (!confiances?.length || confiances.every((c) => c.total === 0)) return '';
+  const lignes = [...confiances.filter((c) => c.id === moi), ...confiances.filter((c) => c.id !== moi)];
+  return `
+    <section class="carte carte-stats carte-confiances">
+      <h3><span class="icone-section" aria-hidden="true">🌡️</span>Le thermomètre de la confiance</h3>
+      <p class="small">Nombre de paris de match à chaque niveau de confiance (entre parenthèses : part de tous les paris du parieur).</p>
+      <div class="tableau-defilant"><table class="detail-points table-confiances">
+        <thead><tr><th></th>${[6, 7, 8, 9, 10].map((c) => `<th scope="col">${c}</th>`).join('')}</tr></thead>
+        <tbody>${lignes.map((c) => `<tr class="${c.id === moi ? 'isme' : ''}"><th scope="row" class="col-nom">${htmlPastille(c, 'pastille pastille-petite')}<span>${echapper(c.prenom)}</span></th>${c.repartition.map((r) => `<td><b>${echapper(r.n)}</b><small>${echapper(r.pourcentage)}&nbsp;%</small></td>`).join('')}</tr>`).join('')}</tbody>
+      </table></div>
+    </section>`;
+}
+
 const lienTournoi = (t) => `<a class="nom-tournoi" href="#/tournoi/${encodeURIComponent(t.id)}">${echapper(t.nom)} ${echapper(t.annee)}</a>`;
 
 function htmlRecords(r, { nbTournois = 0, nbMatchs = 0 } = {}) {
@@ -253,6 +277,10 @@ function htmlRecords(r, { nbTournois = 0, nbMatchs = 0 } = {}) {
         ${rec('Ric rac !', rr ? `${lienTournoi(rr.tournoi)} · <b>${echapper(rr.premier)}</b> devant <b>${echapper(rr.deuxieme)}</b> · ${echapper(rr.ecart)} point${rr.pluriel ? 's' : ''} d’écart` : '<em>pas encore de tournoi terminé</em>')}
         ${compte('Le grand fou', r.grandFou)}
         ${compte('Le gagne-petit', r.gagnePetit)}
+        ${rec('Le sniper', r.sniper ? `<b>${echapper(r.sniper.prenom)}</b> · ${taux(r.sniper)}${r.sniper.autres.length ? `<br><small>${r.sniper.autres.map((a) => `${echapper(a.prenom)} : ${taux(a)}`).join(' · ')}</small>` : ''}` : '<em>pas encore de match joué</em>')}
+        ${rec('Le contradicteur', r.contradicteur ? `<b>${echapper(r.contradicteur.prenom)}</b> · ${echapper(r.contradicteur.bons)} fois raison seul contre tous (sur ${echapper(r.contradicteur.solo)} paris en solitaire)${r.contradicteur.autres.length ? `<br><small>${r.contradicteur.autres.map((a) => `${echapper(a.prenom)} : ${echapper(a.bons)} sur ${echapper(a.solo)}`).join(' · ')}</small>` : ''}` : '<em>personne pour l’instant</em>')}
+        ${rec('Le strike', r.strike ? `${lienTournoi(r.strike.tournoi)} · <b>${echapper(r.strike.prenom)}</b> · ${taux(r.strike)} bons vainqueurs${r.strike.autres.length ? `<br><small>${r.strike.autres.map((a) => `${echapper(a.prenom)} : ${taux(a)} (${echapper(a.tournoi.nom)})`).join(' · ')}</small>` : ''}` : '<em>pas encore de tournoi terminé</em>')}
+        ${rec('La bérézina', r.berezina ? htmlBerezina(r.berezina) : '<em>pas encore de match concerné</em>')}
       </ul>
       <p class="small">Scores avant bonification de 1re et 2e places. « Le grand fou » : le plus de paris à 10 ; « Le gagne-petit » : le plus de paris à 6.</p>
     </section>`;
@@ -276,6 +304,7 @@ function htmlStatsRace(stats, moi) {
     intro: 'Parmi les joueurs sur lesquels le parieur a misé au moins trois fois : ceux qui l’ont le moins souvent récompensé (victoires du joueur / paris sur lui).',
     texteJoueur: (j) => `<b>${echapper(j.nom)}</b> <span class="valeur">${echapper(j.rapport)} (${echapper(j.pourcentage)}&nbsp;%)</span>`,
   })}
+    ${htmlConfiances(stats.confiances, moi)}
     ${htmlRecords(stats.records, stats)}`;
 }
 

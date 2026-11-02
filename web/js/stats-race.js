@@ -1,3 +1,5 @@
+import { formaterScore, LIBELLES_TOURS } from './tournois.js';
+
 // Statistiques de la page « Race » : détail des points, vaches à lait, chouchous, amours impossibles, records en tournoi.
 // Fonctions pures. Le moteur est passé en paramètre (comme dans classement.js). Tout porte sur les tournois TERMINÉS de l'année.
 
@@ -191,15 +193,115 @@ export function statsRace({ moteur, annee, tournois, resultats, profils, matchs,
     };
   };
 
+  // ---------- Records « paris » : sniper, contradicteur, strike, bérézina ----------
+  const pct = (n, sur) => (sur > 0 ? Math.round((100 * n) / sur) : 0);
+  const parDate = (a, b) => String(a.date_debut ?? '').localeCompare(String(b.date_debut ?? '')) || a.id - b.id;
+
+  // Le sniper : meilleur taux de bons vainqueurs sur les matchs joués
+  const tirs = new Map(profils.map((x) => [x.id, { ok: 0, sur: 0 }]));
+  for (const m of lesMatchs) {
+    if (!matchJoue(m)) continue;
+    for (const [id, bet] of parisDe(m)) {
+      if (!tirs.has(id)) continue;
+      const c = tirs.get(id);
+      c.sur += 1;
+      if (bet.choix === m.vainqueur) c.ok += 1;
+    }
+  }
+  const classeTirs = profils.map((x) => ({ id: x.id, prenom: x.prenom, ...tirs.get(x.id) })).filter((c) => c.sur > 0)
+    .sort((a, b) => b.ok * a.sur - a.ok * b.sur || b.sur - a.sur || cmp(a.prenom, b.prenom));
+  const formeTir = (c) => ({ id: c.id, prenom: c.prenom, ok: c.ok, sur: c.sur, pourcentage: pct(c.ok, c.sur) });
+  const sniper = classeTirs.length ? {
+    ...formeTir(classeTirs[0]), autres: classeTirs.slice(1).map(formeTir),
+  } : null;
+
+  // Le contradicteur : seul contre tous (au moins deux autres parieurs, tous d'un avis contraire) et raison
+  const contre = new Map(profils.map((x) => [x.id, { bons: 0, solo: 0 }]));
+  for (const m of lesMatchs) {
+    if (!matchJoue(m)) continue;
+    const bets = [...parisDe(m)].filter(([id]) => contre.has(id));
+    if (bets.length < 3) continue;
+    for (const [id, bet] of bets) {
+      if (!bets.every(([autre, b]) => autre === id || b.choix !== bet.choix)) continue;
+      contre.get(id).solo += 1;
+      if (bet.choix === m.vainqueur) contre.get(id).bons += 1;
+    }
+  }
+  const classeContre = profils.map((x) => ({ id: x.id, prenom: x.prenom, ...contre.get(x.id) }))
+    .sort((a, b) => b.bons - a.bons || a.solo - b.solo || cmp(a.prenom, b.prenom));
+  const contradicteur = classeContre.length && classeContre[0].bons > 0 ? {
+    ...classeContre[0], autres: classeContre.slice(1),
+  } : null;
+
+  // Le strike : le plus de bons vainqueurs dans un même tournoi ; pour chacun des autres, son meilleur tournoi (pro rata)
+  const joues = new Map(clos.map((t) => [t.id, lesMatchs.filter((m) => m.tournament_id === t.id && matchJoue(m)).length]));
+  const bonsParTournoi = [];
+  for (const t of clos) {
+    for (const x of profils) {
+      let ok = 0;
+      for (const m of lesMatchs) {
+        if (m.tournament_id !== t.id || !matchJoue(m)) continue;
+        const bet = parisDe(m).get(x.id);
+        if (bet && bet.choix === m.vainqueur) ok += 1;
+      }
+      if (joues.get(t.id) > 0) bonsParTournoi.push({ t, id: x.id, prenom: x.prenom, ok, sur: joues.get(t.id) });
+    }
+  }
+  const formeStrike = (c) => ({ prenom: c.prenom, tournoi: infoTournoi(c.t), ok: c.ok, sur: c.sur, pourcentage: pct(c.ok, c.sur) });
+  const meilleurStrike = [...bonsParTournoi].sort((a, b) => b.ok - a.ok || b.ok * a.sur - a.ok * b.sur || parDate(a.t, b.t) || cmp(a.prenom, b.prenom))[0];
+  const strike = meilleurStrike && meilleurStrike.ok > 0 ? {
+    ...formeStrike(meilleurStrike),
+    autres: profils.filter((x) => x.id !== meilleurStrike.id).map((x) => bonsParTournoi.filter((c) => c.id === x.id)
+      .sort((a, b) => b.ok * a.sur - a.ok * b.sur || b.ok - a.ok || parDate(a.t, b.t))[0]).filter(Boolean).map(formeStrike),
+  } : null;
+
+  // La bérézina : le match où le total des points des parieurs est le plus bas (au moins deux paris)
+  let berezina = null;
+  for (const m of lesMatchs) {
+    if (!matchJoue(m)) continue;
+    const pts = new Map();
+    for (const [id, bet] of parisDe(m)) {
+      if (!idsProfils.has(id)) continue;
+      const r = pointsDuPari(m, bet);
+      if (r) pts.set(id, r.total);
+    }
+    if (pts.size < 2) continue;
+    const total = [...pts.values()].reduce((a, b) => a.plus(b), ZERO);
+    const t = parId.get(m.tournament_id);
+    if (berezina === null || total.comparer(berezina.valeur) < 0 || (total.comparer(berezina.valeur) === 0 && parDate(t, berezina.t) < 0)) berezina = { valeur: total, t, m, pts };
+  }
+  if (berezina) {
+    const { valeur, t, m, pts } = berezina;
+    const gagnant = m.vainqueur === 1 ? m.p1_id : m.p2_id;
+    const perdant = m.vainqueur === 1 ? m.p2_id : m.p1_id;
+    berezina = {
+      tournoi: infoTournoi(t), tour: LIBELLES_TOURS[m.tour] ?? m.tour,
+      vainqueur: nomJoueur(gagnant), perdant: nomJoueur(perdant), score: formaterScore(m.score, m.fin_match, m.vainqueur),
+      total: moteur.formaterPoints(valeur, { signe: true }),
+      parieurs: profils.map((x) => (pts.has(x.id)
+        ? { prenom: x.prenom, points: moteur.formaterPoints(pts.get(x.id), { signe: true }), negatif: pts.get(x.id).comparer(ZERO) < 0, choix: nomJoueur(parisDe(m).get(x.id).choix === 1 ? m.p1_id : m.p2_id) }
+        : { prenom: x.prenom, points: null, negatif: false, choix: null })),
+    };
+  }
+
+  // ---------- Degrés de confiance ----------
+  const confiances = profils.map((x) => {
+    const nb = new Map(moteur.CONFIANCES.map((c) => [c, 0]));
+    for (const m of lesMatchs) { const b = parisDe(m).get(x.id); if (b && nb.has(b.confiance)) nb.set(b.confiance, nb.get(b.confiance) + 1); }
+    const total = [...nb.values()].reduce((a, b) => a + b, 0);
+    return { id: x.id, prenom: x.prenom, couleur: x.couleur ?? null, photo_url: x.photo_url ?? null, total, repartition: [...nb].map(([confiance, n]) => ({ confiance, n, pourcentage: pct(n, total) })) };
+  });
+
   return {
     nbTournois: clos.length, nbMatchs: lesMatchs.filter((m) => !m.neutralise).length,
-    detailPoints, vachesALait, chouchous, amoursImpossibles,
+    detailPoints, vachesALait, chouchous, amoursImpossibles, confiances,
     records: {
       grandChelem: plusGrosScore('grand_slam'),
       masters: plusGrosScore('masters_1000'),
       ricRac,
       grandFou: compterConfiance(10),
       gagnePetit: compterConfiance(6),
+      sniper, contradicteur, strike, berezina,
     },
   };
 }

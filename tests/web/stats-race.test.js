@@ -79,3 +79,41 @@ test('page Race : les sections viennent dans l’ordre demandé', () => {
   // sans statistiques (échec de chargement) : la page s'affiche quand même
   assert.doesNotMatch(htmlPageRace(d, { moi: 'p' }), /vaches à lait/);
 });
+
+test('records « paris » : sniper, contradicteur, strike, bérézina, confiance', () => {
+  const trois = [{ id: 'a', prenom: 'André', couleur: null }, { id: 'p', prenom: 'Paul', couleur: null }, { id: 'j', prenom: 'Jacques', couleur: null }];
+  const ms = [
+    { id: 1, tournament_id: 1, tour: 'R16', p1_id: 10, p2_id: 11, vainqueur: 1, sets_joues: 3, neutralise: false },
+    { id: 2, tournament_id: 1, tour: 'QF', p1_id: 10, p2_id: 11, vainqueur: 2, sets_joues: 3, score: { games: [[3, 6], [4, 6]] }, fin_match: 'normal', neutralise: false },
+    { id: 3, tournament_id: 1, tour: 'SF', p1_id: 10, p2_id: 11, vainqueur: 1, sets_joues: 3, neutralise: false },
+    { id: 4, tournament_id: 1, tour: 'F', p1_id: 10, p2_id: 11, vainqueur: 1, sets_joues: 3, neutralise: false },
+  ];
+  const pr = new Map([
+    [1, new Map([['a', { choix: 1, confiance: 10, sets: 3 }], ['p', { choix: 1, confiance: 10, sets: 3 }], ['j', { choix: 2, confiance: 6, sets: 3 }]])],
+    [2, new Map([['a', { choix: 1, confiance: 10, sets: 3 }], ['p', { choix: 1, confiance: 10, sets: 3 }], ['j', { choix: 2, confiance: 6, sets: 3 }]])],
+    [3, new Map([['a', { choix: 1, confiance: 7, sets: 3 }], ['p', { choix: 1, confiance: 7, sets: 3 }], ['j', { choix: 1, confiance: 7, sets: 3 }]])],
+    [4, new Map([['a', { choix: 1, confiance: 8, sets: 3 }]])],
+  ]);
+  const rs = trois.map((x) => ({ tournament_id: 1, joueur_id: x.id, points_matchs: '10', points_pari_tournoi: '0', bonus_classement: '0', score_final: '10', rang: 1 }));
+  const st = statsRace({ moteur, annee: 2026, tournois: [tournois[0]], resultats: rs, profils: trois, matchs: ms, paris: pr, parisTournoi: [], joueurs });
+  const r = st.records;
+  // sniper : André 3/4, Paul et Jacques 2/3
+  assert.deepEqual([r.sniper.prenom, r.sniper.ok, r.sniper.sur, r.sniper.pourcentage], ['André', 3, 4, 75]);
+  assert.deepEqual(r.sniper.autres.map((x) => [x.prenom, `${x.ok}/${x.sur}`, x.pourcentage]), [['Jacques', '2/3', 67], ['Paul', '2/3', 67]]);
+  // contradicteur : Jacques seul contre tous aux matchs 1 et 2, raison une fois (match 2)
+  assert.deepEqual([r.contradicteur.prenom, r.contradicteur.bons, r.contradicteur.solo], ['Jacques', 1, 2]);
+  // strike : André a trouvé 3 vainqueurs sur les 4 matchs du tournoi
+  assert.deepEqual([r.strike.prenom, r.strike.ok, r.strike.sur, r.strike.pourcentage, r.strike.tournoi.nom], ['André', 3, 4, 75, 'Roland-Garros']);
+  assert.deepEqual(r.strike.autres.map((x) => [x.prenom, x.ok, x.sur, x.tournoi.nom]), [['Paul', 2, 4, 'Roland-Garros'], ['Jacques', 2, 4, 'Roland-Garros']]);
+  // bérézina : match 2, quart de finale ×1,5 (−25,5 −25,5 +10,5 avec le bonus de sets = −40,5), score vu du vainqueur (joueur 2)
+  assert.equal(r.berezina.total, '−40,5');
+  assert.deepEqual([r.berezina.tour, r.berezina.vainqueur, r.berezina.perdant, r.berezina.score], ['Quarts de finale', 'Bublik', 'Alcaraz', '6-3 6-4']);
+  assert.deepEqual(r.berezina.parieurs.map((x) => [x.prenom, x.points]), [['André', '−25,5'], ['Paul', '−25,5'], ['Jacques', '+10,5']]);
+  // confiance : André a parié 10 deux fois, 7 une fois, 8 une fois
+  const a = st.confiances.find((c) => c.id === 'a');
+  assert.deepEqual(a.repartition.map((x) => [x.confiance, x.n, x.pourcentage]), [[6, 0, 0], [7, 1, 25], [8, 1, 25], [9, 0, 0], [10, 2, 50]]);
+  const html = htmlPageRace(detailRace({ moteur, annee: 2026, tournois: [tournois[0]], resultats: rs, profils: trois }), { moi: 'a', stats: st });
+  const ordre = ['Les amours impossibles', 'Le thermomètre de la confiance', 'Records en tournoi'].map((t) => html.indexOf(t));
+  assert.ok(ordre.every((x) => x >= 0) && ordre[0] < ordre[1] && ordre[1] < ordre[2]);
+  for (const t of ['Le sniper', 'Le contradicteur', 'Le strike', 'La bérézina']) assert.match(html, new RegExp(t));
+});
