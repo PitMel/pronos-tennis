@@ -121,7 +121,7 @@ export function htmlListeTournois(tournois, { race = null, anneeCourante = null,
     <section>
       <h2 class="titre-annee titre-saison">Saison ${echapper(annee)}</h2>
       ${race && annee === anneeCourante ? htmlRace(race, { lienPalmares: anneeAffichee !== null }) : ''}
-      ${race && annee !== anneeCourante && liste.some((t) => t.etat === 'clos') ? `<p class="lien-archive"><a href="#/race/${encodeURIComponent(annee)}">${echapper(intituleRace(annee, saisonTerminee(liste)))} ›</a></p>` : ''}
+      ${race && annee !== anneeCourante && liste.some((t) => t.etat === 'clos') ? `<p class="lien-archive"><a href="#/race/${encodeURIComponent(annee)}">Détail de la saison ${echapper(annee)} ›</a></p>` : ''}
       ${liste.length ? liste.map((t) => htmlCarteTournoi(t, classements.get(t.id) ?? null, joueurs, moi)).join('') : '<p class="vide">Aucun tournoi pour cette saison.</p>'}
     </section>`).join('')}`;
 }
@@ -247,7 +247,7 @@ function htmlBerezina(b) {
 }
 
 /** Courbes de la confiance : abscisse = valeur du pari (6 à 10), ordonnée = part des paris du parieur (%), une courbe par parieur. */
-function htmlCourbesConfiance(confiances) {
+export function htmlCourbesConfiance(confiances) {
   const W = 640; const H = 300; const L = 52; const R = 24; const haut = 16; const bas = 46;
   const plusGrand = Math.max(0, ...confiances.flatMap((c) => c.repartition.map((r) => r.pourcentage)));
   const pas = plusGrand <= 20 ? 5 : plusGrand <= 50 ? 10 : 20;
@@ -264,7 +264,9 @@ function htmlCourbesConfiance(confiances) {
     const ronds = c.repartition.map((r, i) => `<circle cx="${nb(X(i))}" cy="${nb(Y(r.pourcentage))}" r="4" fill="${couleur}"><title>${echapper(c.prenom)} · pari à ${r.confiance} : ${echapper(r.n)} fois (${echapper(r.pourcentage)} %)</title></circle>`).join('');
     return `<g class="evo-courbe"><polyline points="${points}" fill="none" stroke="${couleur}" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>${ronds}</g>`;
   }).join('');
-  const legende = confiances.map((c) => `<li>${htmlPastille(c, 'pastille pastille-petite')}<span>${echapper(c.prenom)}</span></li>`).join('');
+  const legende = confiances.map((c) => (c.sansPastille
+    ? `<li><i class="pt-legende" style="background:${/^#[0-9A-Fa-f]{6}$/.test(c.couleur ?? '') ? c.couleur : '#2F6CC2'}"></i><span>${echapper(c.prenom)}</span></li>`
+    : `<li>${htmlPastille(c, 'pastille pastille-petite')}<span>${echapper(c.prenom)}</span></li>`)).join('');
   return `
       <svg class="evo-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="Part des paris à chaque niveau de confiance, une courbe par parieur">
         ${grille.join('')}${abscisses}
@@ -292,27 +294,42 @@ function htmlConfiances(confiances, moi) {
 
 const lienTournoi = (t) => `<a class="nom-tournoi" href="#/tournoi/${encodeURIComponent(t.id)}">${echapper(t.nom)} ${echapper(t.annee)}</a>`;
 
-function htmlRecords(r, { nbTournois = 0, nbMatchs = 0 } = {}) {
+const recordLi = (titre, contenu, explication) => `<li class="record"><b>${echapper(titre)}</b><span>${contenu}</span><small class="explication">${echapper(explication)}</small></li>`;
+
+/** Section « Autres récompenses » : les récompenses « de parieur » (Biggest win, grand fou, gagne-petit, sniper, contradicteur). */
+function htmlAutresRecompenses(r) {
   if (!r) return '';
-  const rec = (titre, contenu, explication) => `<li class="record"><b>${echapper(titre)}</b><span>${contenu}</span><small class="explication">${echapper(explication)}</small></li>`;
+  const rec = recordLi;
   const gros = (titre, liste, explication) => rec(titre, liste?.length
     ? liste.map((x) => `${lienTournoi(x.tournoi)} · <b>${echapper(x.parieur)}</b> · ${echapper(x.score)} points`).join('<br>') : '<em>pas encore de tournoi terminé</em>', explication);
   const compte = (titre, x, explication) => rec(titre, x
     ? `${x.noms.map((n) => `<b>${echapper(n)}</b> · ${echapper(x.nombre)} fois`).join('<br>')}${x.autres.length ? `<br><small>${x.autres.map((a) => `${echapper(a.prenom)} : ${echapper(a.nombre)}`).join(' · ')}</small>` : ''}`
     : '<em>personne pour l’instant</em>', explication);
-  const rr = r.ricRac;
   return `
-    <section class="carte carte-stats carte-records">
-      <h3><span class="icone-section" aria-hidden="true">🏆</span>Records en tournoi</h3>
-      <p class="small">${echapper(nbTournois)} tournoi${nbTournois > 1 ? 's' : ''} passé${nbTournois > 1 ? 's' : ''} · ${echapper(nbMatchs)} match${nbMatchs > 1 ? 's' : ''}</p>
+    <section class="carte carte-stats carte-records carte-autres-recompenses">
+      <h3><span class="icone-section" aria-hidden="true">🏅</span>Autres récompenses</h3>
       <ul class="liste-records">
         ${gros('Biggest win – Grand Chelem', r.grandChelem, 'Meilleur score d’un parieur dans un tournoi du Grand Chelem, avant bonification de 1re et 2e places.')}
         ${gros('Biggest win – Master 1000', r.masters, 'Meilleur score d’un parieur dans un Masters 1000, avant bonification de 1re et 2e places.')}
-        ${rec('Ric rac !', rr?.length ? rr.map((x) => `${lienTournoi(x.tournoi)} · <b>${echapper(x.premier)}</b> devant <b>${echapper(x.deuxieme)}</b> · ${echapper(x.ecart)} point${x.pluriel ? 's' : ''} d’écart`).join('<br>') : '<em>pas encore de tournoi terminé</em>', 'Tournoi où l’écart entre le 1er et le 2e est le plus faible, avant bonification.')}
         ${compte('Le grand fou', r.grandFou, 'Parieur qui a le plus souvent misé avec une confiance de 10 ; les autres chiffres sont ceux des autres parieurs.')}
         ${compte('Le gagne-petit', r.gagnePetit, 'Parieur qui a le plus souvent misé avec une confiance de 6 ; les autres chiffres sont ceux des autres parieurs.')}
         ${rec('Le sniper', r.sniper ? `${r.sniper.tops.map((x) => `<b>${echapper(x.prenom)}</b> · ${taux(x)}`).join('<br>')}${r.sniper.autres.length ? `<br><small>${r.sniper.autres.map((a) => `${echapper(a.prenom)} : ${taux(a)}`).join(' · ')}</small>` : ''}` : '<em>pas encore de match joué</em>', 'Meilleur taux de bons vainqueurs sur tous les matchs joués (bons vainqueurs / paris) ; dessous, le taux des autres parieurs.')}
         ${rec('Le contradicteur', r.contradicteur ? `${r.contradicteur.tops.map((x) => `<b>${echapper(x.prenom)}</b> · ${echapper(x.bons)} fois raison seul contre tous (sur ${echapper(x.solo)} paris en solitaire)`).join('<br>')}${r.contradicteur.autres.length ? `<br><small>${r.contradicteur.autres.map((a) => `${echapper(a.prenom)} : ${echapper(a.bons)} sur ${echapper(a.solo)}`).join(' · ')}</small>` : ''}` : '<em>personne pour l’instant</em>', 'Nombre de fois où le parieur était seul contre tous (au moins deux autres parieurs, tous sur l’autre joueur) et avait raison ; dessous, le même compteur pour les autres parieurs.')}
+      </ul>
+    </section>`;
+}
+
+/** Section « Faits de l'année » : Ric rac, strike, bérézina. */
+function htmlRecords(r, { nbTournois = 0, nbMatchs = 0 } = {}) {
+  if (!r) return '';
+  const rec = recordLi;
+  const rr = r.ricRac;
+  return `
+    <section class="carte carte-stats carte-records">
+      <h3><span class="icone-section" aria-hidden="true">📅</span>Faits de l’année</h3>
+      <p class="small">${echapper(nbTournois)} tournoi${nbTournois > 1 ? 's' : ''} passé${nbTournois > 1 ? 's' : ''} · ${echapper(nbMatchs)} match${nbMatchs > 1 ? 's' : ''}</p>
+      <ul class="liste-records">
+        ${rec('Ric rac !', rr?.length ? rr.map((x) => `${lienTournoi(x.tournoi)} · <b>${echapper(x.premier)}</b> devant <b>${echapper(x.deuxieme)}</b> · ${echapper(x.ecart)} point${x.pluriel ? 's' : ''} d’écart`).join('<br>') : '<em>pas encore de tournoi terminé</em>', 'Tournoi où l’écart entre le 1er et le 2e est le plus faible, avant bonification.')}
         ${rec('Le strike', r.strike ? `${r.strike.tops.map((x) => `${lienTournoi(x.tournoi)} · <b>${echapper(x.prenom)}</b> · ${taux(x)} bons vainqueurs`).join('<br>')}${r.strike.autres.length ? `<br><small>${r.strike.autres.map((a) => `${echapper(a.prenom)} : ${taux(a)} (${a.tournois.map((t) => echapper(t.nom)).join(', ')})`).join(' · ')}</small>` : ''}` : '<em>pas encore de tournoi terminé</em>', 'Plus grand nombre de bons vainqueurs dans un même tournoi, sur les matchs joués de ce tournoi (tous les ex æquo sont affichés) ; dessous, le meilleur tournoi de chaque autre parieur.')}
         ${rec('La bérézina', r.berezina?.length ? r.berezina.map(htmlBerezina).join('<hr class="sep-record">') : '<em>pas encore de match concerné</em>', 'Match où le total des points gagnés ou perdus par les parieurs est le plus bas (au moins deux paris).')}
       </ul>
@@ -364,11 +381,11 @@ export function htmlPageRace(detail, { moi = null, stats = null } = {}) {
   return `
     <section class="hero hero-race">
       <a class="retour retour-clair" href="#/saison">← Saison ${echapper(detail.annee)}</a>
-      <h2 class="hero-titre">${echapper(intituleRace(detail.annee, detail.terminee))}</h2>
+      <h2 class="hero-titre">Détail de la saison ${echapper(detail.annee)}</h2>
       <p class="hero-details">${detail.tournoisClos === 0 ? 'Aucun tournoi terminé pour l’instant.' : `Somme des scores finaux de ${detail.tournoisClos} tournoi${detail.tournoisClos > 1 ? 's' : ''} terminé${detail.tournoisClos > 1 ? 's' : ''}.`}</p>
     </section>
     <section class="carte carte-race race-saison"><h3>Classement</h3><ol class="liste-race">${classement}</ol></section>
-    ${detail.tournoisClos === 0 ? '' : htmlDetailPoints(stats?.detailPoints, moi)}
+    ${detail.tournoisClos === 0 ? '' : `${htmlAutresRecompenses(stats?.records)}${htmlDetailPoints(stats?.detailPoints, moi)}`}
     ${detail.tournoisClos === 0 ? '<p class="vide">La Race bouge à la clôture de chaque tournoi.</p>' : `
     <section class="carte carte-detail-race">
       <h3>Détail par tournoi</h3>

@@ -64,7 +64,7 @@ test('records : plus gros score avant bonification, ric rac, grand fou, gagne-pe
 test('page Race : les sections viennent dans l’ordre demandé', () => {
   const d = detailRace({ moteur, annee: 2026, tournois, resultats, profils });
   const html = htmlPageRace(d, { moi: 'p', stats: calculer() });
-  const ordre = ['<h3>Classement</h3>', '<h3>Détail des points</h3>', '<h3>Détail par tournoi</h3>', '<h3>Évolution</h3>', 'Les vaches à lait', 'Les chouchous', 'Les amours impossibles', 'Records en tournoi'];
+  const ordre = ['<h3>Classement</h3>', 'Autres récompenses', '<h3>Détail des points</h3>', '<h3>Détail par tournoi</h3>', '<h3>Évolution</h3>', 'Les vaches à lait', 'Les chouchous', 'Les amours impossibles', 'Faits de l’année'];
   const positions = ordre.map((t) => html.indexOf(t));
   assert.ok(positions.every((x) => x >= 0), `section manquante : ${positions}`);
   assert.deepEqual([...positions].sort((x, y) => x - y), positions);
@@ -114,7 +114,7 @@ test('records « paris » : sniper, contradicteur, strike, bérézina, confiance
   const a = st.confiances.find((c) => c.id === 'a');
   assert.deepEqual(a.repartition.map((x) => [x.confiance, x.n, x.pourcentage]), [[6, 0, 0], [7, 1, 25], [8, 1, 25], [9, 0, 0], [10, 2, 50]]);
   const html = htmlPageRace(detailRace({ moteur, annee: 2026, tournois: [tournois[0]], resultats: rs, profils: trois }), { moi: 'a', stats: st });
-  const ordre = ['Les amours impossibles', 'Le thermomètre de la confiance', 'Records en tournoi'].map((t) => html.indexOf(t));
+  const ordre = ['Les amours impossibles', 'Le thermomètre de la confiance', 'Faits de l’année'].map((t) => html.indexOf(t));
   assert.ok(ordre.every((x) => x >= 0) && ordre[0] < ordre[1] && ordre[1] < ordre[2]);
   assert.match(html, /<td><b>50&nbsp;%<\/b><small>2<\/small><\/td>/); // pourcentage en grand, nombre dessous
   assert.equal((html.match(/<polyline /g) ?? []).length >= 3, true); // une courbe par parieur dans le thermomètre

@@ -161,8 +161,7 @@ test('vues : page Race (classement, détail par tournoi, total, vert pour le mei
   const ts = [{ id: 1, annee: 2026, nom: 'Miami <b>', categorie: 'masters_1000', etat: 'clos', date_debut: '2026-03-18' }];
   const rs = [{ tournament_id: 1, joueur_id: 'a', score_final: '20' }, { tournament_id: 1, joueur_id: 'p', score_final: '-4' }];
   const html = htmlPageRace(detailRace({ moteur, annee: 2026, tournois: ts, resultats: rs, profils }), { moi: 'p' });
-  assert.match(html, /Classement final 2026/); // tous les tournois de la saison sont terminés
-  assert.doesNotMatch(html, /Race 2026/);
+  assert.match(html, /<h2 class="hero-titre">Détail de la saison 2026<\/h2>/);
   assert.match(html, /Somme des scores finaux de 1 tournoi terminé\./);
   assert.match(html, /<td class="gagnant"><span class="cellule-score"><span class="medaille" role="img" aria-label="1re place">🥇<\/span><span class="cadre-gagnant">20<\/span><\/span><\/td>/);
   assert.match(html, /<td class="neg"><span class="cellule-score"><span class="medaille" role="img" aria-label="2e place">🥈<\/span>−4<\/span><\/td>/);
@@ -229,7 +228,7 @@ test('vues : trophée différent par catégorie ; saison avec vainqueur du group
   assert.match(html, /palmares-groupe[\s\S]*<b>André<\/b> · 20/);
   assert.match(html, /Paul <b class="neg">−4<\/b>/);
   assert.match(html, /href="#\/race\/2026">Détail de la saison/);
-  assert.match(html, /href="#\/race\/2025">Classement final 2025 ›/);
+  assert.match(html, /href="#\/race\/2025">Détail de la saison 2025 ›/);
 });
 
 test('vues : la page tournoi affiche le classement du tournoi quand il est fourni', () => {

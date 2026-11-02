@@ -580,3 +580,32 @@ svg.filet[data-edition="1"] { cursor: pointer; }
 .detail-berezina .neg { color: var(--erreur); font-weight: 700; }
 .record small.explication { color: var(--gris); font-size: .78rem; font-style: italic; margin-top: 2px; }
 .sep-record { border: 0; border-top: 1px dashed #C9D3C9; margin: 8px 0; }
+.pt-legende { display: inline-block; width: 14px; height: 14px; border-radius: 50%; }
+
+/* ---------- Onglet Palmarès (personnel) ---------- */
+.carte-armoire h3, .carte-parcours h3 { margin: 0 0 6px; font-size: 1.1rem; color: var(--vert-fonce); }
+.rangee-armoire { padding: 10px 0; border-top: 1px solid #E3E9E3; }
+.rangee-armoire:first-of-type { border-top: 0; }
+.rangee-armoire h4 { margin: 0 0 8px; font-size: .95rem; color: var(--vert-fonce); }
+.etagere { display: flex; flex-wrap: wrap; gap: 12px 14px; align-items: flex-end; }
+.trophee-grand { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 2px; width: 82px; text-align: center; }
+.trophee-grand .trophee { width: 64px; height: 64px; }
+.trophee-grand figcaption { display: flex; flex-direction: column; font-size: .72rem; line-height: 1.15; }
+.trophee-grand figcaption small { color: var(--gris); }
+.parcours { border-collapse: collapse; min-width: 100%; }
+.parcours th, .parcours td { padding: 6px 6px; text-align: center; border-top: 1px solid #E3E9E3; font-size: .78rem; }
+.parcours thead th { border-top: 0; min-width: 78px; font-weight: 700; color: var(--gris); vertical-align: bottom; }
+.parcours tbody th { position: sticky; left: 0; background: #fff; font-weight: 800; font-size: .95rem; }
+.parcours .case-jouee { color: #B9C3BB; font-size: 1.4rem; }
+.parcours .case-gagnee .trophee { width: 44px; height: 44px; }
+.liste-saisons { list-style: none; margin: 8px 0 0; padding: 0; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(160px, 1fr); gap: 8px; overflow-x: auto; }
+.colonne-saison { padding: 8px; border-radius: 10px; background: #F4F7F4; min-width: 0; }
+.bloc-stat { margin-top: 10px; }
+.bloc-stat h4 { margin: 0 0 6px; font-size: .95rem; color: var(--vert-fonce); }
+.stat-saisons { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.stat-saisons li { display: flex; flex-direction: column; align-items: center; min-width: 76px; padding: 6px 10px; border-radius: 10px; background: #F4F7F4; }
+.stat-saisons li b { font-size: 1.15rem; font-weight: 800; }
+.stat-saisons li small { color: var(--gris); font-size: .72rem; }
+.carte-mes-stats .liste-records { margin-top: 14px; }
+.table-prix thead th.col-joueur span { margin-left: 5px; }
+.table-prix td.total { background: #F4F7F4; }

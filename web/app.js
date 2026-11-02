@@ -13,6 +13,8 @@ import { emailTechnique, messageErreurConnexion } from './js/identifiants.js';
 import { echapper, anneeCourante, dateDuJour } from './js/outils.js';
 import { construireRace, classementTournoi, detailRace } from './js/classement.js';
 import { statsRace } from './js/stats-race.js';
+import { monPalmares } from './js/mon-palmares.js';
+import { htmlMonPalmares } from './js/vues-palmares.js';
 import { creerDonnees } from './js/donnees.js';
 import { htmlListeTournois, htmlPageTournoi, htmlErreur, htmlPastille, htmlCarteMatch, htmlSectionPariTournoi, htmlPageRace } from './js/vues.js';
 import { ordonnerProfils, regrouperParis, regrouperQui, pariAEnregistrer, messageErreurPari } from './js/paris.js';
@@ -92,6 +94,7 @@ function afficherCadre(profil) {
     <nav class="menu" aria-label="Navigation">
       <a href="#/" data-menu="accueil">Accueil</a>
       <a href="#/saison" data-menu="saison">Saison</a>
+      <a href="#/mon-palmares" data-menu="palmares">Palmarès</a>
       <a href="#/regles" data-menu="regles">Règles</a>
       ${profil.is_admin ? '<a href="#/admin" data-menu="admin">Admin</a>' : ''}
       <a href="#/profil" data-menu="mdp">Compte</a>
@@ -597,6 +600,7 @@ function lireRoute() {
   if (window.location.hash === '#/regles') return { nom: 'regles' };
   if (window.location.hash === '#/profil' || window.location.hash === '#/mot-de-passe') return { nom: 'profil' };
   if (window.location.hash === '#/palmares') return { nom: 'palmares' };
+  if (window.location.hash === '#/mon-palmares') return { nom: 'mon-palmares' };
   if (window.location.hash === '#/saison') return { nom: 'saison', annee: null };
   const saison = /^#\/saison\/(\d{4})$/.exec(window.location.hash);
   if (saison) return { nom: 'saison', annee: Number(saison[1]) };
@@ -636,7 +640,7 @@ async function afficherRoute({ silencieux = false } = {}) {
   if (!silencieux) contenu.innerHTML = '<p class="chargement-court">Chargement…</p>';
   try {
     document.querySelectorAll('nav.menu a').forEach((a) => {
-      const actif = route.nom === 'accueil' ? 'accueil' : route.nom === 'regles' ? 'regles' : route.nom === 'profil' ? 'mdp' : route.nom === 'palmares' ? 'saison' : route.nom.startsWith('admin') ? 'admin' : 'saison';
+      const actif = route.nom === 'accueil' ? 'accueil' : route.nom === 'regles' ? 'regles' : route.nom === 'profil' ? 'mdp' : route.nom === 'palmares' ? 'saison' : route.nom === 'mon-palmares' ? 'palmares' : route.nom.startsWith('admin') ? 'admin' : 'saison';
       if (a.dataset.menu === actif) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current');
     });
     if (route.nom.startsWith('admin')) {
@@ -710,6 +714,25 @@ async function afficherRoute({ silencieux = false } = {}) {
       ]);
       const joueurs = await donnees.joueurs(tournois.flatMap((t) => [t.vainqueur_id, t.finaliste_id]));
       contenu.innerHTML = htmlPalmares(construirePalmares({ moteur, tournois, resultats, profils, joueurs }));
+    } else if (route.nom === 'mon-palmares') {
+      page = null;
+      const [tournois, resultats, profils, moteur] = await Promise.all([
+        donnees.tournois(), donnees.resultats(), donnees.profilsGroupe(profilCourant.is_test), import('./moteur/index.js'),
+      ]);
+      const clos = tournois.filter((t) => t.etat === 'clos');
+      const idsClos = clos.map((t) => t.id);
+      let matchs = []; let lignesParis = []; let parisTournoi = []; let joueurs = new Map();
+      try {
+        [matchs, parisTournoi] = await Promise.all([donnees.matchsDesTournois(idsClos), donnees.parisTournoiDesTournois(idsClos)]);
+        const idsMatchs = matchs.map((m) => m.id);
+        const lots = [];
+        for (let i = 0; i < idsMatchs.length; i += 80) lots.push(idsMatchs.slice(i, i + 80));
+        lignesParis = (await Promise.all(lots.map((l) => donnees.parisDesMatchs(l)))).flat();
+        joueurs = await donnees.joueurs([...matchs.flatMap((m) => [m.p1_id, m.p2_id]), ...parisTournoi.flatMap((l) => [l.vainqueur_id, l.finaliste_id]), ...clos.flatMap((t) => [t.vainqueur_id, t.finaliste_id])]);
+      } catch { /* sans les matchs, on affiche au moins l'armoire et le parcours */ }
+      contenu.innerHTML = htmlMonPalmares(monPalmares({
+        moteur, moi: profilCourant.id, profils, tournois, resultats, matchs, paris: regrouperParis(lignesParis), parisTournoi, joueurs,
+      }), { prenom: profilCourant.prenom });
     } else if (route.nom === 'profil') {
       page = null;
       contenu.innerHTML = htmlPageProfil({ profil: profilCourant });
