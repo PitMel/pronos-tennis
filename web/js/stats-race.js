@@ -39,7 +39,7 @@ export function statsRace({ moteur, annee, tournois, resultats, profils, matchs,
   const lesMatchs = matchs.filter((m) => parId.has(m.tournament_id));
   const parisDe = (m) => paris?.get(m.id) ?? new Map();
 
-  const cellule = (v) => ({ texte: moteur.formaterPoints(v, { signe: false }), negatif: v.comparer(ZERO) < 0, positif: v.comparer(ZERO) > 0 });
+  const cellule = (v) => ({ valeur: v.versNombre(), texte: moteur.formaterPoints(v, { signe: false }), negatif: v.comparer(ZERO) < 0, positif: v.comparer(ZERO) > 0 });
   const somme = (liste, champ) => liste.reduce((s, r) => s.plus(Fraction.de(r[champ] ?? '0')), ZERO);
 
   // ---------- points d'un pari de match, et part due au nombre de sets ----------
@@ -111,7 +111,7 @@ export function statsRace({ moteur, annee, tournois, resultats, profils, matchs,
       .filter(([, v]) => v.comparer(ZERO) > 0)
       .map(([id, v]) => ({ id, nom: nomJoueur(id), points: moteur.formaterPoints(v, { signe: false }), valeur: v }))
       .sort((a, b) => b.valeur.comparer(a.valeur) || cmp(a.nom, b.nom))
-      .slice(0, 3).map(({ valeur, ...reste }) => reste),
+      .slice(0, 5).map(({ valeur, ...reste }) => reste),
   }));
 
   // ---------- 3 et 4. Chouchous et amours impossibles ----------
@@ -143,7 +143,7 @@ export function statsRace({ moteur, annee, tournois, resultats, profils, matchs,
       .filter(([j]) => (apparitions.get(j) ?? 0) >= 5)
       .map(([j, n]) => ({ id: j, nom: nomJoueur(j), n, sur: apparitions.get(j) }))
       .sort((a, b) => b.n * a.sur - a.n * b.sur || b.sur - a.sur || b.n - a.n || cmp(a.nom, b.nom))
-      .slice(0, 3).map((j) => ({ id: j.id, nom: j.nom, rapport: `${j.n}/${j.sur}` })),
+      .slice(0, 5).map((j) => ({ id: j.id, nom: j.nom, rapport: `${j.n}/${j.sur}`, pourcentage: Math.round((100 * j.n) / j.sur) })),
   }));
   const amoursImpossibles = profils.map((x) => ({
     id: x.id, prenom: x.prenom,
@@ -151,7 +151,7 @@ export function statsRace({ moteur, annee, tournois, resultats, profils, matchs,
       .filter(([, c]) => c.paris >= 3)
       .map(([j, c]) => ({ id: j, nom: nomJoueur(j), ...c }))
       .sort((a, b) => a.victoires * b.paris - b.victoires * a.paris || b.paris - a.paris || cmp(a.nom, b.nom))
-      .slice(0, 3).map((j) => ({ id: j.id, nom: j.nom, rapport: `${j.victoires}/${j.paris}` })),
+      .slice(0, 5).map((j) => ({ id: j.id, nom: j.nom, rapport: `${j.victoires}/${j.paris}`, pourcentage: Math.round((100 * j.victoires) / j.paris) })),
   }));
 
   // ---------- 5. Records en tournoi ----------
@@ -192,6 +192,7 @@ export function statsRace({ moteur, annee, tournois, resultats, profils, matchs,
   };
 
   return {
+    nbTournois: clos.length, nbMatchs: lesMatchs.filter((m) => !m.neutralise).length,
     detailPoints, vachesALait, chouchous, amoursImpossibles,
     records: {
       grandChelem: plusGrosScore('grand_slam'),

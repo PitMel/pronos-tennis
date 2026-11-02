@@ -41,13 +41,13 @@ test('vaches à lait : points cumulés par joueur de tennis (matchs et pari tour
 
 test('chouchous : joueurs vus au moins 5 fois, rapport paris sur sa victoire / matchs', () => {
   const [a, p] = calculer().chouchous;
-  assert.deepEqual(a.joueurs.map((j) => [j.nom, j.rapport]), [['Alcaraz', '6/6']]);
+  assert.deepEqual(a.joueurs.map((j) => [j.nom, j.rapport, j.pourcentage]), [['Alcaraz', '6/6', 100]]);
   assert.deepEqual(p.joueurs, []); // Paul n'a jamais misé sur Alcaraz
 });
 
 test('amours impossibles : au moins trois paris, victoires du joueur / paris sur lui', () => {
   const [a, p] = calculer().amoursImpossibles;
-  assert.deepEqual(a.joueurs.map((j) => [j.nom, j.rapport]), [['Alcaraz', '4/6']]);
+  assert.deepEqual(a.joueurs.map((j) => [j.nom, j.rapport, j.pourcentage]), [['Alcaraz', '4/6', 67]]);
   assert.deepEqual(p.joueurs, []); // un seul pari sur chaque adversaire
 });
 
@@ -64,15 +64,18 @@ test('records : plus gros score avant bonification, ric rac, grand fou, gagne-pe
 test('page Race : les sections viennent dans l’ordre demandé', () => {
   const d = detailRace({ moteur, annee: 2026, tournois, resultats, profils });
   const html = htmlPageRace(d, { moi: 'p', stats: calculer() });
-  const ordre = ['<h3>Classement</h3>', '<h3>Détail des points</h3>', '<h3>Détail par tournoi</h3>', '<h3>Évolution</h3>', 'Les vaches à lait', 'Les chouchous', 'Amours impossibles', 'Records en tournoi'];
+  const ordre = ['<h3>Classement</h3>', '<h3>Détail des points</h3>', '<h3>Détail par tournoi</h3>', '<h3>Évolution</h3>', 'Les vaches à lait', 'Les chouchous', 'Les amours impossibles', 'Records en tournoi'];
   const positions = ordre.map((t) => html.indexOf(t));
   assert.ok(positions.every((x) => x >= 0), `section manquante : ${positions}`);
   assert.deepEqual([...positions].sort((x, y) => x - y), positions);
   assert.match(html, /Biggest win – Grand Chelem/);
   assert.match(html, /Ric rac !/);
   assert.match(html, /Le grand fou/);
+  assert.match(html, /2 tournois passés · 7 matchs|1 tournoi passé · 6 matchs/);
+  assert.match(html, /6\/6 \(100&nbsp;%\)/);
+  assert.match(html, /<td class="[^"]*gagnant"><span class="cellule-score"><span class="medaille"[^>]*>🥇<\/span><span class="cadre-gagnant">/); // médaille et cadre dans « Détail des points »
   assert.match(html, /Le gagne-petit/);
-  assert.match(html, /Alcaraz <span class="valeur">\(24\)<\/span>/);
+  assert.match(html, /<b>Alcaraz<\/b> <span class="valeur">\(24\)<\/span>/);
   // sans statistiques (échec de chargement) : la page s'affiche quand même
   assert.doesNotMatch(htmlPageRace(d, { moi: 'p' }), /vaches à lait/);
 });

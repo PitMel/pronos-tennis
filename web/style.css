@@ -549,22 +549,24 @@ svg.filet[data-edition="1"] { cursor: pointer; }
 /* ---------- Page Race : détail des points, vaches à lait, chouchous, amours impossibles, records ---------- */
 .carte-detail-points h3, .carte-stats h3 { margin: 0 0 4px; font-size: 1.1rem; color: var(--vert-fonce); }
 .icone-section { margin-right: 8px; }
-.detail-points { width: 100%; border-collapse: collapse; margin-top: 6px; }
-.detail-points th, .detail-points td { padding: 7px 6px; border-top: 1px solid #E3E9E3; text-align: right; font-size: .9rem; }
-.detail-points thead th { border-top: 0; font-size: .72rem; font-weight: 700; color: var(--gris); vertical-align: bottom; }
-.detail-points tbody th.col-nom { text-align: left; font-weight: 700; white-space: nowrap; }
-.detail-points tbody th.col-nom span { margin-left: 6px; }
+.detail-points { width: 100%; table-layout: fixed; border-collapse: collapse; margin-top: 6px; }
+.detail-points th, .detail-points td { padding: 7px 2px; border-top: 1px solid #E3E9E3; text-align: center; font-size: .9rem; }
+.detail-points thead th { border-top: 0; font-size: .7rem; font-weight: 700; color: var(--gris); vertical-align: bottom; }
+.detail-points thead th:first-child, .detail-points tbody th.col-nom { width: 22%; }
+.detail-points tbody th.col-nom { text-align: left; font-weight: 700; white-space: nowrap; padding-left: 4px; }
+.detail-points tbody th.col-nom span { margin-left: 5px; }
 .detail-points td { font-weight: 600; }
 .detail-points td.total { font-weight: 800; }
 .detail-points td.neg { color: var(--erreur); }
 .detail-points tr.isme { background: #F6FAD7; }
-.liste-parieurs { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 8px; }
-.bloc-parieur { padding: 8px 10px; border-radius: 10px; background: #F4F7F4; }
-.bloc-parieur.isme { background: #F6FAD7; }
-.nom-parieur { display: block; margin-bottom: 2px; }
-.top3 { margin: 0; padding-left: 22px; }
-.top3 li { padding: 1px 0; }
-.top3 .valeur { font-weight: 700; color: var(--vert-fonce); }
+.detail-points .cellule-score { flex-direction: column; gap: 2px; }
+.liste-parieurs { list-style: none; margin: 8px 0 0; padding: 0; display: grid; grid-template-columns: repeat(var(--n, 3), minmax(0, 1fr)); gap: 8px; }
+.colonne-parieur { padding: 8px 8px; border-radius: 10px; background: #F4F7F4; min-width: 0; }
+.colonne-parieur.isme { background: #F6FAD7; }
+.nom-parieur { display: block; margin-bottom: 4px; text-align: center; }
+.top5 { margin: 0; padding-left: 16px; font-size: .82rem; }
+.top5 li { padding: 2px 0; overflow-wrap: anywhere; }
+.top5 .valeur { font-weight: 400; color: var(--gris); }
 .liste-records { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 8px; }
 .record { display: grid; gap: 2px; padding: 8px 10px; border-radius: 10px; background: #F4F7F4; }
 .record > b { color: var(--vert-fonce); }

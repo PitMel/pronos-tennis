@@ -188,41 +188,53 @@ export function htmlEvolutionRace(evolution) {
     </section>`;
 }
 
-/** Tableau « Détail des points » : par parieur, matchs, sets, pari vainqueur/finaliste, bonification, total. */
+/** Rangs « à la compétition » (ex æquo partagés) de valeurs numériques ; null si tout le monde est à égalité. */
+function rangsDesValeurs(valeurs) {
+  if (valeurs.every((v) => v === valeurs[0])) return valeurs.map(() => null);
+  return valeurs.map((v) => 1 + valeurs.filter((w) => w > v).length);
+}
+
+/** Tableau « Détail des points » : par parieur, matchs, sets, pari vainqueur/finaliste, bonification, total. Médaille et cadre selon la place dans chaque colonne. */
 function htmlDetailPoints(detailPoints, moi) {
   if (!detailPoints?.length) return '';
   const lignes = [...detailPoints.filter((d) => d.id === moi), ...detailPoints.filter((d) => d.id !== moi)];
-  const td = (c, classe = '') => `<td class="${[classe, c.negatif ? 'neg' : ''].filter(Boolean).join(' ')}">${echapper(c.texte)}</td>`;
+  const colonnes = ['matchs', 'sets', 'pari', 'bonus', 'total'];
+  const rangs = Object.fromEntries(colonnes.map((c) => [c, rangsDesValeurs(lignes.map((d) => d[c].valeur))]));
+  const td = (c, rang, classe = '') => {
+    const medaille = rang && MEDAILLES[rang] ? `<span class="medaille" role="img" aria-label="${MEDAILLES[rang][1]}">${MEDAILLES[rang][0]}</span>` : '';
+    const score = rang === 1 ? `<span class="cadre-gagnant">${echapper(c.texte)}</span>` : echapper(c.texte);
+    return `<td class="${[classe, c.negatif ? 'neg' : '', rang === 1 ? 'gagnant' : ''].filter(Boolean).join(' ')}"><span class="cellule-score">${medaille}${score}</span></td>`;
+  };
   return `
     <section class="carte carte-detail-points">
       <h3>Détail des points</h3>
       <div class="tableau-defilant"><table class="detail-points">
         <thead><tr><th></th><th scope="col">Matchs</th><th scope="col">Sets</th><th scope="col">Vainqueur et finaliste</th><th scope="col">Bonification</th><th scope="col">Total</th></tr></thead>
-        <tbody>${lignes.map((d) => `<tr class="${d.id === moi ? 'isme' : ''}"><th scope="row" class="col-nom">${htmlPastille(d, 'pastille pastille-petite')}<span>${echapper(d.prenom)}</span></th>${td(d.matchs)}${td(d.sets)}${td(d.pari)}${td(d.bonus)}${td(d.total, 'total')}</tr>`).join('')}</tbody>
+        <tbody>${lignes.map((d, i) => `<tr class="${d.id === moi ? 'isme' : ''}"><th scope="row" class="col-nom">${htmlPastille(d, 'pastille pastille-petite')}<span>${echapper(d.prenom)}</span></th>${colonnes.map((c) => td(d[c], rangs[c][i], c === 'total' ? 'total' : '')).join('')}</tr>`).join('')}</tbody>
       </table></div>
-      <p class="small">Points des paris de match, du nombre de sets (Grand Chelem), du pari sur le vainqueur et le finaliste, et des bonifications de 1re et 2e places.</p>
+      <p class="small">Points des paris de match, du nombre de sets (Grand Chelem), du pari sur le vainqueur et le finaliste, et des bonifications de 1re et 2e places. Médaille et cadre : place de chaque joueur dans la colonne.</p>
     </section>`;
 }
 
-/** Section « par parieur » : un bloc par parieur avec ses (jusqu'à) trois joueurs de tennis. */
+/** Section « par parieur » : une colonne par parieur avec ses (jusqu'à) cinq joueurs de tennis. */
 function htmlSectionParParieur({ titre, icone, intro, lignes, moi, texteJoueur, vide }) {
   const ordre = [...lignes.filter((l) => l.id === moi), ...lignes.filter((l) => l.id !== moi)];
-  const blocs = ordre.map((l) => `
-      <li class="bloc-parieur${l.id === moi ? ' isme' : ''}">
+  const colonnes = ordre.map((l) => `
+      <li class="colonne-parieur${l.id === moi ? ' isme' : ''}">
         <b class="nom-parieur">${echapper(l.prenom)}</b>
-        ${l.joueurs.length ? `<ol class="top3">${l.joueurs.map((j) => `<li>${texteJoueur(j)}</li>`).join('')}</ol>` : `<p class="small">${echapper(vide)}</p>`}
+        ${l.joueurs.length ? `<ol class="top5">${l.joueurs.map((j) => `<li>${texteJoueur(j)}</li>`).join('')}</ol>` : `<p class="small">${echapper(vide)}</p>`}
       </li>`).join('');
   return `
     <section class="carte carte-stats">
       <h3><span class="icone-section" aria-hidden="true">${icone}</span>${echapper(titre)}</h3>
       <p class="small">${echapper(intro)}</p>
-      <ul class="liste-parieurs">${blocs}</ul>
+      <ul class="liste-parieurs" style="--n:${ordre.length || 1}">${colonnes}</ul>
     </section>`;
 }
 
 const lienTournoi = (t) => `<a class="nom-tournoi" href="#/tournoi/${encodeURIComponent(t.id)}">${echapper(t.nom)} ${echapper(t.annee)}</a>`;
 
-function htmlRecords(r) {
+function htmlRecords(r, { nbTournois = 0, nbMatchs = 0 } = {}) {
   if (!r) return '';
   const rec = (titre, contenu) => `<li class="record"><b>${echapper(titre)}</b><span>${contenu}</span></li>`;
   const gros = (titre, liste) => rec(titre, liste?.length
@@ -234,6 +246,7 @@ function htmlRecords(r) {
   return `
     <section class="carte carte-stats carte-records">
       <h3><span class="icone-section" aria-hidden="true">🏆</span>Records en tournoi</h3>
+      <p class="small">${echapper(nbTournois)} tournoi${nbTournois > 1 ? 's' : ''} passé${nbTournois > 1 ? 's' : ''} · ${echapper(nbMatchs)} match${nbMatchs > 1 ? 's' : ''}</p>
       <ul class="liste-records">
         ${gros('Biggest win – Grand Chelem', r.grandChelem)}
         ${gros('Biggest win – Master 1000', r.masters)}
@@ -250,20 +263,20 @@ function htmlStatsRace(stats, moi) {
   return `
     ${htmlSectionParParieur({
     titre: 'Les vaches à lait', icone: '🐄', moi, lignes: stats.vachesALait, vide: 'Aucun joueur n’a encore rapporté de points.',
-    intro: 'Les trois joueurs de tennis qui ont rapporté le plus de points à chaque parieur sur l’année (entre parenthèses).',
-    texteJoueur: (j) => `${echapper(j.nom)} <span class="valeur">(${echapper(j.points)})</span>`,
+    intro: 'Les cinq joueurs de tennis qui ont rapporté le plus de points à chaque parieur sur l’année (entre parenthèses).',
+    texteJoueur: (j) => `<b>${echapper(j.nom)}</b> <span class="valeur">(${echapper(j.points)})</span>`,
   })}
     ${htmlSectionParParieur({
     titre: 'Les chouchous', icone: '❤️', moi, lignes: stats.chouchous, vide: 'Pas encore de joueur vu au moins 5 fois.',
     intro: 'Parmi les joueurs vus au moins 5 fois dans l’année : ceux sur la victoire desquels le parieur a le plus souvent misé (paris sur sa victoire / matchs où l’on pouvait parier sur lui).',
-    texteJoueur: (j) => `${echapper(j.nom)} <span class="valeur">${echapper(j.rapport)}</span>`,
+    texteJoueur: (j) => `<b>${echapper(j.nom)}</b> <span class="valeur">${echapper(j.rapport)} (${echapper(j.pourcentage)}&nbsp;%)</span>`,
   })}
     ${htmlSectionParParieur({
-    titre: 'Amours impossibles', icone: '💔', moi, lignes: stats.amoursImpossibles, vide: 'Aucun joueur n’a encore reçu trois paris de sa part.',
+    titre: 'Les amours impossibles', icone: '💔', moi, lignes: stats.amoursImpossibles, vide: 'Aucun joueur n’a encore reçu trois paris de sa part.',
     intro: 'Parmi les joueurs sur lesquels le parieur a misé au moins trois fois : ceux qui l’ont le moins souvent récompensé (victoires du joueur / paris sur lui).',
-    texteJoueur: (j) => `${echapper(j.nom)} <span class="valeur">${echapper(j.rapport)}</span>`,
+    texteJoueur: (j) => `<b>${echapper(j.nom)}</b> <span class="valeur">${echapper(j.rapport)} (${echapper(j.pourcentage)}&nbsp;%)</span>`,
   })}
-    ${htmlRecords(stats.records)}`;
+    ${htmlRecords(stats.records, stats)}`;
 }
 
 export function htmlPageRace(detail, { moi = null, stats = null } = {}) {
