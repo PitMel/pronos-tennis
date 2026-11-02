@@ -579,3 +579,4 @@ svg.filet[data-edition="1"] { cursor: pointer; }
 .detail-berezina { list-style: none; margin: 4px 0 0; padding: 0; font-size: .9rem; }
 .detail-berezina .neg { color: var(--erreur); font-weight: 700; }
 .record small.explication { color: var(--gris); font-size: .78rem; font-style: italic; margin-top: 2px; }
+.sep-record { border: 0; border-top: 1px dashed #C9D3C9; margin: 8px 0; }

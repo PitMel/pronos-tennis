@@ -41,6 +41,8 @@ export function statsRace({ moteur, annee, tournois, resultats, profils, matchs,
   const lesMatchs = matchs.filter((m) => parId.has(m.tournament_id));
   const parisDe = (m) => paris?.get(m.id) ?? new Map();
 
+  const pct = (n, sur) => (sur > 0 ? Math.round((100 * n) / sur) : 0);
+  const parDate = (a, b) => String(a.date_debut ?? '').localeCompare(String(b.date_debut ?? '')) || a.id - b.id;
   const cellule = (v) => ({ valeur: v.versNombre(), texte: moteur.formaterPoints(v, { signe: false }), negatif: v.comparer(ZERO) < 0, positif: v.comparer(ZERO) > 0 });
   const somme = (liste, champ) => liste.reduce((s, r) => s.plus(Fraction.de(r[champ] ?? '0')), ZERO);
 
@@ -170,16 +172,16 @@ export function statsRace({ moteur, annee, tournois, resultats, profils, matchs,
       .sort((a, b) => String(a.tournoi.date_debut ?? '').localeCompare(String(b.tournoi.date_debut ?? '')) || cmp(a.prenom, b.prenom));
     return ex.map((a) => ({ tournoi: infoTournoi(a.tournoi), parieur: a.prenom, score: moteur.formaterPoints(a.valeur, { signe: false }) }));
   };
-  let ricRac = null;
+  // Ric rac : tous les tournois dont l'écart entre le 1er et le 2e est le plus faible (ex æquo compris)
+  const ecarts = [];
   for (const t of clos) {
     const scores = avantBonus.filter((a) => a.tournoi.id === t.id).sort((a, b) => b.valeur.comparer(a.valeur) || cmp(a.prenom, b.prenom));
     if (scores.length < 2) continue;
-    const ecart = scores[0].valeur.moins(scores[1].valeur);
-    if (ricRac === null || ecart.comparer(ricRac.valeur) < 0) {
-      ricRac = { valeur: ecart, pluriel: ecart.comparer(moteur.f(2)) >= 0, tournoi: infoTournoi(t), premier: scores[0].prenom, deuxieme: scores[1].prenom, ecart: moteur.formaterPoints(ecart, { signe: false }) };
-    }
+    ecarts.push({ t, valeur: scores[0].valeur.moins(scores[1].valeur), premier: scores[0].prenom, deuxieme: scores[1].prenom });
   }
-  if (ricRac) delete ricRac.valeur;
+  const plusPetit = ecarts.reduce((m, e) => (m === null || e.valeur.comparer(m) < 0 ? e.valeur : m), null);
+  const ricRac = ecarts.length ? ecarts.filter((e) => e.valeur.comparer(plusPetit) === 0).sort((a, b) => parDate(a.t, b.t))
+    .map((e) => ({ tournoi: infoTournoi(e.t), pluriel: e.valeur.comparer(moteur.f(2)) >= 0, premier: e.premier, deuxieme: e.deuxieme, ecart: moteur.formaterPoints(e.valeur, { signe: false }) })) : null;
 
   const compterConfiance = (confiance) => {
     const nb = new Map(profils.map((x) => [x.id, 0]));
@@ -194,8 +196,6 @@ export function statsRace({ moteur, annee, tournois, resultats, profils, matchs,
   };
 
   // ---------- Records « paris » : sniper, contradicteur, strike, bérézina ----------
-  const pct = (n, sur) => (sur > 0 ? Math.round((100 * n) / sur) : 0);
-  const parDate = (a, b) => String(a.date_debut ?? '').localeCompare(String(b.date_debut ?? '')) || a.id - b.id;
 
   // Le sniper : meilleur taux de bons vainqueurs sur les matchs joués
   const tirs = new Map(profils.map((x) => [x.id, { ok: 0, sur: 0 }]));
@@ -211,8 +211,10 @@ export function statsRace({ moteur, annee, tournois, resultats, profils, matchs,
   const classeTirs = profils.map((x) => ({ id: x.id, prenom: x.prenom, ...tirs.get(x.id) })).filter((c) => c.sur > 0)
     .sort((a, b) => b.ok * a.sur - a.ok * b.sur || b.sur - a.sur || cmp(a.prenom, b.prenom));
   const formeTir = (c) => ({ id: c.id, prenom: c.prenom, ok: c.ok, sur: c.sur, pourcentage: pct(c.ok, c.sur) });
+  const egalTir = (a, b) => a.ok * b.sur === b.ok * a.sur;
   const sniper = classeTirs.length ? {
-    ...formeTir(classeTirs[0]), autres: classeTirs.slice(1).map(formeTir),
+    tops: classeTirs.filter((c) => egalTir(c, classeTirs[0])).map(formeTir),
+    autres: classeTirs.filter((c) => !egalTir(c, classeTirs[0])).map(formeTir),
   } : null;
 
   // Le contradicteur : seul contre tous (au moins deux autres parieurs, tous d'un avis contraire) et raison
@@ -230,7 +232,8 @@ export function statsRace({ moteur, annee, tournois, resultats, profils, matchs,
   const classeContre = profils.map((x) => ({ id: x.id, prenom: x.prenom, ...contre.get(x.id) }))
     .sort((a, b) => b.bons - a.bons || a.solo - b.solo || cmp(a.prenom, b.prenom));
   const contradicteur = classeContre.length && classeContre[0].bons > 0 ? {
-    ...classeContre[0], autres: classeContre.slice(1),
+    tops: classeContre.filter((c) => c.bons === classeContre[0].bons),
+    autres: classeContre.filter((c) => c.bons !== classeContre[0].bons),
   } : null;
 
   // Le strike : le plus de bons vainqueurs dans un même tournoi ; pour chacun des autres, son meilleur tournoi (pro rata)
@@ -266,7 +269,7 @@ export function statsRace({ moteur, annee, tournois, resultats, profils, matchs,
   }
 
   // La bérézina : le match où le total des points des parieurs est le plus bas (au moins deux paris)
-  let berezina = null;
+  const candidatsBerezina = [];
   for (const m of lesMatchs) {
     if (!matchJoue(m)) continue;
     const pts = new Map();
@@ -276,23 +279,22 @@ export function statsRace({ moteur, annee, tournois, resultats, profils, matchs,
       if (r) pts.set(id, r.total);
     }
     if (pts.size < 2) continue;
-    const total = [...pts.values()].reduce((a, b) => a.plus(b), ZERO);
-    const t = parId.get(m.tournament_id);
-    if (berezina === null || total.comparer(berezina.valeur) < 0 || (total.comparer(berezina.valeur) === 0 && parDate(t, berezina.t) < 0)) berezina = { valeur: total, t, m, pts };
+    candidatsBerezina.push({ valeur: [...pts.values()].reduce((x, y) => x.plus(y), ZERO), t: parId.get(m.tournament_id), m, pts });
   }
-  if (berezina) {
-    const { valeur, t, m, pts } = berezina;
-    const gagnant = m.vainqueur === 1 ? m.p1_id : m.p2_id;
-    const perdant = m.vainqueur === 1 ? m.p2_id : m.p1_id;
-    berezina = {
-      tournoi: infoTournoi(t), tour: LIBELLES_TOURS[m.tour] ?? m.tour,
-      vainqueur: nomJoueur(gagnant), perdant: nomJoueur(perdant), score: formaterScore(m.score, m.fin_match, m.vainqueur),
-      total: moteur.formaterPoints(valeur, { signe: true }),
-      parieurs: profils.map((x) => (pts.has(x.id)
-        ? { prenom: x.prenom, points: moteur.formaterPoints(pts.get(x.id), { signe: true }), negatif: pts.get(x.id).comparer(ZERO) < 0, choix: nomJoueur(parisDe(m).get(x.id).choix === 1 ? m.p1_id : m.p2_id) }
-        : { prenom: x.prenom, points: null, negatif: false, choix: null })),
-    };
-  }
+  const plusBas = candidatsBerezina.reduce((mn, c) => (mn === null || c.valeur.comparer(mn) < 0 ? c.valeur : mn), null);
+  const berezina = candidatsBerezina.length
+    ? candidatsBerezina.filter((c) => c.valeur.comparer(plusBas) === 0).sort((a, b) => parDate(a.t, b.t) || a.m.id - b.m.id).map(({ valeur, t, m, pts }) => {
+      const gagnant = m.vainqueur === 1 ? m.p1_id : m.p2_id;
+      const perdant = m.vainqueur === 1 ? m.p2_id : m.p1_id;
+      return {
+        tournoi: infoTournoi(t), tour: LIBELLES_TOURS[m.tour] ?? m.tour,
+        vainqueur: nomJoueur(gagnant), perdant: nomJoueur(perdant), score: formaterScore(m.score, m.fin_match, m.vainqueur),
+        total: moteur.formaterPoints(valeur, { signe: true }),
+        parieurs: profils.map((x) => (pts.has(x.id)
+          ? { prenom: x.prenom, points: moteur.formaterPoints(pts.get(x.id), { signe: true }), negatif: pts.get(x.id).comparer(ZERO) < 0, choix: nomJoueur(parisDe(m).get(x.id).choix === 1 ? m.p1_id : m.p2_id) }
+          : { prenom: x.prenom, points: null, negatif: false, choix: null })),
+      };
+    }) : null;
 
   // ---------- Degrés de confiance ----------
   const confiances = profils.map((x) => {
