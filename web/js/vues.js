@@ -42,7 +42,7 @@ export function htmlRace(race, { lienPalmares = false } = {}) {
       <h3>Race ${echapper(race.annee)}</h3>
       <p class="sous-race">${echapper(etat)}</p>
       <ol class="liste-race">${lignes}</ol>
-      <a class="lien-detail" href="#/race/${encodeURIComponent(race.annee)}">Détail par tournoi ›</a>
+      <a class="lien-detail" href="#/race/${encodeURIComponent(race.annee)}">Détail de la saison ›</a>
       ${lienPalmares ? '<a class="lien-detail lien-palmares" href="#/palmares">Palmarès de la saison ›</a>' : ''}
     </section>`;
 }
