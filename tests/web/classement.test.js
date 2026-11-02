@@ -184,11 +184,11 @@ test('vues : page Race — joueur du compte en 1re colonne, médailles, évoluti
     { tournament_id: 2, joueur_id: 'a', score_final: '-5' }, { tournament_id: 2, joueur_id: 'p', score_final: '30' }, { tournament_id: 2, joueur_id: 'j', score_final: '10' },
   ];
   const d = detailRace({ moteur, annee: 2026, tournois: ts, resultats: rs, profils });
-  // totaux : Paul 42, Jacques 15, André 15 → écart au dernier : Paul 7 puis 27
+  // totaux : Paul 42, Jacques 15, André 15 → retard sur le premier (négatif) : après Miami André en tête, après Roland-Garros Paul
   assert.deepEqual(d.evolution.tournois.map((t) => t.nom), ['Miami', 'Roland-Garros']);
-  assert.deepEqual(d.evolution.series.find((x) => x.id === 'p').ecarts, [7, 27]);
-  assert.deepEqual(d.evolution.series.find((x) => x.id === 'a').ecarts, [15, 0]);
-  assert.deepEqual(d.evolution.series.find((x) => x.id === 'j').ecarts, [0, 0]);
+  assert.deepEqual(d.evolution.series.find((x) => x.id === 'p').ecarts, [-8, 0]);
+  assert.deepEqual(d.evolution.series.find((x) => x.id === 'a').ecarts, [0, -27]);
+  assert.deepEqual(d.evolution.series.find((x) => x.id === 'j').ecarts, [-15, -27]);
   const html = htmlPageRace(d, { moi: 'a' });
   const entetes = [...html.matchAll(/<th scope="col" class="col-joueur">.*?<span>(.*?)<\/span><\/th>/g)].map((m) => m[1]);
   assert.deepEqual(entetes, ['André', 'Paul', 'Jacques']);

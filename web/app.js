@@ -12,6 +12,7 @@ import { SUPABASE_URL, SUPABASE_CLE_PUBLIABLE } from './config.js';
 import { emailTechnique, messageErreurConnexion } from './js/identifiants.js';
 import { echapper, anneeCourante, dateDuJour } from './js/outils.js';
 import { construireRace, classementTournoi, detailRace } from './js/classement.js';
+import { statsRace } from './js/stats-race.js';
 import { creerDonnees } from './js/donnees.js';
 import { htmlListeTournois, htmlPageTournoi, htmlErreur, htmlPastille, htmlCarteMatch, htmlSectionPariTournoi, htmlPageRace } from './js/vues.js';
 import { ordonnerProfils, regrouperParis, regrouperQui, pariAEnregistrer, messageErreurPari } from './js/paris.js';
@@ -720,7 +721,22 @@ async function afficherRoute({ silencieux = false } = {}) {
       const [tournois, resultats, profils, moteur] = await Promise.all([
         donnees.tournois(), donnees.resultats(), donnees.profilsGroupe(profilCourant.is_test), import('./moteur/index.js'),
       ]);
-      contenu.innerHTML = htmlPageRace(detailRace({ moteur, annee: route.annee, tournois, resultats, profils }), { moi: profilCourant.id });
+      const detail = detailRace({ moteur, annee: route.annee, tournois, resultats, profils });
+      let stats = null;
+      if (detail.tournoisClos > 0) {
+        try {
+          const clos = tournois.filter((t) => t.annee === route.annee && t.etat === 'clos');
+          const idsClos = clos.map((t) => t.id);
+          const [matchs, parisTournoi] = await Promise.all([donnees.matchsDesTournois(idsClos), donnees.parisTournoiDesTournois(idsClos)]);
+          const idsMatchs = matchs.map((m) => m.id);
+          const lots = [];
+          for (let i = 0; i < idsMatchs.length; i += 80) lots.push(idsMatchs.slice(i, i + 80));
+          const lignesParis = (await Promise.all(lots.map((l) => donnees.parisDesMatchs(l)))).flat();
+          const joueurs = await donnees.joueurs([...matchs.flatMap((m) => [m.p1_id, m.p2_id]), ...parisTournoi.flatMap((l) => [l.vainqueur_id, l.finaliste_id]), ...clos.flatMap((t) => [t.vainqueur_id, t.finaliste_id])]);
+          stats = statsRace({ moteur, annee: route.annee, tournois, resultats, profils: detail.colonnes, matchs, paris: regrouperParis(lignesParis), parisTournoi, joueurs });
+        } catch { stats = null; } // les statistiques sont un plus : la Race s'affiche même si elles échouent
+      }
+      contenu.innerHTML = htmlPageRace(detail, { moi: profilCourant.id, stats });
     } else if (route.nom === 'tournoi') {
       const donneesPage = await chargerPageTournoi(route.id);
       if (!donneesPage) { page = null; contenu.innerHTML = htmlErreur('Ce tournoi n’existe pas.'); return; }

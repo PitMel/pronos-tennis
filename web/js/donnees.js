@@ -27,6 +27,20 @@ export function creerDonnees(supabase) {
         .eq('tournament_id', tournoiId));
     },
 
+    /** Matchs de plusieurs tournois à la fois (page Race). */
+    matchsDesTournois(ids) {
+      if (ids.length === 0) return Promise.resolve([]);
+      return lire(supabase.from('matches_visibles')
+        .select('id, tournament_id, tour, heure_prevue, p1_id, p2_id, statut, debut_detecte, neutralise, paris_reveles, verrouille, resultat_visible, vainqueur, sets_joues, score, fin_match')
+        .in('tournament_id', ids));
+    },
+
+    /** Paris tournoi de plusieurs tournois à la fois (page Race). */
+    parisTournoiDesTournois(ids) {
+      if (ids.length === 0) return Promise.resolve([]);
+      return lire(supabase.from('tournament_bets').select('tournament_id, joueur_id, vainqueur_id, finaliste_id').in('tournament_id', ids));
+    },
+
     /** Les parieurs du groupe (réel ou test) de la personne connectée, actifs seulement. */
     profilsGroupe(isTest) {
       return lire(supabase.from('profiles').select('id, prenom, couleur, photo_url').eq('is_test', isTest).eq('actif', true).order('prenom'));

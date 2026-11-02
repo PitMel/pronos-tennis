@@ -153,7 +153,7 @@ export function detailRace({ moteur, annee, tournois, resultats, profils }) {
 
 /**
  * Évolution de la Race : après chaque tournoi terminé (ordre chronologique), écart de chaque joueur au joueur
- * le moins bien classé de la Race à ce moment-là (celui qui a le plus petit total, donc écart 0).
+ * en tête de la Race à ce moment-là, en négatif (retard de 23 points → −23 ; le meneur est à 0).
  * @returns {{tournois:Array<{id, nom}>, series:Array<{id, prenom, couleur, ecarts:number[]}>}}
  */
 export function evolutionRace({ moteur, clos, resultats, colonnes, ids }) {
@@ -163,9 +163,9 @@ export function evolutionRace({ moteur, clos, resultats, colonnes, ids }) {
     for (const r of resultats) {
       if (r.tournament_id === t.id && ids.has(r.joueur_id)) totaux.set(r.joueur_id, totaux.get(r.joueur_id).plus(moteur.Fraction.de(r.score_final)));
     }
-    let plusPetit = null;
-    for (const v of totaux.values()) if (plusPetit === null || v.comparer(plusPetit) < 0) plusPetit = v;
-    for (const serie of series) serie.ecarts.push(totaux.get(serie.id).moins(plusPetit).versNombre());
+    let meilleur = null;
+    for (const v of totaux.values()) if (meilleur === null || v.comparer(meilleur) > 0) meilleur = v;
+    for (const serie of series) serie.ecarts.push(totaux.get(serie.id).moins(meilleur).versNombre());
   }
   return { tournois: clos.map((t) => ({ id: t.id, nom: t.nom })), series };
 }

@@ -545,3 +545,28 @@ svg.filet[data-edition="1"] { cursor: pointer; }
 .etoile-sets { font-size: .95em; }
 
 @media (hover: hover) and (pointer: fine) { .trophee[data-tournoi] { cursor: pointer; } }
+
+/* ---------- Page Race : détail des points, vaches à lait, chouchous, amours impossibles, records ---------- */
+.carte-detail-points h3, .carte-stats h3 { margin: 0 0 4px; font-size: 1.1rem; color: var(--vert-fonce); }
+.icone-section { margin-right: 8px; }
+.detail-points { width: 100%; border-collapse: collapse; margin-top: 6px; }
+.detail-points th, .detail-points td { padding: 7px 6px; border-top: 1px solid #E3E9E3; text-align: right; font-size: .9rem; }
+.detail-points thead th { border-top: 0; font-size: .72rem; font-weight: 700; color: var(--gris); vertical-align: bottom; }
+.detail-points tbody th.col-nom { text-align: left; font-weight: 700; white-space: nowrap; }
+.detail-points tbody th.col-nom span { margin-left: 6px; }
+.detail-points td { font-weight: 600; }
+.detail-points td.total { font-weight: 800; }
+.detail-points td.neg { color: var(--erreur); }
+.detail-points tr.isme { background: #F6FAD7; }
+.liste-parieurs { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 8px; }
+.bloc-parieur { padding: 8px 10px; border-radius: 10px; background: #F4F7F4; }
+.bloc-parieur.isme { background: #F6FAD7; }
+.nom-parieur { display: block; margin-bottom: 2px; }
+.top3 { margin: 0; padding-left: 22px; }
+.top3 li { padding: 1px 0; }
+.top3 .valeur { font-weight: 700; color: var(--vert-fonce); }
+.liste-records { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 8px; }
+.record { display: grid; gap: 2px; padding: 8px 10px; border-radius: 10px; background: #F4F7F4; }
+.record > b { color: var(--vert-fonce); }
+.record a.nom-tournoi { color: inherit; font-weight: 700; }
+.record small { color: var(--gris); }

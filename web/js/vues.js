@@ -152,33 +152,35 @@ export function htmlClassementTournoi(classement, { moi = null, tournoi = null }
 /* ---------- Page « Race » : classement de l'année, détail par tournoi et évolution ---------- */
 const MEDAILLES = { 1: ['🥇', '1re place'], 2: ['🥈', '2e place'], 3: ['🥉', '3e place'] };
 
-/** Graphe « Évolution » : une courbe par joueur, écart (en points) au dernier de la Race après chaque tournoi. */
+/** Graphe « Évolution » : une courbe par joueur, écart (négatif) avec le joueur en tête de la Race après chaque tournoi. */
 export function htmlEvolutionRace(evolution) {
   const n = evolution.tournois.length;
   if (n === 0 || evolution.series.length === 0) return '';
   const L = 88; const R = 20; const H = 360; const haut = 16; const bas = 150; const largeur = 640;
-  const plusGrand = Math.max(0, ...evolution.series.flatMap((s) => s.ecarts));
+  const plusGrand = Math.max(0, ...evolution.series.flatMap((s) => s.ecarts.map((e) => -e)));
   const pas = [1, 2, 5, 10, 20, 25, 50, 100, 200, 500, 1000].find((p) => Math.ceil(plusGrand / p) <= 5) ?? 1000;
   const ymax = Math.max(pas, Math.ceil(plusGrand / pas) * pas);
   const X = (i) => (n === 1 ? L + (largeur - L - R) / 2 : L + ((largeur - L - R) * i) / (n - 1));
-  const Y = (v) => haut + (H - haut - bas) * (1 - v / ymax);
+  // 0 (le meneur) en haut, −ymax en bas
+  const Y = (v) => haut + (H - haut - bas) * (-v / ymax);
   const nb = (x) => Math.round(x * 10) / 10;
+  const texte = (v) => (v === 0 ? '0' : `${v < 0 ? '−' : '+'}${nb(Math.abs(v)).toString().replace('.', ',')}`);
   const graduations = [];
-  for (let v = 0; v <= ymax; v += pas) graduations.push(v);
-  const grille = graduations.map((v) => `<line class="evo-grille" x1="${L}" x2="${largeur - R}" y1="${nb(Y(v))}" y2="${nb(Y(v))}"/><text class="evo-axe" x="${L - 6}" y="${nb(Y(v) + 4)}" text-anchor="end">${v}</text>`).join('');
+  for (let v = 0; v >= -ymax; v -= pas) graduations.push(v);
+  const grille = graduations.map((v) => `<line class="evo-grille" x1="${L}" x2="${largeur - R}" y1="${nb(Y(v))}" y2="${nb(Y(v))}"/><text class="evo-axe" x="${L - 6}" y="${nb(Y(v) + 4)}" text-anchor="end">${texte(v)}</text>`).join('');
   const court = (nom) => (nom.length > 20 ? `${nom.slice(0, 19)}…` : nom);
   const etiquettes = evolution.tournois.map((t, i) => `<text class="evo-axe" transform="translate(${nb(X(i))} ${H - bas + 12}) rotate(-45)" text-anchor="end">${echapper(court(t.nom))}</text>`).join('');
   const courbes = evolution.series.map((s) => {
     const couleur = /^#[0-9A-Fa-f]{6}$/.test(s.couleur ?? '') ? s.couleur : '#2F6CC2';
     const points = s.ecarts.map((v, i) => `${nb(X(i))},${nb(Y(v))}`).join(' ');
-    const ronds = s.ecarts.map((v, i) => `<circle cx="${nb(X(i))}" cy="${nb(Y(v))}" r="4" fill="${couleur}"><title>${echapper(s.prenom)} · ${echapper(evolution.tournois[i].nom)} : +${nb(v).toString().replace('.', ',')} point${v > 1 ? 's' : ''} sur le dernier</title></circle>`).join('');
+    const ronds = s.ecarts.map((v, i) => `<circle cx="${nb(X(i))}" cy="${nb(Y(v))}" r="4" fill="${couleur}"><title>${echapper(s.prenom)} · ${echapper(evolution.tournois[i].nom)} : ${v === 0 ? 'en tête de la Race' : `${texte(v)} point${v < -1 ? 's' : ''} sur le premier`}</title></circle>`).join('');
     return `<g class="evo-courbe">${n > 1 ? `<polyline points="${points}" fill="none" stroke="${couleur}" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>` : ''}${ronds}</g>`;
   }).join('');
   const legende = evolution.series.map((s) => `<li>${htmlPastille(s, 'pastille pastille-petite')}<span>${echapper(s.prenom)}</span></li>`).join('');
   return `
     <section class="carte carte-evolution">
       <h3>Évolution</h3>
-      <p class="small">Écart de chaque joueur, en points, avec le joueur qui a le plus petit score à la Race après chaque tournoi.</p>
+      <p class="small">Retard de chaque joueur, en points, sur le premier de la Race après chaque tournoi (0 = en tête).</p>
       <svg class="evo-svg" viewBox="0 0 ${largeur} ${H}" role="img" aria-label="Évolution de la Race ${echapper(evolution.tournois.length)} tournoi${n > 1 ? 's' : ''}">
         ${grille}${etiquettes}${courbes}
       </svg>
@@ -186,7 +188,85 @@ export function htmlEvolutionRace(evolution) {
     </section>`;
 }
 
-export function htmlPageRace(detail, { moi = null } = {}) {
+/** Tableau « Détail des points » : par parieur, matchs, sets, pari vainqueur/finaliste, bonification, total. */
+function htmlDetailPoints(detailPoints, moi) {
+  if (!detailPoints?.length) return '';
+  const lignes = [...detailPoints.filter((d) => d.id === moi), ...detailPoints.filter((d) => d.id !== moi)];
+  const td = (c, classe = '') => `<td class="${[classe, c.negatif ? 'neg' : ''].filter(Boolean).join(' ')}">${echapper(c.texte)}</td>`;
+  return `
+    <section class="carte carte-detail-points">
+      <h3>Détail des points</h3>
+      <div class="tableau-defilant"><table class="detail-points">
+        <thead><tr><th></th><th scope="col">Matchs</th><th scope="col">Sets</th><th scope="col">Vainqueur et finaliste</th><th scope="col">Bonification</th><th scope="col">Total</th></tr></thead>
+        <tbody>${lignes.map((d) => `<tr class="${d.id === moi ? 'isme' : ''}"><th scope="row" class="col-nom">${htmlPastille(d, 'pastille pastille-petite')}<span>${echapper(d.prenom)}</span></th>${td(d.matchs)}${td(d.sets)}${td(d.pari)}${td(d.bonus)}${td(d.total, 'total')}</tr>`).join('')}</tbody>
+      </table></div>
+      <p class="small">Points des paris de match, du nombre de sets (Grand Chelem), du pari sur le vainqueur et le finaliste, et des bonifications de 1re et 2e places.</p>
+    </section>`;
+}
+
+/** Section « par parieur » : un bloc par parieur avec ses (jusqu'à) trois joueurs de tennis. */
+function htmlSectionParParieur({ titre, icone, intro, lignes, moi, texteJoueur, vide }) {
+  const ordre = [...lignes.filter((l) => l.id === moi), ...lignes.filter((l) => l.id !== moi)];
+  const blocs = ordre.map((l) => `
+      <li class="bloc-parieur${l.id === moi ? ' isme' : ''}">
+        <b class="nom-parieur">${echapper(l.prenom)}</b>
+        ${l.joueurs.length ? `<ol class="top3">${l.joueurs.map((j) => `<li>${texteJoueur(j)}</li>`).join('')}</ol>` : `<p class="small">${echapper(vide)}</p>`}
+      </li>`).join('');
+  return `
+    <section class="carte carte-stats">
+      <h3><span class="icone-section" aria-hidden="true">${icone}</span>${echapper(titre)}</h3>
+      <p class="small">${echapper(intro)}</p>
+      <ul class="liste-parieurs">${blocs}</ul>
+    </section>`;
+}
+
+const lienTournoi = (t) => `<a class="nom-tournoi" href="#/tournoi/${encodeURIComponent(t.id)}">${echapper(t.nom)} ${echapper(t.annee)}</a>`;
+
+function htmlRecords(r) {
+  if (!r) return '';
+  const rec = (titre, contenu) => `<li class="record"><b>${echapper(titre)}</b><span>${contenu}</span></li>`;
+  const gros = (titre, liste) => rec(titre, liste?.length
+    ? liste.map((x) => `${lienTournoi(x.tournoi)} · <b>${echapper(x.parieur)}</b> · ${echapper(x.score)} points`).join('<br>') : '<em>pas encore de tournoi terminé</em>');
+  const compte = (titre, x) => rec(titre, x
+    ? `<b>${echapper(x.noms.join(' et '))}</b> · ${echapper(x.nombre)} fois${x.autres.length ? `<br><small>${x.autres.map((a) => `${echapper(a.prenom)} : ${echapper(a.nombre)}`).join(' · ')}</small>` : ''}`
+    : '<em>personne pour l’instant</em>');
+  const rr = r.ricRac;
+  return `
+    <section class="carte carte-stats carte-records">
+      <h3><span class="icone-section" aria-hidden="true">🏆</span>Records en tournoi</h3>
+      <ul class="liste-records">
+        ${gros('Biggest win – Grand Chelem', r.grandChelem)}
+        ${gros('Biggest win – Master 1000', r.masters)}
+        ${rec('Ric rac !', rr ? `${lienTournoi(rr.tournoi)} · <b>${echapper(rr.premier)}</b> devant <b>${echapper(rr.deuxieme)}</b> · ${echapper(rr.ecart)} point${rr.pluriel ? 's' : ''} d’écart` : '<em>pas encore de tournoi terminé</em>')}
+        ${compte('Le grand fou', r.grandFou)}
+        ${compte('Le gagne-petit', r.gagnePetit)}
+      </ul>
+      <p class="small">Scores avant bonification de 1re et 2e places. « Le grand fou » : le plus de paris à 10 ; « Le gagne-petit » : le plus de paris à 6.</p>
+    </section>`;
+}
+
+function htmlStatsRace(stats, moi) {
+  if (!stats) return '';
+  return `
+    ${htmlSectionParParieur({
+    titre: 'Les vaches à lait', icone: '🐄', moi, lignes: stats.vachesALait, vide: 'Aucun joueur n’a encore rapporté de points.',
+    intro: 'Les trois joueurs de tennis qui ont rapporté le plus de points à chaque parieur sur l’année (entre parenthèses).',
+    texteJoueur: (j) => `${echapper(j.nom)} <span class="valeur">(${echapper(j.points)})</span>`,
+  })}
+    ${htmlSectionParParieur({
+    titre: 'Les chouchous', icone: '❤️', moi, lignes: stats.chouchous, vide: 'Pas encore de joueur vu au moins 5 fois.',
+    intro: 'Parmi les joueurs vus au moins 5 fois dans l’année : ceux sur la victoire desquels le parieur a le plus souvent misé (paris sur sa victoire / matchs où l’on pouvait parier sur lui).',
+    texteJoueur: (j) => `${echapper(j.nom)} <span class="valeur">${echapper(j.rapport)}</span>`,
+  })}
+    ${htmlSectionParParieur({
+    titre: 'Amours impossibles', icone: '💔', moi, lignes: stats.amoursImpossibles, vide: 'Aucun joueur n’a encore reçu trois paris de sa part.',
+    intro: 'Parmi les joueurs sur lesquels le parieur a misé au moins trois fois : ceux qui l’ont le moins souvent récompensé (victoires du joueur / paris sur lui).',
+    texteJoueur: (j) => `${echapper(j.nom)} <span class="valeur">${echapper(j.rapport)}</span>`,
+  })}
+    ${htmlRecords(stats.records)}`;
+}
+
+export function htmlPageRace(detail, { moi = null, stats = null } = {}) {
   const classement = detail.colonnes.map((c) => `
       <li class="ligne-race${c.id === moi ? ' isme' : ''}">
         <span class="rang">${echapper(c.rang)}</span>
@@ -213,6 +293,7 @@ export function htmlPageRace(detail, { moi = null } = {}) {
       <p class="hero-details">${detail.tournoisClos === 0 ? 'Aucun tournoi terminé pour l’instant.' : `Somme des scores finaux de ${detail.tournoisClos} tournoi${detail.tournoisClos > 1 ? 's' : ''} terminé${detail.tournoisClos > 1 ? 's' : ''}.`}</p>
     </section>
     <section class="carte carte-race race-saison"><h3>Classement</h3><ol class="liste-race">${classement}</ol></section>
+    ${detail.tournoisClos === 0 ? '' : htmlDetailPoints(stats?.detailPoints, moi)}
     ${detail.tournoisClos === 0 ? '<p class="vide">La Race bouge à la clôture de chaque tournoi.</p>' : `
     <section class="carte carte-detail-race">
       <h3>Détail par tournoi</h3>
@@ -223,7 +304,8 @@ export function htmlPageRace(detail, { moi = null } = {}) {
       </table></div>
       <p class="small">Score final de chaque tournoi (après pari tournoi et bonus de classement), précédé d’une médaille pour les trois premières places ; le score du vainqueur est encadré.</p>
     </section>
-    ${htmlEvolutionRace(detail.evolution)}`}`;
+    ${htmlEvolutionRace(detail.evolution)}
+    ${htmlStatsRace(stats, moi)}`}`;
 }
 
 /* ---------- Page d'un tournoi ---------- */
