@@ -106,6 +106,9 @@ test('records « paris » : sniper, contradicteur, strike, bérézina, confiance
   assert.deepEqual(r.strike.tops.map((x) => [x.prenom, x.ok, x.sur, x.pourcentage, x.tournoi.nom]), [['André', 3, 4, 75, 'Roland-Garros']]);
   assert.deepEqual(r.strike.autres.map((x) => [x.prenom, x.ok, x.sur, x.tournois.map((t) => t.nom)]), [['Paul', 2, 4, ['Roland-Garros']], ['Jacques', 2, 4, ['Roland-Garros']]]);
   assert.deepEqual(r.fullStrike, []); // personne n'a trouvé les 4 vainqueurs
+  // pomme de discorde : 10 sur le joueur 1 (+5) contre 6 sur le joueur 2 (−1) = écart de 6, aux matchs 1 et 2 (André et Paul contre Jacques)
+  assert.deepEqual(r.pommeDiscorde.map((x) => [x.ecart, x.tour, x.paires.length]), [[6, 'Huitièmes de finale', 2], [6, 'Quarts de finale', 2]]);
+  assert.deepEqual(r.pommeDiscorde[0].paires.map(([x, y]) => [x.prenom, x.confiance, y.prenom, y.confiance]), [['André', 10, 'Jacques', 6], ['Paul', 10, 'Jacques', 6]]);
   // bérézina : match 2, quart de finale ×1,5 (−25,5 −25,5 +10,5 avec le bonus de sets = −40,5), score vu du vainqueur (joueur 2)
   assert.equal(r.berezina.length, 1);
   assert.equal(r.berezina[0].total, '−40,5');

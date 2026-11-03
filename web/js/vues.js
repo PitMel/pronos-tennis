@@ -6,6 +6,7 @@ import {
 import { htmlCarteMatch, htmlBaremeTour, bilanDuTour, matchsAParier } from './cartes.js';
 import { htmlSectionPariTournoi, contextePariTournoi } from './pari-tournoi.js';
 import { htmlTrophee, htmlIconeRecompense } from './trophees.js';
+import { htmlLigneRecompenses } from './recompenses.js';
 
 export { htmlCarteMatch, htmlSectionPariTournoi, htmlTrophee };
 
@@ -30,7 +31,7 @@ const htmlTropheesRace = (l) => (l.trophees?.length ? `<span class="trophees-rac
 export const intituleRace = (annee, terminee) => `${terminee ? 'Classement final' : 'Race'} ${annee}`;
 const saisonTerminee = (liste) => liste.length > 0 && liste.every((t) => t.etat === 'clos');
 
-export function htmlRace(race, { lienPalmares = false } = {}) {
+export function htmlRace(race, { lienPalmares = false, ligneRecompenses = '' } = {}) {
   const lignes = race.lignes.map((l) => `
     <li class="ligne-race">
       <span class="rang">${echapper(l.rang)}</span>
@@ -47,13 +48,14 @@ export function htmlRace(race, { lienPalmares = false } = {}) {
       <h3>${echapper(intituleRace(race.annee, race.terminee))}</h3>
       <p class="sous-race">${echapper(etat)}</p>
       <ol class="liste-race">${lignes}</ol>
+      ${ligneRecompenses}
       <a class="lien-detail" href="#/race/${encodeURIComponent(race.annee)}">Détail de la saison ›</a>
       ${lienPalmares ? '<a class="lien-detail lien-palmares" href="#/palmares">Palmarès de la saison ›</a>' : ''}
     </section>`;
 }
 
 /* ---------- Page de la saison : classement puis tournois dans l'ordre chronologique ---------- */
-function htmlCarteTournoi(t, classement = null, joueurs = new Map(), moi = null) {
+function htmlCarteTournoi(t, classement = null, joueurs = new Map(), moi = null, records = null) {
   let palmares = '';
   // « Vainqueur : Prénom Nom » : le joueur de tennis qui a gagné le tournoi (tournoi terminé, finale connue)
   const gagnant = t.etat === 'clos' && t.vainqueur_id ? joueurs.get(t.vainqueur_id) : null;
@@ -64,13 +66,25 @@ function htmlCarteTournoi(t, classement = null, joueurs = new Map(), moi = null)
     // « | Moi · score » : mon score final, sauf si je suis le (ou l'un des) vainqueur(s) des pronos
     const mienne = moi ? classement.lignes.find((l) => l.id === moi) : null;
     const lienMoi = mienne && mienne.rang !== 1 ? `<span class="sep-moi" aria-hidden="true">|</span><span><b>Moi</b> · ${echapper(mienne.final.texte)}</span>` : '';
-    palmares = `<p class="palmares-groupe">${htmlTrophee(t.categorie, t.nom, t)}<span><b>${echapper(premiers.map((l) => l.prenom).join(' et '))}</b>`
+    // trophées « Biggest win » et « Full strike » du vainqueur pour ce tournoi, à côté du trophée du tournoi (même taille)
+    const prenomsPremiers = new Set(premiers.map((l) => l.prenom));
+    const biggest = t.categorie === 'grand_slam' ? records?.grandChelem : t.categorie === 'masters_1000' ? records?.masters : null;
+    const iconesGagnant = (biggest?.some((x) => x.tournoi.id === t.id && prenomsPremiers.has(x.parieur))
+      ? htmlIconeRecompense(t.categorie === 'grand_slam' ? 'biggest_gc' : 'biggest_m1000', 22) : '')
+      + (records?.fullStrike?.some((x) => x.tournoi.id === t.id && prenomsPremiers.has(x.prenom)) ? htmlIconeRecompense('full_strike', 22) : '');
+    const strikeDe = (prenom) => records?.strike?.tops.some((x) => x.tournoi.id === t.id && x.prenom === prenom);
+    palmares = `<p class="palmares-groupe">${htmlTrophee(t.categorie, t.nom, t)}${iconesGagnant}<span><b>${echapper(premiers.map((l) => l.prenom).join(' et '))}</b>`
       + ` · ${echapper(premiers[0].final.texte)}</span>${lienMoi}</p>`
       + `<p class="scores-groupe">${classement.lignes.map((l) => {
         // score avant bonification (matchs + pari tournoi), puis la bonification du 1er et du 2e entre parenthèses : « Paul 112 (+12) »
         const base = l.avantBonus ?? l.final;
-        return `${echapper(l.prenom)} <b class="${base.negatif ? 'neg' : ''}">${echapper(base.texte)}</b>${l.bonus?.positif ? ` <b class="bonus-classement">(${echapper(l.bonus.texte)})</b>` : ''}`;
+        return `${echapper(l.prenom)} <b class="${base.negatif ? 'neg' : ''}">${echapper(base.texte)}</b>${strikeDe(l.prenom) ? htmlIconeRecompense('strike', 14) : ''}${l.bonus?.positif ? ` <b class="bonus-classement">(${echapper(l.bonus.texte)})</b>` : ''}`;
       }).join(' · ')}</p>`;
+    // logos des faits de l'année qui concernent ce tournoi ou l'un de ses matchs, sur une ligne à part en bas
+    const faits = [
+      ['ric_rac', records?.ricRac], ['berezina', records?.berezina], ['pomme_discorde', records?.pommeDiscorde],
+    ].filter(([, liste]) => liste?.some((x) => x.tournoi.id === t.id)).map(([cle]) => htmlIconeRecompense(cle, 26)).join('');
+    if (faits) palmares += `<p class="faits-tournoi">${faits}</p>`;
   }
   return `
     <a class="carte carte-tournoi categorie-${echapper(t.categorie)}" href="#/tournoi/${encodeURIComponent(t.id)}">
@@ -106,7 +120,7 @@ export function htmlOngletsSaisons(annees, affichee) {
  * Liste des tournois. Sans `anneeAffichee`, toutes les saisons à la suite ; avec, une seule saison et des onglets
  * pour passer de l'une à l'autre (la saison en cours existe toujours, même sans tournoi).
  */
-export function htmlListeTournois(tournois, { race = null, anneeCourante = null, anneeAffichee = null, classements = new Map(), joueurs = new Map(), moi = null } = {}) {
+export function htmlListeTournois(tournois, { race = null, anneeCourante = null, anneeAffichee = null, classements = new Map(), joueurs = new Map(), moi = null, stats = null } = {}) {
   const annees = grouperParAnnee(tournois);
   if (race && anneeCourante && !annees.some((a) => a.annee === anneeCourante)) {
     annees.unshift({ annee: anneeCourante, tournois: [] });
@@ -120,9 +134,9 @@ export function htmlListeTournois(tournois, { race = null, anneeCourante = null,
   return `${anneeAffichee !== null ? htmlOngletsSaisons(annees.map((a) => a.annee), choisie ?? anneeCourante) : ''}${visibles.map(({ annee, tournois: liste }) => `
     <section>
       <h2 class="titre-annee titre-saison">Saison ${echapper(annee)}</h2>
-      ${race && annee === anneeCourante ? htmlRace(race, { lienPalmares: anneeAffichee !== null }) : ''}
+      ${race && annee === anneeCourante ? htmlRace(race, { lienPalmares: anneeAffichee !== null, ligneRecompenses: htmlLigneRecompenses(stats?.records, race.lignes) }) : ''}
       ${race && annee !== anneeCourante && liste.some((t) => t.etat === 'clos') ? `<p class="lien-archive"><a href="#/race/${encodeURIComponent(annee)}">Détail de la saison ${echapper(annee)} ›</a></p>` : ''}
-      ${liste.length ? liste.map((t) => htmlCarteTournoi(t, classements.get(t.id) ?? null, joueurs, moi)).join('') : '<p class="vide">Aucun tournoi pour cette saison.</p>'}
+      ${liste.length ? liste.map((t) => htmlCarteTournoi(t, classements.get(t.id) ?? null, joueurs, moi, annee === anneeCourante ? stats?.records ?? null : null)).join('') : '<p class="vide">Aucun tournoi pour cette saison.</p>'}
     </section>`).join('')}`;
 }
 
@@ -246,6 +260,11 @@ function htmlBerezina(b) {
   return `${lienTournoi(b.tournoi)} · ${echapper(b.tour)}<br><b>${echapper(b.vainqueur)}</b> bat ${echapper(b.perdant)}${b.score ? ` · ${echapper(b.score)}` : ''}<br><small>Total des parieurs : <span class="${b.total.startsWith('−') ? 'neg' : ''}">${echapper(b.total)}</span></small><ul class="detail-berezina">${lignes}</ul>`;
 }
 
+function htmlPommeDiscorde(p) {
+  const paires = p.paires.map(([a, b]) => `<b>${echapper(a.prenom)}</b> (${echapper(a.confiance)} sur ${echapper(a.choix)}) contre <b>${echapper(b.prenom)}</b> (${echapper(b.confiance)} sur ${echapper(b.choix)})`).join('<br>');
+  return `${lienTournoi(p.tournoi)} · ${echapper(p.tour)}<br>${echapper(p.joueur1)} – ${echapper(p.joueur2)} · vainqueur : ${echapper(p.vainqueur)}<br>${paires}<br><small>Écart : ${echapper(p.ecart)}</small>`;
+}
+
 /** Courbes de la confiance : abscisse = valeur du pari (6 à 10), ordonnée = part des paris du parieur (%), une courbe par parieur. */
 export function htmlCourbesConfiance(confiances) {
   const W = 640; const H = 300; const L = 52; const R = 24; const haut = 16; const bas = 46;
@@ -312,7 +331,7 @@ function htmlAutresRecompenses(r) {
         ${gros('Biggest win – Master 1000', r.masters, 'Meilleur score d’un parieur dans un Masters 1000, avant bonification de 1re et 2e places.', htmlIconeRecompense('biggest_m1000'))}
         ${compte('Le grand fou', r.grandFou, 'Parieur qui a le plus souvent misé avec une confiance de 10 ; les autres chiffres sont ceux des autres parieurs.', htmlIconeRecompense('grand_fou'))}
         ${compte('Le gagne-petit', r.gagnePetit, 'Parieur qui a le plus souvent misé avec une confiance de 6 ; les autres chiffres sont ceux des autres parieurs.', htmlIconeRecompense('gagne_petit'))}
-        ${rec('Le full strike', r.fullStrike?.length ? r.fullStrike.map((x) => `<b>${echapper(x.prenom)}</b> · ${lienTournoi(x.tournoi)} · ${echapper(x.sur)}/${echapper(x.sur)}`).join('<br>') : '<em>personne pour l’instant</em>', 'Tous les vainqueurs de tous les matchs d’un même tournoi trouvés. Attribué dès la fin du tournoi, sans attendre la fin de la saison ; plusieurs fois possible, ou jamais.', htmlIconeRecompense('full_strike'))}
+        ${rec('Le full strike', r.fullStrike?.length ? r.fullStrike.map((x) => `<b>${echapper(x.prenom)}</b> · ${lienTournoi(x.tournoi)} · ${echapper(x.sur)}/${echapper(x.sur)}`).join('<br>') : '<em>personne pour l’instant</em>', 'Tous les vainqueurs de tous les matchs d’un même tournoi trouvés. Attribué une fois le tournoi terminé, sans attendre la fin de la saison ; plusieurs fois possible, ou jamais.', htmlIconeRecompense('full_strike'))}
         ${rec('Le sniper', r.sniper ? `${r.sniper.tops.map((x) => `<b>${echapper(x.prenom)}</b> · ${taux(x)}`).join('<br>')}${r.sniper.autres.length ? `<br><small>${r.sniper.autres.map((a) => `${echapper(a.prenom)} : ${taux(a)}`).join(' · ')}</small>` : ''}` : '<em>pas encore de match joué</em>', 'Meilleur taux de bons vainqueurs sur tous les matchs joués (bons vainqueurs / paris) ; dessous, le taux des autres parieurs.', htmlIconeRecompense('sniper'))}
         ${rec('Le contradicteur', r.contradicteur ? `${r.contradicteur.tops.map((x) => `<b>${echapper(x.prenom)}</b> · ${echapper(x.bons)} fois raison seul contre tous (sur ${echapper(x.solo)} paris en solitaire)`).join('<br>')}${r.contradicteur.autres.length ? `<br><small>${r.contradicteur.autres.map((a) => `${echapper(a.prenom)} : ${echapper(a.bons)} sur ${echapper(a.solo)}`).join(' · ')}</small>` : ''}` : '<em>personne pour l’instant</em>', 'Nombre de fois où le parieur était seul contre tous (au moins deux autres parieurs, tous sur l’autre joueur) et avait raison ; dessous, le même compteur pour les autres parieurs.', htmlIconeRecompense('contradicteur'))}
       </ul>
@@ -329,9 +348,10 @@ function htmlRecords(r, { nbTournois = 0, nbMatchs = 0 } = {}) {
       <h3><span class="icone-section" aria-hidden="true">📅</span>Faits de l’année</h3>
       <p class="small">${echapper(nbTournois)} tournoi${nbTournois > 1 ? 's' : ''} passé${nbTournois > 1 ? 's' : ''} · ${echapper(nbMatchs)} match${nbMatchs > 1 ? 's' : ''}</p>
       <ul class="liste-records">
-        ${rec('Ric rac !', rr?.length ? rr.map((x) => `${lienTournoi(x.tournoi)} · <b>${echapper(x.premier)}</b> devant <b>${echapper(x.deuxieme)}</b> · ${echapper(x.ecart)} point${x.pluriel ? 's' : ''} d’écart`).join('<br>') : '<em>pas encore de tournoi terminé</em>', 'Tournoi où l’écart entre le 1er et le 2e est le plus faible, avant bonification.')}
-        ${rec('Le strike', r.strike ? `${r.strike.tops.map((x) => `${lienTournoi(x.tournoi)} · <b>${echapper(x.prenom)}</b> · ${taux(x)} bons vainqueurs`).join('<br>')}${r.strike.autres.length ? `<br><small>${r.strike.autres.map((a) => `${echapper(a.prenom)} : ${taux(a)} (${a.tournois.map((t) => echapper(t.nom)).join(', ')})`).join(' · ')}</small>` : ''}` : '<em>pas encore de tournoi terminé</em>', 'Plus grand nombre de bons vainqueurs dans un même tournoi, sur les matchs joués de ce tournoi (tous les ex æquo sont affichés) ; dessous, le meilleur tournoi de chaque autre parieur.')}
-        ${rec('La bérézina', r.berezina?.length ? r.berezina.map(htmlBerezina).join('<hr class="sep-record">') : '<em>pas encore de match concerné</em>', 'Match où le total des points gagnés ou perdus par les parieurs est le plus bas (au moins deux paris).')}
+        ${rec('Ric rac !', rr?.length ? rr.map((x) => `${lienTournoi(x.tournoi)} · <b>${echapper(x.premier)}</b> devant <b>${echapper(x.deuxieme)}</b> · ${echapper(x.ecart)} point${x.pluriel ? 's' : ''} d’écart`).join('<br>') : '<em>pas encore de tournoi terminé</em>', 'Tournoi où l’écart entre le 1er et le 2e est le plus faible, avant bonification.', htmlIconeRecompense('ric_rac'))}
+        ${rec('Le strike', r.strike ? `${r.strike.tops.map((x) => `${lienTournoi(x.tournoi)} · <b>${echapper(x.prenom)}</b> · ${taux(x)} bons vainqueurs`).join('<br>')}${r.strike.autres.length ? `<br><small>${r.strike.autres.map((a) => `${echapper(a.prenom)} : ${taux(a)} (${a.tournois.map((t) => echapper(t.nom)).join(', ')})`).join(' · ')}</small>` : ''}` : '<em>pas encore de tournoi terminé</em>', 'Plus grand nombre de bons vainqueurs dans un même tournoi, sur les matchs joués de ce tournoi (tous les ex æquo sont affichés) ; dessous, le meilleur tournoi de chaque autre parieur.', htmlIconeRecompense('strike'))}
+        ${rec('La bérézina', r.berezina?.length ? r.berezina.map(htmlBerezina).join('<hr class="sep-record">') : '<em>pas encore de match concerné</em>', 'Match où le total des points gagnés ou perdus par les parieurs est le plus bas (au moins deux paris).', htmlIconeRecompense('berezina'))}
+        ${rec('La pomme de discorde', r.pommeDiscorde?.length ? r.pommeDiscorde.map(htmlPommeDiscorde).join('<hr class="sep-record">') : '<em>pas encore de match concerné</em>', 'Match où l’écart entre les paris de deux parieurs est le plus grand : un pari vaut (confiance − 5) pour un joueur et son opposé pour l’autre ; 6 sur A contre 6 sur B = écart de 2, 6 sur A contre 8 sur B = écart de 4.', htmlIconeRecompense('pomme_discorde'))}
       </ul>
     </section>`;
 }
@@ -384,7 +404,7 @@ export function htmlPageRace(detail, { moi = null, stats = null } = {}) {
       <h2 class="hero-titre">Détail de la saison ${echapper(detail.annee)}</h2>
       <p class="hero-details">${detail.tournoisClos === 0 ? 'Aucun tournoi terminé pour l’instant.' : `Somme des scores finaux de ${detail.tournoisClos} tournoi${detail.tournoisClos > 1 ? 's' : ''} terminé${detail.tournoisClos > 1 ? 's' : ''}.`}</p>
     </section>
-    <section class="carte carte-race race-saison"><h3>Classement</h3><ol class="liste-race">${classement}</ol></section>
+    <section class="carte carte-race race-saison"><h3>Classement</h3><ol class="liste-race">${classement}</ol>${htmlLigneRecompenses(stats?.records, detail.colonnes)}</section>
     ${detail.tournoisClos === 0 ? '' : htmlDetailPoints(stats?.detailPoints, moi)}
     ${detail.tournoisClos === 0 ? '<p class="vide">La Race bouge à la clôture de chaque tournoi.</p>' : `
     <section class="carte carte-detail-race">

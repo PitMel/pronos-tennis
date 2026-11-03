@@ -300,6 +300,34 @@ export function statsRace({ moteur, annee, tournois, resultats, profils, matchs,
       };
     }) : null;
 
+  // La pomme de discorde : le match où l'écart entre les paris de deux parieurs est le plus grand.
+  // Un pari vaut (confiance − 5) pour le joueur 1 et −(confiance − 5) pour le joueur 2 : 6 sur A contre 6 sur B = écart de 2 ; 6 sur A contre 8 sur B = 4.
+  const candidatsPomme = [];
+  for (const m of lesMatchs) {
+    if (!matchJoue(m)) continue;
+    const bets = [...parisDe(m)].filter(([id]) => idsProfils.has(id)).map(([id, b]) => ({ id, b, v: (b.choix === 1 ? 1 : -1) * (Number(b.confiance) - 5) }));
+    if (bets.length < 2) continue;
+    let max = -1; let paires = [];
+    for (let i = 0; i < bets.length; i += 1) {
+      for (let j = i + 1; j < bets.length; j += 1) {
+        const e = Math.abs(bets[i].v - bets[j].v);
+        if (e > max) { max = e; paires = []; }
+        if (e === max) paires.push([bets[i], bets[j]]);
+      }
+    }
+    candidatsPomme.push({ m, t: parId.get(m.tournament_id), ecart: max, paires });
+  }
+  const plusGrandEcart = candidatsPomme.reduce((mx, c) => Math.max(mx, c.ecart), 0);
+  const pommeDiscorde = plusGrandEcart > 0
+    ? candidatsPomme.filter((c) => c.ecart === plusGrandEcart).sort((a, b) => parDate(a.t, b.t) || a.m.id - b.m.id).map(({ m, t, ecart, paires }) => {
+      const nomChoix = (bet) => nomJoueur(bet.choix === 1 ? m.p1_id : m.p2_id);
+      return {
+        tournoi: infoTournoi(t), tour: LIBELLES_TOURS[m.tour] ?? m.tour, ecart,
+        joueur1: nomJoueur(m.p1_id), joueur2: nomJoueur(m.p2_id), vainqueur: nomJoueur(m.vainqueur === 1 ? m.p1_id : m.p2_id),
+        paires: paires.map(([x, y]) => [x, y].map((z) => ({ id: z.id, prenom: prenom.get(z.id), choix: nomChoix(z.b), confiance: Number(z.b.confiance) }))),
+      };
+    }) : null;
+
   // ---------- Degrés de confiance ----------
   const confiances = profils.map((x) => {
     const nb = new Map(moteur.CONFIANCES.map((c) => [c, 0]));
@@ -317,7 +345,7 @@ export function statsRace({ moteur, annee, tournois, resultats, profils, matchs,
       ricRac,
       grandFou: compterConfiance(10),
       gagnePetit: compterConfiance(6),
-      sniper, contradicteur, strike, fullStrike, berezina,
+      sniper, contradicteur, strike, fullStrike, berezina, pommeDiscorde,
     },
   };
 }

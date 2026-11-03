@@ -618,3 +618,13 @@ svg.filet[data-edition="1"] { cursor: pointer; }
 
 html, body { overflow-x: hidden; }
 .multiple { display: block; font-weight: 700; color: var(--vert-fonce); }
+
+.ligne-recompenses { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 8px 0 2px; font-size: .78rem; color: var(--texte-doux, #5C6B63); }
+.joueur-recompenses { display: inline-flex; align-items: center; gap: 3px; }
+.mini-recompense { display: inline-flex; align-items: center; }
+.mini-recompense small { font-size: .7rem; font-weight: 700; }
+.ligne-recompenses .icone-recompense { width: 16px; height: 16px; }
+.palmares-groupe .trophee { margin-right: 2px; }
+.scores-groupe .trophee { width: 14px; height: 14px; vertical-align: -2px; margin-left: 2px; }
+.faits-tournoi { display: flex; gap: 8px; margin: 6px 0 0; }
+.faits-tournoi .trophee { width: 26px; height: 26px; }

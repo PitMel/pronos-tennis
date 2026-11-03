@@ -44,6 +44,21 @@ const racine = document.getElementById('app');
 let profilCourant = null;
 
 /* ---------- Écran de connexion ---------- */
+/** Statistiques d'une saison (records, etc.) : charge les matchs et paris des tournois terminés. null si le chargement échoue (un plus, jamais bloquant). */
+async function chargerStatsAnnee({ moteur, annee, tournois, resultats, profils }) {
+  try {
+    const clos = tournois.filter((t) => t.annee === annee && t.etat === 'clos');
+    const idsClos = clos.map((t) => t.id);
+    const [matchs, parisTournoi] = await Promise.all([donnees.matchsDesTournois(idsClos), donnees.parisTournoiDesTournois(idsClos)]);
+    const idsMatchs = matchs.map((m) => m.id);
+    const lots = [];
+    for (let i = 0; i < idsMatchs.length; i += 80) lots.push(idsMatchs.slice(i, i + 80));
+    const lignesParis = (await Promise.all(lots.map((l) => donnees.parisDesMatchs(l)))).flat();
+    const joueurs = await donnees.joueurs([...matchs.flatMap((m) => [m.p1_id, m.p2_id]), ...parisTournoi.flatMap((l) => [l.vainqueur_id, l.finaliste_id]), ...clos.flatMap((t) => [t.vainqueur_id, t.finaliste_id])]);
+    return statsRace({ moteur, annee, tournois, resultats, profils, matchs, paris: regrouperParis(lignesParis), parisTournoi, joueurs });
+  } catch { return null; }
+}
+
 function afficherConnexion(message = '') {
   profilCourant = null;
   racine.innerHTML = `
@@ -745,20 +760,7 @@ async function afficherRoute({ silencieux = false } = {}) {
         donnees.tournois(), donnees.resultats(), donnees.profilsGroupe(profilCourant.is_test), import('./moteur/index.js'),
       ]);
       const detail = detailRace({ moteur, annee: route.annee, tournois, resultats, profils });
-      let stats = null;
-      if (detail.tournoisClos > 0) {
-        try {
-          const clos = tournois.filter((t) => t.annee === route.annee && t.etat === 'clos');
-          const idsClos = clos.map((t) => t.id);
-          const [matchs, parisTournoi] = await Promise.all([donnees.matchsDesTournois(idsClos), donnees.parisTournoiDesTournois(idsClos)]);
-          const idsMatchs = matchs.map((m) => m.id);
-          const lots = [];
-          for (let i = 0; i < idsMatchs.length; i += 80) lots.push(idsMatchs.slice(i, i + 80));
-          const lignesParis = (await Promise.all(lots.map((l) => donnees.parisDesMatchs(l)))).flat();
-          const joueurs = await donnees.joueurs([...matchs.flatMap((m) => [m.p1_id, m.p2_id]), ...parisTournoi.flatMap((l) => [l.vainqueur_id, l.finaliste_id]), ...clos.flatMap((t) => [t.vainqueur_id, t.finaliste_id])]);
-          stats = statsRace({ moteur, annee: route.annee, tournois, resultats, profils: detail.colonnes, matchs, paris: regrouperParis(lignesParis), parisTournoi, joueurs });
-        } catch { stats = null; } // les statistiques sont un plus : la Race s'affiche même si elles échouent
-      }
+      const stats = detail.tournoisClos > 0 ? await chargerStatsAnnee({ moteur, annee: route.annee, tournois, resultats, profils: detail.colonnes }) : null;
       contenu.innerHTML = htmlPageRace(detail, { moi: profilCourant.id, stats });
     } else if (route.nom === 'tournoi') {
       const donneesPage = await chargerPageTournoi(route.id);
@@ -780,7 +782,8 @@ async function afficherRoute({ silencieux = false } = {}) {
         if (c.cloture) classements.set(t.id, c);
       }
       const joueurs = await donnees.joueurs(tournois.filter((t) => t.etat === 'clos').map((t) => t.vainqueur_id));
-      contenu.innerHTML = htmlListeTournois(tournois, { race, anneeCourante: affichee, anneeAffichee: affichee, classements, joueurs, moi: profilCourant.id });
+      const stats = race.tournoisClos > 0 ? await chargerStatsAnnee({ moteur, annee: affichee, tournois, resultats, profils: race.lignes }) : null;
+      contenu.innerHTML = htmlListeTournois(tournois, { race, anneeCourante: affichee, anneeAffichee: affichee, classements, joueurs, moi: profilCourant.id, stats });
     } else {
       page = null;
       const [tournois, resultats, profils, moteur] = await Promise.all([
