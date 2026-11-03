@@ -28,7 +28,7 @@ function htmlArmoire(armoire) {
       ${ligne('ATP Finals', armoire.atp_finals, 'Pas encore d’ATP Finals remportées.')}
       <div class="rangee-armoire">
         <h4>Autres récompenses</h4>
-        <div class="etagere">${armoire.autres.length ? armoire.autres.map((a) => `<figure class="trophee-grand">${htmlIconeRecompense(a.cle, 64, a.annee)}<figcaption><b>${echapper(a.court)}</b><small>${echapper(a.annee)}</small></figcaption></figure>`).join('') : '<p class="small">Pas encore d’autre récompense.</p>'}</div>
+        <div class="etagere">${armoire.autres.length ? armoire.autres.map((a) => `<figure class="trophee-grand">${htmlIconeRecompense(a.cle, 64, a.tournoi ? `${a.tournoi} ${a.annee}` : a.annee)}<figcaption><b>${echapper(a.court)}</b><small>${echapper(a.tournoi ? `${a.tournoi} ${a.annee}` : a.annee)}</small></figcaption></figure>`).join('') : '<p class="small">Pas encore d’autre récompense.</p>'}</div>
       </div>
     </section>`;
 }
@@ -41,13 +41,14 @@ function htmlRecompensesSaison(rs) {
     const champ = !l.termine ? '<td class="vide-case"></td>'
       : l.laurier ? `<td class="case-gagnee">${htmlTrophee(l.laurier.categorie, l.laurier.nom, { annee: l.annee }, 44)}</td>` : point;
     const autres = l.cases.map((c, i) => (c === null ? '<td class="vide-case"></td>'
-      : c.gagne ? `<td class="case-gagnee">${htmlIconeRecompense(rs.colonnes[i].cle, 40, l.annee)}</td>` : point)).join('');
+      : c.gagne ? `<td class="case-gagnee">${htmlIconeRecompense(rs.colonnes[i].cle, 40, c.tournois?.length ? `${c.tournois.join(', ')} ${l.annee}` : l.annee)}${c.nombre > 1 ? `<small class="multiple">×${echapper(c.nombre)}</small>` : ''}</td>`
+        : l.termine ? point : '<td class="vide-case"></td>')).join('');
     return `\n        <tr><th scope="row">${echapper(l.annee)}</th>${champ}${autres}</tr>`;
   }).join('');
   return `
     <section class="carte carte-parcours carte-recompenses-saison">
       <h3><span class="icone-section" aria-hidden="true">🏅</span>Récompenses de saison</h3>
-      <p class="small">Une ligne par saison. Les récompenses ne sont décernées qu’une fois la saison terminée ; un point : récompense obtenue par un autre parieur.</p>
+      <p class="small">Une ligne par saison. Les récompenses ne sont décernées qu’une fois la saison terminée ; un point : récompense obtenue par un autre parieur. Le full strike, lui, est attribué dès la fin du tournoi.</p>
       <div class="tableau-defilant"><table class="parcours">
         <thead><tr><th></th><th scope="col">Championnat de saison</th>${entetes}</tr></thead>
         <tbody>${lignes}</tbody>

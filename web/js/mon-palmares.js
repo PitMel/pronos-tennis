@@ -74,10 +74,13 @@ export function monPalmares({ moteur, moi, profils, tournois, resultats, matchs,
   const monPrenom = profils.find((x) => x.id === moi)?.prenom ?? null;
   const gagneesParAnnee = new Map(); // année → Set des clés de récompense que j'ai gagnées
   const anneesTerminees = new Set();
+  const fullStrikes = new Map(); // année → mes full strikes (tournois), attribués sans attendre la fin de la saison
   for (const annee of annees) {
-    if (!construireRace({ moteur, annee, tournois, resultats, profils }).terminee) continue;
-    anneesTerminees.add(annee);
+    const terminee = construireRace({ moteur, annee, tournois, resultats, profils }).terminee;
     const r = statsRace({ moteur, annee, tournois, resultats, profils, matchs: lesMatchs, paris, parisTournoi, joueurs }).records;
+    fullStrikes.set(annee, (r.fullStrike ?? []).filter((x) => x.id === moi).map((x) => x.tournoi));
+    if (!terminee) continue;
+    anneesTerminees.add(annee);
     const gagnees = new Set();
     if (r.grandChelem?.some((x) => x.parieur === monPrenom)) gagnees.add('biggest_gc');
     if (r.masters?.some((x) => x.parieur === monPrenom)) gagnees.add('biggest_m1000');
@@ -89,7 +92,10 @@ export function monPalmares({ moteur, moi, profils, tournois, resultats, matchs,
   }
   const autresRecompenses = [];
   for (const annee of annees) {
-    for (const rc of AUTRES_RECOMPENSES) if (gagneesParAnnee.get(annee)?.has(rc.cle)) autresRecompenses.push({ cle: rc.cle, titre: rc.titre, court: rc.court, annee });
+    for (const rc of AUTRES_RECOMPENSES) {
+      if (rc.cle === 'full_strike') for (const t of fullStrikes.get(annee) ?? []) autresRecompenses.push({ cle: rc.cle, titre: rc.titre, court: rc.court, annee, tournoi: t.nom });
+      else if (gagneesParAnnee.get(annee)?.has(rc.cle)) autresRecompenses.push({ cle: rc.cle, titre: rc.titre, court: rc.court, annee });
+    }
   }
   const recompensesSaison = {
     colonnes: AUTRES_RECOMPENSES,
@@ -98,7 +104,9 @@ export function monPalmares({ moteur, moi, profils, tournois, resultats, matchs,
       const laurier = saison.find((s) => s.annee === annee) ?? null;
       return {
         annee, termine, laurier,
-        cases: AUTRES_RECOMPENSES.map((rc) => (termine ? { gagne: gagneesParAnnee.get(annee).has(rc.cle) } : null)),
+        cases: AUTRES_RECOMPENSES.map((rc) => (rc.cle === 'full_strike'
+          ? { gagne: (fullStrikes.get(annee) ?? []).length > 0, nombre: (fullStrikes.get(annee) ?? []).length, tournois: (fullStrikes.get(annee) ?? []).map((t) => t.nom) }
+          : termine ? { gagne: gagneesParAnnee.get(annee).has(rc.cle) } : null)),
       };
     }),
   };

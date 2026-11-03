@@ -95,11 +95,12 @@ test('palmarès : la page contient toutes les sections dans l’ordre demandé',
 
 test('palmarès : autres récompenses de saison — décernées une fois l’année terminée, ex æquo compris', () => {
   const rs = d.recompensesSaison;
-  assert.deepEqual(rs.colonnes.map((c) => c.cle), ['biggest_gc', 'biggest_m1000', 'grand_fou', 'gagne_petit', 'sniper', 'contradicteur']);
+  assert.deepEqual(rs.colonnes.map((c) => c.cle), ['biggest_gc', 'biggest_m1000', 'grand_fou', 'gagne_petit', 'full_strike', 'sniper', 'contradicteur']);
   const gagnees = (annee) => rs.lignes.find((l) => l.annee === annee).cases.map((c, i) => (c?.gagne ? rs.colonnes[i].cle : null)).filter(Boolean);
   assert.deepEqual(gagnees(2025), ['biggest_gc', 'grand_fou', 'sniper']); // sniper : ex æquo 1/2 avec Aline
-  assert.deepEqual(gagnees(2026), ['biggest_m1000', 'sniper']);
-  assert.deepEqual(d.armoire.autres.map((a) => [a.cle, a.annee]), [['biggest_m1000', 2026], ['sniper', 2026], ['biggest_gc', 2025], ['grand_fou', 2025], ['sniper', 2025]]);
+  assert.deepEqual(gagnees(2026), ['biggest_m1000', 'full_strike', 'sniper']);
+  assert.equal(rs.lignes.find((l) => l.annee === 2026).cases[4].nombre, 2); // full strike à Miami et à Roland-Garros 2026 (un seul match joué, trouvé)
+  assert.deepEqual(d.armoire.autres.map((a) => [a.cle, a.annee]), [['biggest_m1000', 2026], ['full_strike', 2026], ['full_strike', 2026], ['sniper', 2026], ['biggest_gc', 2025], ['grand_fou', 2025], ['sniper', 2025]]);
   const html = htmlMonPalmares(d);
   for (const t of ['Championnat de saison', 'Autres récompenses', 'Récompenses de saison']) assert.ok(html.includes(t), t);
   assert.ok(html.indexOf('Autres récompenses') > html.indexOf('ATP Finals'));

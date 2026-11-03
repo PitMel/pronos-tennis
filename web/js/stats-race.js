@@ -268,6 +268,10 @@ export function statsRace({ moteur, annee, tournois, resultats, profils, matchs,
     strike = { tops: tops.map(formeStrike), autres };
   }
 
+  // Le full strike : tous les vainqueurs de tous les matchs joués d'un tournoi trouvés (un par parieur et par tournoi)
+  const fullStrike = bonsParTournoi.filter((c) => c.ok === c.sur).sort((a, b) => parDate(a.t, b.t) || cmp(a.prenom, b.prenom))
+    .map((c) => ({ id: c.id, prenom: c.prenom, tournoi: infoTournoi(c.t), sur: c.sur }));
+
   // La bérézina : le match où le total des points des parieurs est le plus bas (au moins deux paris)
   const candidatsBerezina = [];
   for (const m of lesMatchs) {
@@ -313,7 +317,7 @@ export function statsRace({ moteur, annee, tournois, resultats, profils, matchs,
       ricRac,
       grandFou: compterConfiance(10),
       gagnePetit: compterConfiance(6),
-      sniper, contradicteur, strike, berezina,
+      sniper, contradicteur, strike, fullStrike, berezina,
     },
   };
 }

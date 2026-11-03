@@ -617,3 +617,4 @@ svg.filet[data-edition="1"] { cursor: pointer; }
 .record-icone > b, .record-icone > span, .record-icone > small { grid-column: 2; }
 
 html, body { overflow-x: hidden; }
+.multiple { display: block; font-weight: 700; color: var(--vert-fonce); }
