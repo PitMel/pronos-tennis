@@ -92,3 +92,17 @@ test('palmarès : la page contient toutes les sections dans l’ordre demandé',
   const vide = monPalmares({ moteur, moi: 'm', profils, tournois: [], resultats: [], matchs: [], paris: new Map(), parisTournoi: [], joueurs });
   assert.match(htmlMonPalmares(vide), /Aucun tournoi terminé/);
 });
+
+test('palmarès : autres récompenses de saison — décernées une fois l’année terminée, ex æquo compris', () => {
+  const rs = d.recompensesSaison;
+  assert.deepEqual(rs.colonnes.map((c) => c.cle), ['biggest_gc', 'biggest_m1000', 'grand_fou', 'gagne_petit', 'sniper', 'contradicteur']);
+  const gagnees = (annee) => rs.lignes.find((l) => l.annee === annee).cases.map((c, i) => (c?.gagne ? rs.colonnes[i].cle : null)).filter(Boolean);
+  assert.deepEqual(gagnees(2025), ['biggest_gc', 'grand_fou', 'sniper']); // sniper : ex æquo 1/2 avec Aline
+  assert.deepEqual(gagnees(2026), ['biggest_m1000', 'sniper']);
+  assert.deepEqual(d.armoire.autres.map((a) => [a.cle, a.annee]), [['biggest_m1000', 2026], ['sniper', 2026], ['biggest_gc', 2025], ['grand_fou', 2025], ['sniper', 2025]]);
+  const html = htmlMonPalmares(d);
+  for (const t of ['Championnat de saison', 'Autres récompenses', 'Récompenses de saison']) assert.ok(html.includes(t), t);
+  assert.ok(html.indexOf('Autres récompenses') > html.indexOf('ATP Finals'));
+  assert.ok(html.indexOf('Parcours dans les tournois') < html.indexOf('>Récompenses de saison<') || html.indexOf('Parcours dans les tournois') < html.indexOf('Récompenses de saison</h3>'));
+  assert.match(html, /aria-label="Biggest win – Grand Chelem 2025"/);
+});

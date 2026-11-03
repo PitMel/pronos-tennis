@@ -1,6 +1,6 @@
 // Page « Palmarès » du joueur connecté (onglet du même nom). Vues pures à partir du résultat de monPalmares().
 import { echapper } from './outils.js';
-import { htmlTrophee } from './trophees.js';
+import { htmlTrophee, htmlIconeRecompense } from './trophees.js';
 import { htmlPastille, htmlCourbesConfiance } from './vues.js';
 
 const COULEURS_SAISONS = ['#2F6CC2', '#C2562F', '#2FA05A', '#8E44AD', '#D4A017', '#17A2B8'];
@@ -22,10 +22,36 @@ function htmlArmoire(armoire) {
   return `
     <section class="carte carte-armoire">
       <h3><span class="icone-section" aria-hidden="true">🏆</span>Armoire à trophées</h3>
-      ${ligne('Récompenses de saison', armoire.saison, 'Pas encore de récompense de saison.')}
+      ${ligne('Championnat de saison', armoire.saison, 'Pas encore de récompense du championnat de saison.')}
       ${ligne('Grand Chelem', armoire.grand_slam, 'Pas encore de Grand Chelem remporté.')}
       ${ligne('Masters 1000', armoire.masters_1000, 'Pas encore de Masters 1000 remporté.')}
       ${ligne('ATP Finals', armoire.atp_finals, 'Pas encore d’ATP Finals remportées.')}
+      <div class="rangee-armoire">
+        <h4>Autres récompenses</h4>
+        <div class="etagere">${armoire.autres.length ? armoire.autres.map((a) => `<figure class="trophee-grand">${htmlIconeRecompense(a.cle, 64, a.annee)}<figcaption><b>${echapper(a.court)}</b><small>${echapper(a.annee)}</small></figcaption></figure>`).join('') : '<p class="small">Pas encore d’autre récompense.</p>'}</div>
+      </div>
+    </section>`;
+}
+
+function htmlRecompensesSaison(rs) {
+  if (!rs.lignes.length) return '';
+  const entetes = rs.colonnes.map((c) => `<th scope="col">${echapper(c.court)}</th>`).join('');
+  const point = '<td class="case-jouee" aria-label="Pas décerné"><span aria-hidden="true">·</span></td>';
+  const lignes = rs.lignes.map((l) => {
+    const champ = !l.termine ? '<td class="vide-case"></td>'
+      : l.laurier ? `<td class="case-gagnee">${htmlTrophee(l.laurier.categorie, l.laurier.nom, { annee: l.annee }, 44)}</td>` : point;
+    const autres = l.cases.map((c, i) => (c === null ? '<td class="vide-case"></td>'
+      : c.gagne ? `<td class="case-gagnee">${htmlIconeRecompense(rs.colonnes[i].cle, 40, l.annee)}</td>` : point)).join('');
+    return `\n        <tr><th scope="row">${echapper(l.annee)}</th>${champ}${autres}</tr>`;
+  }).join('');
+  return `
+    <section class="carte carte-parcours carte-recompenses-saison">
+      <h3><span class="icone-section" aria-hidden="true">🏅</span>Récompenses de saison</h3>
+      <p class="small">Une ligne par saison. Les récompenses ne sont décernées qu’une fois la saison terminée ; un point : récompense obtenue par un autre parieur.</p>
+      <div class="tableau-defilant"><table class="parcours">
+        <thead><tr><th></th><th scope="col">Championnat de saison</th>${entetes}</tr></thead>
+        <tbody>${lignes}</tbody>
+      </table></div>
     </section>`;
 }
 
@@ -133,6 +159,7 @@ export function htmlMonPalmares(d, { prenom = '' } = {}) {
     </section>
     ${htmlArmoire(d.armoire)}
     ${htmlParcours(d.parcours)}
+    ${htmlRecompensesSaison(d.recompensesSaison)}
     ${htmlParSaison({
     titre: 'Mes vaches à lait', icone: '🐄', saisons: d.saisons, cle: 'vaches', vide: 'Aucun joueur n’a encore rapporté de points.',
     intro: 'Les cinq joueurs de tennis qui t’ont rapporté le plus de points, par saison (entre parenthèses).',

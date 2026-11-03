@@ -299,8 +299,8 @@ const recordLi = (titre, contenu, explication, icone = '') => `<li class="record
 function htmlAutresRecompenses(r) {
   if (!r) return '';
   const rec = recordLi;
-  const gros = (titre, liste, explication) => rec(titre, liste?.length
-    ? liste.map((x) => `${lienTournoi(x.tournoi)} · <b>${echapper(x.parieur)}</b> · ${echapper(x.score)} points`).join('<br>') : '<em>pas encore de tournoi terminé</em>', explication);
+  const gros = (titre, liste, explication, icone) => rec(titre, liste?.length
+    ? liste.map((x) => `${lienTournoi(x.tournoi)} · <b>${echapper(x.parieur)}</b> · ${echapper(x.score)} points`).join('<br>') : '<em>pas encore de tournoi terminé</em>', explication, icone);
   const compte = (titre, x, explication, icone) => rec(titre, x
     ? `${x.noms.map((n) => `<b>${echapper(n)}</b> · ${echapper(x.nombre)} fois`).join('<br>')}${x.autres.length ? `<br><small>${x.autres.map((a) => `${echapper(a.prenom)} : ${echapper(a.nombre)}`).join(' · ')}</small>` : ''}`
     : '<em>personne pour l’instant</em>', explication, icone);
@@ -308,8 +308,8 @@ function htmlAutresRecompenses(r) {
     <section class="carte carte-stats carte-records carte-autres-recompenses">
       <h3><span class="icone-section" aria-hidden="true">🏅</span>Autres récompenses</h3>
       <ul class="liste-records">
-        ${gros('Biggest win – Grand Chelem', r.grandChelem, 'Meilleur score d’un parieur dans un tournoi du Grand Chelem, avant bonification de 1re et 2e places.')}
-        ${gros('Biggest win – Master 1000', r.masters, 'Meilleur score d’un parieur dans un Masters 1000, avant bonification de 1re et 2e places.')}
+        ${gros('Biggest win – Grand Chelem', r.grandChelem, 'Meilleur score d’un parieur dans un tournoi du Grand Chelem, avant bonification de 1re et 2e places.', htmlIconeRecompense('biggest_gc'))}
+        ${gros('Biggest win – Master 1000', r.masters, 'Meilleur score d’un parieur dans un Masters 1000, avant bonification de 1re et 2e places.', htmlIconeRecompense('biggest_m1000'))}
         ${compte('Le grand fou', r.grandFou, 'Parieur qui a le plus souvent misé avec une confiance de 10 ; les autres chiffres sont ceux des autres parieurs.', htmlIconeRecompense('grand_fou'))}
         ${compte('Le gagne-petit', r.gagnePetit, 'Parieur qui a le plus souvent misé avec une confiance de 6 ; les autres chiffres sont ceux des autres parieurs.', htmlIconeRecompense('gagne_petit'))}
         ${rec('Le sniper', r.sniper ? `${r.sniper.tops.map((x) => `<b>${echapper(x.prenom)}</b> · ${taux(x)}`).join('<br>')}${r.sniper.autres.length ? `<br><small>${r.sniper.autres.map((a) => `${echapper(a.prenom)} : ${taux(a)}`).join(' · ')}</small>` : ''}` : '<em>pas encore de match joué</em>', 'Meilleur taux de bons vainqueurs sur tous les matchs joués (bons vainqueurs / paris) ; dessous, le taux des autres parieurs.', htmlIconeRecompense('sniper'))}

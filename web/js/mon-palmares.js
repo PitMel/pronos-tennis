@@ -2,6 +2,7 @@
 // profil des paris, « le juste prix »). Fonctions pures ; le moteur est passé en paramètre.
 import { construireRace } from './classement.js';
 import { statsRace } from './stats-race.js';
+import { AUTRES_RECOMPENSES } from './trophees.js';
 
 const cmp = (a, b) => a.localeCompare(b, 'fr');
 const pct = (n, sur) => (sur > 0 ? Math.round((100 * n) / sur) : null);
@@ -68,8 +69,43 @@ export function monPalmares({ moteur, moi, profils, tournois, resultats, matchs,
     else if (ligne?.rang === 2) saison.push({ id: null, nom: 'Vice-champion de la saison', categorie: 'vice_champion_saison', annee });
   }
   saison.sort((a, b) => b.annee - a.annee);
+
+  // ---------- 1 bis. Autres récompenses de saison (décernées une fois l'année terminée, ex æquo compris) ----------
+  const monPrenom = profils.find((x) => x.id === moi)?.prenom ?? null;
+  const gagneesParAnnee = new Map(); // année → Set des clés de récompense que j'ai gagnées
+  const anneesTerminees = new Set();
+  for (const annee of annees) {
+    if (!construireRace({ moteur, annee, tournois, resultats, profils }).terminee) continue;
+    anneesTerminees.add(annee);
+    const r = statsRace({ moteur, annee, tournois, resultats, profils, matchs: lesMatchs, paris, parisTournoi, joueurs }).records;
+    const gagnees = new Set();
+    if (r.grandChelem?.some((x) => x.parieur === monPrenom)) gagnees.add('biggest_gc');
+    if (r.masters?.some((x) => x.parieur === monPrenom)) gagnees.add('biggest_m1000');
+    if (r.grandFou?.noms.includes(monPrenom)) gagnees.add('grand_fou');
+    if (r.gagnePetit?.noms.includes(monPrenom)) gagnees.add('gagne_petit');
+    if (r.sniper?.tops.some((x) => x.id === moi)) gagnees.add('sniper');
+    if (r.contradicteur?.tops.some((x) => x.id === moi)) gagnees.add('contradicteur');
+    gagneesParAnnee.set(annee, gagnees);
+  }
+  const autresRecompenses = [];
+  for (const annee of annees) {
+    for (const rc of AUTRES_RECOMPENSES) if (gagneesParAnnee.get(annee)?.has(rc.cle)) autresRecompenses.push({ cle: rc.cle, titre: rc.titre, court: rc.court, annee });
+  }
+  const recompensesSaison = {
+    colonnes: AUTRES_RECOMPENSES,
+    lignes: annees.map((annee) => {
+      const termine = anneesTerminees.has(annee);
+      const laurier = saison.find((s) => s.annee === annee) ?? null;
+      return {
+        annee, termine, laurier,
+        cases: AUTRES_RECOMPENSES.map((rc) => (termine ? { gagne: gagneesParAnnee.get(annee).has(rc.cle) } : null)),
+      };
+    }),
+  };
+
   const armoire = {
     saison,
+    autres: autresRecompenses,
     grand_slam: victoires.filter((v) => v.categorie === 'grand_slam').sort(parTournoiPuisAnnee),
     masters_1000: victoires.filter((v) => v.categorie === 'masters_1000').sort(parTournoiPuisAnnee),
     atp_finals: victoires.filter((v) => v.categorie === 'atp_finals').sort(parTournoiPuisAnnee),
@@ -197,5 +233,5 @@ export function monPalmares({ moteur, moi, profils, tournois, resultats, matchs,
     }),
   };
 
-  return { annees, armoire, parcours, saisons, statistiques, profilDesParis, justePrix };
+  return { annees, armoire, parcours, recompensesSaison, saisons, statistiques, profilDesParis, justePrix };
 }
