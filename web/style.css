@@ -337,7 +337,9 @@ svg.filet[data-edition="1"] { cursor: pointer; }
 .hero-race .hero-titre { font-size: clamp(1.8rem, 6vw, 2.6rem); }
 
 /* ---------- Menu et page des règles (3.6) ---------- */
-.menu { display: flex; gap: 4px; background: var(--vert-fonce); margin: 0 -16px 20px; padding: 0 12px 10px; }
+.menu { display: flex; gap: 4px; background: var(--vert-fonce); margin: 0 -16px 20px; padding: 0 12px 10px; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.menu::-webkit-scrollbar { display: none; }
+.menu a { flex: none; white-space: nowrap; }
 .menu a { color: #BFD2C9; text-decoration: none; font-weight: 700; font-size: .9rem; padding: 6px 12px; border-radius: 99px; }
 .menu a[aria-current="page"] { background: rgba(255, 255, 255, .15); color: #fff; }
 .carte-regles h3 { margin: 0 0 8px; font-size: 1.1rem; color: var(--vert-fonce); }
@@ -613,3 +615,5 @@ svg.filet[data-edition="1"] { cursor: pointer; }
 .record-icone { grid-template-columns: 44px 1fr; column-gap: 10px; align-items: center; }
 .record-icone > .icone-recompense { grid-row: 1 / span 3; width: 40px; height: 40px; align-self: center; }
 .record-icone > b, .record-icone > span, .record-icone > small { grid-column: 2; }
+
+html, body { overflow-x: hidden; }

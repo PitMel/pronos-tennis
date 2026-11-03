@@ -24,6 +24,10 @@ test('tournoisPourAccueil : les tournois en cours, sinon le prochain daté', () 
   assert.deepEqual(sans.encours, []);
   assert.equal(sans.prochain.id, 4); // le plus proche à venir ; ni sans date, ni déjà passé
   assert.equal(tournoisPourAccueil([], '2026-11-03').prochain, null);
+  // un tournoi déjà commencé (date de début passée) mais encore « à venir » dans la base passe avant le suivant tant qu'il n'est pas fini
+  const paris = tournoisPourAccueil([t(8, 'a_venir', '2026-10-26', { date_fin: '2026-11-08' }), t(9, 'a_venir', '2026-11-15', { date_fin: '2026-11-22' })], '2026-11-03');
+  assert.equal(paris.prochain.id, 8);
+  assert.equal(tournoisPourAccueil([t(8, 'a_venir', '2026-10-26', { date_fin: '2026-11-01' }), t(9, 'a_venir', '2026-11-15')], '2026-11-03').prochain.id, 9);
 });
 
 test('matchsAParier : ouverts, sans pari de moi, où je ne suis pas exclu', () => {

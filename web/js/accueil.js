@@ -9,13 +9,13 @@ const OUVERT = ['pari_tournoi_ouvert', 'en_cours'];
 const parDate = (a, b) => (a.date_debut ?? '9999-12-31').localeCompare(b.date_debut ?? '9999-12-31') || String(a.nom).localeCompare(String(b.nom), 'fr');
 
 /**
- * Tournois à mettre en avant : tous ceux qui sont en cours (ou ouverts au pari tournoi), sinon le prochain à venir daté.
+ * Tournois à mettre en avant : tous ceux qui sont en cours (ou ouverts au pari tournoi), sinon le premier non commencé dans la base (« à venir ») dont la date de fin n'est pas passée : un tournoi déjà commencé mais pas encore ouvert dans l'appli passe donc avant le suivant.
  * @param {string} aujourdhui AAAA-MM-JJ (Paris)
  */
 export function tournoisPourAccueil(tournois, aujourdhui) {
   const encours = tournois.filter((t) => OUVERT.includes(t.etat)).sort(parDate);
   const prochain = encours.length ? null
-    : tournois.filter((t) => t.etat === 'a_venir' && t.date_debut && t.date_debut >= aujourdhui).sort(parDate)[0] ?? null;
+    : tournois.filter((t) => t.etat === 'a_venir' && t.date_debut && (t.date_fin ?? t.date_debut) >= aujourdhui).sort(parDate)[0] ?? null;
   return { encours, prochain };
 }
 
