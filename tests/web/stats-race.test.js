@@ -64,7 +64,7 @@ test('records : plus gros score avant bonification, ric rac, grand fou, gagne-pe
 test('page Race : les sections viennent dans l’ordre demandé', () => {
   const d = detailRace({ moteur, annee: 2026, tournois, resultats, profils });
   const html = htmlPageRace(d, { moi: 'p', stats: calculer() });
-  const ordre = ['<h3>Classement</h3>', 'Autres récompenses', '<h3>Détail des points</h3>', '<h3>Détail par tournoi</h3>', '<h3>Évolution</h3>', 'Les vaches à lait', 'Les chouchous', 'Les amours impossibles', 'Faits de l’année'];
+  const ordre = ['<h3>Classement</h3>', '<h3>Détail des points</h3>', '<h3>Détail par tournoi</h3>', '<h3>Évolution</h3>', 'Autres récompenses', 'Les vaches à lait', 'Les chouchous', 'Les amours impossibles', 'Faits de l’année'];
   const positions = ordre.map((t) => html.indexOf(t));
   assert.ok(positions.every((x) => x >= 0), `section manquante : ${positions}`);
   assert.deepEqual([...positions].sort((x, y) => x - y), positions);
@@ -117,7 +117,7 @@ test('records « paris » : sniper, contradicteur, strike, bérézina, confiance
   const ordre = ['Les amours impossibles', 'Le thermomètre de la confiance', 'Faits de l’année'].map((t) => html.indexOf(t));
   assert.ok(ordre.every((x) => x >= 0) && ordre[0] < ordre[1] && ordre[1] < ordre[2]);
   assert.match(html, /<td><b>50&nbsp;%<\/b><small>2<\/small><\/td>/); // pourcentage en grand, nombre dessous
-  assert.equal((html.match(/<polyline /g) ?? []).length >= 3, true); // une courbe par parieur dans le thermomètre
+  assert.doesNotMatch(html.slice(html.indexOf('Thermomètre')), /<polyline /); // thermomètre : tableau seul, sans graphique
   for (const t of ['Le sniper', 'Le contradicteur', 'Le strike', 'La bérézina']) assert.match(html, new RegExp(t));
 });
 

@@ -609,3 +609,7 @@ svg.filet[data-edition="1"] { cursor: pointer; }
 .carte-mes-stats .liste-records { margin-top: 14px; }
 .table-prix thead th.col-joueur span { margin-left: 5px; }
 .table-prix td.total { background: #F4F7F4; }
+
+.record-icone { grid-template-columns: 44px 1fr; column-gap: 10px; align-items: center; }
+.record-icone > .icone-recompense { grid-row: 1 / span 3; width: 40px; height: 40px; align-self: center; }
+.record-icone > b, .record-icone > span, .record-icone > small { grid-column: 2; }

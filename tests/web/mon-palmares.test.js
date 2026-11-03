@@ -61,9 +61,9 @@ test('palmarès : statistiques par saison et records personnels', () => {
   assert.deepEqual([an(2026).sets.ok, an(2026).sets.sur], [1, 1]);
   assert.deepEqual([an(2025).vainqueurTournoi.ok, an(2025).vainqueurTournoi.sur], [1, 1]);
   assert.deepEqual([an(2026).vainqueurTournoi.ok, an(2026).vainqueurTournoi.sur], [0, 1]);
-  assert.deepEqual(s.meilleurGrandChelem.map((x) => [x.annee, x.score]), [[2025, '52']]);
-  assert.deepEqual(s.meilleurMasters.map((x) => [x.annee, x.score]), [[2026, '30']]);
-  assert.deepEqual(s.recordSaison.map((x) => [x.annee, x.score]), [[2025, '61']]); // 52 + 9
+  assert.deepEqual(s.meilleurGrandChelem.map((x) => [x.annee, x.score]), [[2025, '28']]);
+  assert.deepEqual(s.meilleurMasters.map((x) => [x.annee, x.score]), [[2026, '18']]);
+  assert.deepEqual(s.recordSaison.map((x) => [x.annee, x.score]), [[2025, '33']]); // 28 + 5, avant bonification
   assert.ok(s.meilleurStrike.length >= 1);
 });
 

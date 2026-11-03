@@ -133,10 +133,13 @@ export function monPalmares({ moteur, moi, profils, tournois, resultats, matchs,
   strikes.sort((a, b) => b.ok - a.ok || b.ok * a.sur - a.ok * b.sur || (a.tournoi.annee - b.tournoi.annee));
   const meilleurStrike = strikes.length ? strikes.filter((s) => memeScore(s, strikes[0])) : [];
 
-  // meilleur tournoi (score final) d'une catégorie, ex æquo compris
+  // score d'un tournoi avant bonification de 1re et 2e places (matchs + pari tournoi)
+  const avantBonus = (r) => Fraction.de(r.points_matchs ?? '0').plus(Fraction.de(r.points_pari_tournoi ?? '0'));
+
+  // meilleur tournoi (avant bonification) d'une catégorie, ex æquo compris
   const meilleurTournoi = (categorie) => {
     const lignes = mesArchives.filter((r) => parId.get(r.tournament_id).categorie === categorie)
-      .map((r) => ({ t: parId.get(r.tournament_id), valeur: Fraction.de(r.score_final ?? '0') }));
+      .map((r) => ({ t: parId.get(r.tournament_id), valeur: avantBonus(r) }));
     if (!lignes.length) return [];
     const max = lignes.reduce((m, l) => (l.valeur.comparer(m) > 0 ? l.valeur : m), lignes[0].valeur);
     return lignes.filter((l) => l.valeur.comparer(max) === 0).sort((a, b) => a.t.annee - b.t.annee)
@@ -146,7 +149,7 @@ export function monPalmares({ moteur, moi, profils, tournois, resultats, matchs,
   // record de saison : plus gros total d'une année
   const totaux = annees.map((annee) => ({
     annee,
-    valeur: mesArchives.filter((r) => parId.get(r.tournament_id).annee === annee).reduce((s, r) => s.plus(Fraction.de(r.score_final ?? '0')), ZERO),
+    valeur: mesArchives.filter((r) => parId.get(r.tournament_id).annee === annee).reduce((s, r) => s.plus(avantBonus(r)), ZERO),
   }));
   const maxTotal = totaux.reduce((m, x) => (m === null || x.valeur.comparer(m) > 0 ? x.valeur : m), null);
   const recordSaison = maxTotal === null ? [] : totaux.filter((x) => x.valeur.comparer(maxTotal) === 0).sort((a, b) => a.annee - b.annee)

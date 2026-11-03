@@ -81,9 +81,9 @@ function htmlStatistiques(st) {
       ${bloc('Pari sur le vainqueur du tournoi', 'vainqueurTournoi', '—')}
       <ul class="liste-records">
         ${rec('Mon meilleur strike', st.meilleurStrike.length ? st.meilleurStrike.map((x) => `${lien({ id: x.tournoi.id, nom: x.tournoi.nom, annee: x.tournoi.annee })} · ${taux(x)} bons vainqueurs`).join('<br>') : '<em>pas encore de tournoi terminé</em>', 'Tournoi où tu as trouvé le plus de bons vainqueurs, toutes saisons confondues (ex æquo : tous affichés).')}
-        ${rec('Mon meilleur tournoi du Grand Chelem', meilleurs(st.meilleurGrandChelem), 'Tournoi du Grand Chelem où tu as marqué le plus de points (score final).')}
-        ${rec('Mon meilleur Master 1000', meilleurs(st.meilleurMasters), 'Masters 1000 où tu as marqué le plus de points (score final).')}
-        ${rec('Mon record saison', st.recordSaison.length ? st.recordSaison.map((x) => `<b>${echapper(x.score)}</b> points (${echapper(x.annee)})`).join('<br>') : '<em>pas encore de saison</em>', 'Plus gros total de points obtenu sur une saison.')}
+        ${rec('Mon meilleur tournoi du Grand Chelem', meilleurs(st.meilleurGrandChelem), 'Tournoi du Grand Chelem où tu as marqué le plus de points (avant bonification de 1re et 2e places).')}
+        ${rec('Mon meilleur Master 1000', meilleurs(st.meilleurMasters), 'Masters 1000 où tu as marqué le plus de points (avant bonification de 1re et 2e places).')}
+        ${rec('Mon record saison', st.recordSaison.length ? st.recordSaison.map((x) => `<b>${echapper(x.score)}</b> points (${echapper(x.annee)})`).join('<br>') : '<em>pas encore de saison</em>', 'Plus gros total de points obtenu sur une saison, avant bonification de 1re et 2e places.')}
       </ul>
     </section>`;
 }
