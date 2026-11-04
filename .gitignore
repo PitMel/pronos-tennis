@@ -15,3 +15,4 @@ Thumbs.db
 !.vscode/settings.json
 # Site assemblé pour GitHub Pages (régénéré par npm run web)
 _site/
+h2h-donnees/

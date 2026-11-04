@@ -5,6 +5,8 @@
 #      simulation : comme un vrai passage, mais n'écrit rien dans la base
 #      normal     : vrai passage
 #      sonde      : exploration de l'API pour retrouver les tournois déjà joués (lecture seule)
+#      h2h-essai : vérifie les téléchargements H2H avec une paire fictive (Sinner – Alcaraz), sans toucher à la base
+#      h2h-simulation / h2h : seulement le calcul des face-à-face (H2H), sans enregistrer / en enregistrant (le calcul a aussi lieu à chaque passage normal)
 # Secrets nécessaires (Settings > Secrets and variables > Actions > Secrets) :
 #   LIVETENNIS_API_KEY, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
 # Le programme (src/sync/) n'a aucune dépendance à installer ; les fenêtres horaires (7 h – 1 h, heure de Paris) sont gérées par le programme.
@@ -19,7 +21,7 @@ on:
         description: 'Mode'
         type: choice
         default: diagnostic
-        options: [diagnostic, simulation, normal, sonde]
+        options: [diagnostic, simulation, normal, sonde, h2h-simulation, h2h, h2h-essai]
 
 permissions:
   contents: read
@@ -50,5 +52,42 @@ jobs:
             diagnostic) node src/sync/cli.js --diagnostic ;;
             simulation) node src/sync/cli.js --simulation ;;
             sonde)      node src/sync/cli.js --sonde ;;
+            h2h|h2h-simulation|h2h-essai) echo "Synchronisation de l'API ignorée (mode $MODE)." ;;
             *)          node src/sync/cli.js ;;
           esac
+      # Face-à-face (H2H) : seulement s'il y a des paires de joueurs à calculer ; les fichiers de résultats ATP sont gardés dans le cache
+      # de GitHub Actions (jamais dans le dépôt : leur licence interdit de les redistribuer).
+      - name: H2H — des paires à calculer ?
+        id: h2h_besoin
+        if: ${{ !cancelled() && inputs.mode != 'diagnostic' && inputs.mode != 'sonde' }}
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          if [ "${{ inputs.mode }}" = "h2h-essai" ]; then node src/sync/h2h-cli.js --besoin --essai; else node src/sync/h2h-cli.js --besoin; fi
+      - name: H2H — fichiers conservés
+        if: steps.h2h_besoin.outputs.besoin == 'true'
+        uses: actions/cache/restore@v4
+        with:
+          path: h2h-donnees
+          key: h2h-donnees-v1-${{ github.run_id }}
+          restore-keys: h2h-donnees-v1-
+      - name: H2H — calcul
+        id: h2h
+        if: steps.h2h_besoin.outputs.besoin == 'true'
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          MODE: ${{ inputs.mode || 'normal' }}
+        run: |
+          case "$MODE" in
+            h2h-essai) node src/sync/h2h-cli.js --essai ;;
+            h2h-simulation) node src/sync/h2h-cli.js --simulation ;;
+            *) node src/sync/h2h-cli.js ;;
+          esac
+      - name: H2H — conserver les fichiers téléchargés
+        if: ${{ !cancelled() && steps.h2h.outputs.modifie == 'true' }}
+        uses: actions/cache/save@v4
+        with:
+          path: h2h-donnees
+          key: h2h-donnees-v1-${{ github.run_id }}
