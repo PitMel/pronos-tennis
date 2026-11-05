@@ -260,6 +260,16 @@ export function creerDonnees(supabase) {
       throw error;
     },
 
+    /** Face-à-face (table h2h) entre les joueurs demandés : Map(« petitId-grandId » → ligne). Vide si la table est illisible (le H2H est un plus). */
+    async h2h(ids) {
+      const uniques = [...new Set(ids.filter((i) => i !== null && i !== undefined))];
+      if (uniques.length < 2) return new Map();
+      try {
+        const lignes = await lire(supabase.from('h2h').select('joueur_a, joueur_b, statut, victoires_a, victoires_b, par_surface, rencontres').in('joueur_a', uniques).in('joueur_b', uniques));
+        return new Map(lignes.map((l) => [`${l.joueur_a}-${l.joueur_b}`, l]));
+      } catch { return new Map(); }
+    },
+
     /** Joueurs de tennis demandés, sous forme de Map id → joueur. */
     async joueurs(ids) {
       const uniques = [...new Set(ids.filter((i) => i !== null && i !== undefined))];

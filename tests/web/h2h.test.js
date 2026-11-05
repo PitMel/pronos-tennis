@@ -1,0 +1,52 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { cleH2H, h2hDuMatch, htmlCompteurH2H, htmlFenetreH2H } from '../../web/js/h2h.js';
+import { htmlCarteMatch } from '../../web/js/cartes.js';
+
+const ligne = { joueur_a: 5, joueur_b: 9, statut: 'ok', victoires_a: 10, victoires_b: 7,
+  par_surface: [{ surface: 'Dur', a: 6, b: 5 }, { surface: 'Gazon', a: 4, b: 2 }],
+  rencontres: [{ annee: 2026, tournoi: 'Monte Carlo', surface: 'Terre battue', tour: 'Finale', score: '7-6(5) 6-3', vainqueur: 'b' }, { annee: 2025, tournoi: 'US Open', surface: 'Dur', tour: 'Finale', score: '6-2 3-6 6-1 6-4', vainqueur: 'a' }] };
+const h2h = new Map([['5-9', ligne], ['5-6', { joueur_a: 5, joueur_b: 6, statut: 'indisponible', raison: 'joueur non reconnu' }]]);
+
+test('h2hDuMatch : orienté du point de vue de p1, quel que soit l’ordre des identifiants', () => {
+  const direct = h2hDuMatch(h2h, { p1_id: 5, p2_id: 9 });
+  assert.deepEqual([direct.v1, direct.v2], [10, 7]);
+  assert.deepEqual(direct.rencontres.map((r) => r.vainqueur), [2, 1]);
+  const inverse = h2hDuMatch(h2h, { p1_id: 9, p2_id: 5 });
+  assert.deepEqual([inverse.v1, inverse.v2], [7, 10]);
+  assert.deepEqual(inverse.rencontres.map((r) => r.vainqueur), [1, 2]);
+  assert.deepEqual(inverse.parSurface[0], { surface: 'Dur', v1: 5, v2: 6 });
+  assert.equal(h2hDuMatch(h2h, { p1_id: 5, p2_id: 6 }), null); // indisponible
+  assert.equal(h2hDuMatch(h2h, { p1_id: 1, p2_id: 2 }), null); // pas encore calculé
+  assert.equal(cleH2H(9, 5), '5-9');
+});
+
+test('compteur et fenêtre : chiffres de chaque côté, bouton H2H sur la ligne, tableau trié, deux couleurs', () => {
+  const m = { p1_id: 9, p2_id: 5 };
+  const c = htmlCompteurH2H(m, h2hDuMatch(h2h, m));
+  assert.match(c, /<b>7<\/b>[\s\S]*data-action="h2h"[^>]*>H2H<\/button>[\s\S]*<b>10<\/b>/);
+  assert.equal(htmlCompteurH2H(m, null), '<div class="h2h-indispo">H2H indisponible</div>');
+  const f = htmlFenetreH2H(h2hDuMatch(h2h, m), 'Alcaraz', 'Sinner');
+  assert.match(f, /h2h-gros[\s\S]*Alcaraz <b>7<\/b>[\s\S]*<b>10<\/b> Sinner/);
+  assert.deepEqual([...f.matchAll(/<th scope="col">([^<]+)</g)].map((x) => x[1]), ['Année', 'Vainqueur', 'Tournoi', 'Tour', 'Surface', 'Score']);
+  assert.ok(f.indexOf('2026') < f.indexOf('2025')); // le plus récent d'abord
+  assert.match(f, /<tr class="h2h-g1"><td>2026<\/td><th scope="row">Alcaraz</); // p1 (Alcaraz) a gagné en 2026
+  assert.match(f, /<tr class="h2h-g2"><td>2025<\/td><th scope="row">Sinner</);
+  assert.match(f, /TennisMyLife/);
+  assert.match(htmlFenetreH2H({ v1: 0, v2: 0, parSurface: [], rencontres: [] }, 'A', 'B'), /Première rencontre/);
+});
+
+test('carte de match : le H2H remplace les scores tant qu’il n’y en a pas ; sans fonction activée, rien ne change', () => {
+  const joueurs = new Map([[5, { id: 5, nom: 'Jannik Sinner' }], [9, { id: 9, nom: 'Carlos Alcaraz' }]]);
+  const match = { id: 1, tournament_id: 1, tour: 'R16', p1_id: 9, p2_id: 5, statut: 'a_venir', heure_prevue: '2026-11-04T10:00:00Z', neutralise: false, verrouille: false, resultat_visible: false };
+  const avec = htmlCarteMatch(match, { joueurs, profils: [], categorie: 'masters_1000', h2h });
+  assert.match(avec, /class="tableau-score"[\s\S]*Alcaraz[\s\S]*<b>7<\/b>[\s\S]*>H2H<\/button>[\s\S]*<b>10<\/b>[\s\S]*Sinner/);
+  const sans = htmlCarteMatch(match, { joueurs, profils: [], categorie: 'masters_1000', h2h: new Map() });
+  assert.match(sans, /H2H indisponible/);
+  assert.doesNotMatch(htmlCarteMatch(match, { joueurs, profils: [], categorie: 'masters_1000' }), /H2H/);
+  // match terminé avec score visible : ce sont les jeux qui s'affichent
+  const fini = { ...match, statut: 'termine', resultat_visible: true, vainqueur: 1, score: { games: [[6, 4], [6, 3]] }, sets_joues: 2 };
+  const f = htmlCarteMatch(fini, { joueurs, profils: [], categorie: 'masters_1000', h2h });
+  assert.doesNotMatch(f, /btn-h2h/);
+  assert.match(f, /<div class="sets/);
+});

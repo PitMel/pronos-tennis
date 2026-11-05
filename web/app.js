@@ -22,7 +22,8 @@ import { brancherParis } from './js/paris-ui.js';
 import { messageService, htmlServiceIndisponible } from './js/service.js';
 import { htmlPageRegles } from './js/regles.js';
 import { tournoisPourAccueil, statutPariTournoi, htmlAccueil } from './js/accueil.js';
-import { matchsAParier } from './js/cartes.js';
+import { matchsAParier, nomCourt } from './js/cartes.js';
+import { h2hDuMatch, htmlFenetreH2H } from './js/h2h.js';
 import { htmlAdminAccueil, htmlAccesRefuse } from './js/admin.js';
 import { validerTournoi, tournoiPourBase, messageErreurAdmin, htmlCalendrierAdmin, htmlFormulaireTournoi } from './js/admin-calendrier.js';
 import { construirePalmares, htmlPalmares } from './js/palmares.js';
@@ -115,6 +116,7 @@ function afficherCadre(profil) {
       <a href="#/profil" data-menu="mdp">Compte</a>
     </nav>
     <main id="contenu"></main>`;
+  document.getElementById('contenu').addEventListener('click', gererClicH2H);
   document.getElementById('contenu').addEventListener('click', gererClicPariTournoi);
   document.getElementById('contenu').addEventListener('click', gererClicAdmin);
   document.getElementById('contenu').addEventListener('submit', gererSoumissionAdmin);
@@ -154,6 +156,7 @@ async function chargerPageTournoi(id) {
     import('./moteur/index.js'),
     donnees.resultats(),
   ]);
+  const h2h = await donnees.h2h(matchs.flatMap((m) => [m.p1_id, m.p2_id]));
   const parisTournoi = regrouperParisTournoi(lignesPariTournoi);
   if (etatPT.tournoiId !== id) Object.assign(etatPT, { tournoiId: id, brouillon: {}, edition: false, enCours: false, message: '' });
   // « qui a parié » : seulement pour les matchs encore ouverts aux paris
@@ -168,10 +171,30 @@ async function chargerPageTournoi(id) {
     matchs,
     joueurs,
     ctx: {
-      moi: profilCourant.id, profils: ordonnerProfils(profils, profilCourant.id), moteur, paris, qui, classement, ...etatParis,
+      moi: profilCourant.id, profils: ordonnerProfils(profils, profilCourant.id), moteur, paris, qui, classement, h2h, ...etatParis,
       parisTournoi, quiTournoi: regrouperQui(quiTournoi), saisiePariTournoi: etatPT,
     },
   };
+}
+
+/** Bouton « H2H » d'une carte de match : ouvre la fenêtre des rencontres passées. */
+function gererClicH2H(e) {
+  const bouton = e.target.closest?.('[data-action="h2h"]');
+  if (!bouton || !page) return;
+  const m = { p1_id: Number(bouton.dataset.j1), p2_id: Number(bouton.dataset.j2) };
+  const h = h2hDuMatch(page.ctx.h2h, m);
+  if (!h) return;
+  let d = document.getElementById('fenetre-h2h');
+  if (!d) {
+    d = document.createElement('dialog');
+    d.id = 'fenetre-h2h';
+    d.className = 'fenetre-h2h';
+    d.setAttribute('aria-labelledby', 'titre-h2h');
+    d.addEventListener('click', (ev) => { if (ev.target === d || ev.target.closest('[data-action="h2h-fermer"]')) d.close(); }); // clic sur le fond ou « Fermer »
+    document.body.appendChild(d);
+  }
+  d.innerHTML = htmlFenetreH2H(h, nomCourt(page.joueurs.get(m.p1_id)), nomCourt(page.joueurs.get(m.p2_id)));
+  d.showModal();
 }
 
 function contexteCartes() {

@@ -4,6 +4,7 @@
 import { echapper, formaterHeureParis } from './outils.js';
 import { formaterScore, LIBELLES_TOURS } from './tournois.js';
 import { svgTerrain } from './filet.js';
+import { h2hDuMatch, htmlCompteurH2H } from './h2h.js';
 
 const NBSP = ' ';
 
@@ -112,7 +113,7 @@ function chip(etat, { attendus, participe }) {
  * Les jeux des deux joueurs sont dans des cellules de même largeur, centrées : les chiffres de chaque set sont alignés
  * l'un au-dessus de l'autre. Chaque nom est centré dans l'espace restant de sa moitié. Le classement est celui de la dernière synchronisation.
  */
-function htmlTableauScore(match, p1, p2, gagnant) {
+function htmlTableauScore(match, p1, p2, gagnant, h2h = undefined) {
   const jeux = match.resultat_visible && Array.isArray(match.score?.games)
     ? match.score.games.filter((s) => Array.isArray(s) && s.length === 2 && s.every((n) => Number.isFinite(n)))
     : [];
@@ -121,6 +122,8 @@ function htmlTableauScore(match, p1, p2, gagnant) {
     + `${joueur?.classement ? ` <span class="rang-joueur">(n°${NBSP}${echapper(joueur.classement)})</span>` : ''}</span></div>`;
   const score = (numero, indice) => (jeux.length
     ? `<div class="sets${etat(numero)}">${jeux.map((s) => `<b>${echapper(s[indice])}</b>`).join('')}</div>` : '');
+  // pas encore de score : le face-à-face prend la place des jeux (h2h indéfini = fonction non activée, ex. tests)
+  if (!jeux.length && h2h !== undefined) return `<div class="tableau-score">${nom(p1, 1)}${htmlCompteurH2H(match, h2h)}${nom(p2, 2)}</div>`;
   return `<div class="tableau-score">${nom(p1, 1)}${score(1, 0)}<div class="filet-ligne"></div>${score(2, 1)}${nom(p2, 2)}</div>`;
 }
 
@@ -302,7 +305,7 @@ export function htmlCarteMatch(match, ctx = {}) {
   return `
     <article class="match carte-filet" data-match="${echapper(match.id)}" data-etat="${etat}">
       <div class="ch"><time>${echapper(formaterHeureParis(match.heure_prevue) || 'Horaire à venir')}</time>${chip(etat, { attendus, participe })}</div>
-      <div class="terrain">${htmlTableauScore(match, p1, p2, gagnant)}${terrain}</div>
+      <div class="terrain">${htmlTableauScore(match, p1, p2, gagnant, ctx.h2h ? h2hDuMatch(ctx.h2h, match) : undefined)}${terrain}</div>
       ${dessous}
     </article>`;
 }
