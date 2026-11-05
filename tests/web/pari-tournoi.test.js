@@ -112,7 +112,7 @@ test('page : saisie, éliminés désactivés, bouton valider selon le brouillon'
   const vide = htmlSectionPariTournoi({ tournoi: tournoi(), matchs, joueurs, ctx });
   assert.match(vide, /Choisis ton vainqueur et ton finaliste/);
   assert.match(vide, /data-action="tp-valider" disabled/);
-  assert.match(vide, /Léa a parié, Thomas pas encore/);
+  assert.match(vide, /Léa a parié, Thomas n’a pas encore parié/);
   assert.match(vide, /ligne-choix elimine/);
   assert.match(vide, /data-joueur="1"[^>]*disabled/); // Alcaraz éliminé
   assert.match(vide, /Chaque joueur choisi qui joue la finale rapporte 4 points[\s\S]*12 au maximum/);

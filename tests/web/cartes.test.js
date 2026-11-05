@@ -48,7 +48,7 @@ test('etatCarte : un état par situation', () => {
 
 test('phraseQui : qui a parié, ou avertissement si l’on est seul', () => {
   const qui = new Map([['p', true], ['l', true], ['m', false], ['t', false]]);
-  assert.equal(phraseQui(profils, 'p', qui), 'Léa a parié, Marc et Thomas pas encore.');
+  assert.equal(phraseQui(profils, 'p', qui), 'Léa a parié, Marc et Thomas n’ont pas encore parié.');
   assert.match(phraseQui([profils[0]], 'p', new Map([['p', false]])), /seul joueur de ton groupe/);
   assert.equal(phraseQui(profils, 'p', null), '');
 });
@@ -94,8 +94,8 @@ test('exemple B : paris révélés, scénarios « Si … gagne »', () => {
   const m = match({ verrouille: true, paris_reveles: true });
   const html = htmlCarteMatch(m, ctxBase({ paris: new Map([[10, paris]]) }));
   assert.match(html, /data-etat="revele"/);
-  assert.match(html, /Si Alcaraz gagne<\/td><td class="pos">\+10,5<\/td><td class="pos">\+6<\/td><td class="pos">\+12<\/td><td class="pos">\+13,5<\/td>/);
-  assert.match(html, /Si Fritz gagne<\/td><td class="pos">\+3<\/td><td class="pos">\+9<\/td><td class="neg">−1,5<\/td><td class="neg">−9<\/td>/);
+  assert.match(html, /Si Alcaraz gagne<\/td><td class="pos">\+10,5<\/td><td class="neg">\+6<\/td><td class="pos">\+12<\/td><td class="pos">\+13,5<\/td>/);
+  assert.match(html, /Si Fritz gagne<\/td><td class="neg">\+3<\/td><td class="pos">\+9<\/td><td class="neg">−1,5<\/td><td class="neg">−9<\/td>/);
   assert.doesNotMatch(html, /data-action="valider"/);
 });
 
@@ -104,7 +104,7 @@ test('saisie : carte ouverte, brouillon, bouton désactivé tant que le pari est
   assert.match(sans, /data-etat="ouvert"/);
   assert.match(sans, /À toi de parier/);
   assert.match(sans, /data-action="valider" disabled/);
-  assert.match(sans, /Léa a parié, Marc et Thomas pas encore/);
+  assert.match(sans, /Léa a parié, Marc et Thomas n’ont pas encore parié/);
   const avec = htmlCarteMatch(match(), ctxBase({ brouillons: new Map([[10, { choix: 2, confiance: 9 }]]) }));
   assert.match(avec, /Fritz, confiance 9/);
   assert.match(avec, /data-action="valider">Valider mon pari/);
@@ -161,4 +161,16 @@ test('échappement : un nom de joueur piégé ne casse pas le HTML', () => {
   const j = new Map([[1, { id: 1, nom: 'A <img src=x onerror=1>' }], [2, { id: 2, nom: 'B' }]]);
   const html = htmlCarteMatch(match(), { ...ctxBase(), joueurs: j });
   assert.doesNotMatch(html, /<img src=x/);
+});
+
+test('forfait : pas de H2H, « Forfait » à la place du score du joueur forfait, « Qualifié » de l’autre ; étiquettes', async () => {
+  const { htmlCarteMatch } = await import('../../web/js/cartes.js');
+  const joueurs = new Map([[1, { nom: 'Tommy Paul' }], [2, { nom: 'Quentin Halys' }]]);
+  const m = { id: 9, tour: 'R16', statut: 'termine', fin_match: 'forfait', resultat_visible: true, paris_reveles: true, vainqueur: 1, p1_id: 1, p2_id: 2, verrouille: true };
+  const h = htmlCarteMatch(m, { joueurs, profils: [], h2h: new Map() });
+  assert.match(h, /Qualifié/);
+  assert.match(h, /Forfait/);
+  assert.doesNotMatch(h, /btn-h2h|h2h-nb/);
+  assert.match(htmlCarteMatch({ ...m, fin_match: 'normal', score: { games: [[6, 4]] } }, { joueurs, profils: [] }), /chip fin termine/);
+  assert.match(htmlCarteMatch({ id: 9, tour: 'R16', statut: 'a_venir', paris_reveles: true, verrouille: true, p1_id: 1, p2_id: 2 }, { joueurs, profils: [] }), /Match à venir/);
 });

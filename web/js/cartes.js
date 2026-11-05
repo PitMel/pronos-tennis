@@ -90,17 +90,17 @@ export function phraseQui(profils, moi, qui) {
   const non = autres.filter((p) => !qui.get(p.id)).map((p) => p.prenom);
   const parts = [];
   if (oui.length) parts.push(`${listeFrancaise(oui)} ${oui.length > 1 ? 'ont' : 'a'} parié`);
-  if (non.length) parts.push(`${listeFrancaise(non)} pas encore`);
+  if (non.length) parts.push(`${listeFrancaise(non)} ${non.length > 1 ? 'n’ont' : 'n’a'} pas encore parié`);
   return `${parts.join(', ')}.`;
 }
 
 function chip(etat, { attendus, participe }) {
   switch (etat) {
-    case 'termine': return '<span class="chip fin"><svg width="13" height="13" viewBox="0 0 14 14" aria-hidden="true"><path d="M2.5 7.5l3 3 6-7" fill="none" stroke="#1B7F44" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>Terminé</span>';
-    case 'termine-masque': return '<span class="chip fin">Terminé · résultat masqué</span>';
+    case 'termine': return '<span class="chip fin termine"><svg width="13" height="13" viewBox="0 0 14 14" aria-hidden="true"><path d="M2.5 7.5l3 3 6-7" fill="none" stroke="#1B7F44" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>Terminé</span>';
+    case 'termine-masque': return '<span class="chip fin termine">Terminé · résultat masqué</span>';
     case 'en-cours': return '<span class="chip live">En cours</span>';
     case 'neutralise': return '<span class="chip fin">Neutralisé</span>';
-    case 'revele': return '<span class="chip fin">Paris révélés</span>';
+    case 'revele': return '<span class="chip fin">Match à venir</span>';
     case 'verrouille': return '<span class="chip wait">Paris verrouillés</span>';
     case 'attente': return `<span class="chip wait">${attendus.length ? `Pari posé, en attente de ${echapper(listeFrancaise(attendus))}` : 'Pari posé'}</span>`;
     default: return participe ? '<span class="chip open">À toi de parier</span>' : '<span class="chip fin">Tu ne participes pas</span>';
@@ -122,6 +122,11 @@ function htmlTableauScore(match, p1, p2, gagnant, h2h = undefined) {
     + `${joueur?.classement ? ` <span class="rang-joueur">(n°${NBSP}${echapper(joueur.classement)})</span>` : ''}</span></div>`;
   const score = (numero, indice) => (jeux.length
     ? `<div class="sets${etat(numero)}">${jeux.map((s) => `<b>${echapper(s[indice])}</b>`).join('')}</div>` : '');
+  // forfait : plus de face-à-face ; « Forfait » grisé du côté de celui qui déclare forfait, « Qualifié » de l'autre
+  if (match.resultat_visible && match.fin_match === 'forfait' && gagnant) {
+    const mot = (numero) => `<div class="sets${etat(numero)} mot-forfait"><b>${gagnant === numero ? 'Qualifié' : 'Forfait'}</b></div>`;
+    return `<div class="tableau-score">${nom(p1, 1)}${mot(1)}<div class="filet-ligne"></div>${mot(2)}${nom(p2, 2)}</div>`;
+  }
   // pas encore de score : le face-à-face prend la place des jeux (h2h indéfini = fonction non activée, ex. tests)
   if (!jeux.length && h2h !== undefined) return `<div class="tableau-score">${nom(p1, 1)}${htmlCompteurH2H(match, h2h)}${nom(p2, 2)}</div>`;
   return `<div class="tableau-score">${nom(p1, 1)}${score(1, 0)}<div class="filet-ligne"></div>${score(2, 1)}${nom(p2, 2)}</div>`;
@@ -136,7 +141,7 @@ export function annotationsBareme(ctx, match) {
       confiance,
       gagne: fmt(ctx, g.gagne),
       perdu: fmt(ctx, g.perdu),
-      perduNegatif: g.perdu.comparer(ctx.moteur.ZERO) < 0,
+      perduNegatif: true, // une défaite est toujours en rouge, même si les points sont positifs
     };
   });
 }
@@ -144,9 +149,8 @@ export function annotationsBareme(ctx, match) {
 function htmlPilules(ctx, match, confiance) {
   if (!ctx.moteur) return '';
   const g = ctx.moteur.gainsPossibles(confiance, ctx.categorie, match.tour);
-  const negatif = g.perdu.comparer(ctx.moteur.ZERO) < 0;
   return `<div class="mine"><span class="pill pos">gagné ${echapper(fmt(ctx, g.gagne))}</span>`
-    + `<span class="pill ${negatif ? 'neg' : 'pos'}">perdu ${echapper(fmt(ctx, g.perdu))}</span></div>`;
+    + `<span class="pill neg">perdu ${echapper(fmt(ctx, g.perdu))}</span></div>`;
 }
 
 /** Match terminé en Grand Chelem : le parieur avait annoncé le bon nombre de sets (même si son vainqueur est faux). */
@@ -273,7 +277,8 @@ export function htmlCarteMatch(match, ctx = {}) {
       const entetes = profils.map((p) => `<th>${echapper(p.prenom)}</th>`).join('');
       const ligne = (v) => `<tr><td>Si ${echapper(noms[v - 1])} gagne</td>${profils.map((p) => {
         const x = s[v][p.id];
-        return `<td class="${x && x.comparer(ctx.moteur.ZERO) < 0 ? 'neg' : 'pos'}">${x ? echapper(fmt(ctx, x)) : '—'}</td>`;
+        const perd = parisMatch.get(p.id)?.choix !== v; // pari perdu dans ce scénario : toujours en rouge
+        return `<td class="${perd ? 'neg' : 'pos'}">${x ? echapper(fmt(ctx, x)) : '—'}</td>`;
       }).join('')}</tr>`;
       table = `<table class="scn"><tr><th></th>${entetes}</tr>${ligne(1)}${ligne(2)}</table>`;
     }
@@ -317,8 +322,7 @@ export function htmlBaremeTour(categorie, tour, moteur) {
   const multTexte = moteur.formaterPoints(mult);
   const cases = (cle) => [6, 7, 8, 9, 10].map((c) => {
     const g = moteur.gainsPossibles(c, categorie, tour)[cle];
-    const neg = g.comparer(moteur.ZERO) < 0;
-    return `<div class="v ${cle === 'gagne' ? 'g' : (neg ? 'l' : 'l ok')}">${echapper(moteur.formaterPoints(g, { signe: true }))}</div>`;
+    return `<div class="v ${cle === 'gagne' ? 'g' : 'l'}">${echapper(moteur.formaterPoints(g, { signe: true }))}</div>`;
   }).join('');
   const rond = [6, 7, 8, 9, 10].map((c) => `<div class="c">${c}</div>`).join('');
   const libelle = (LIBELLES_TOURS[tour] ?? tour).toLowerCase();

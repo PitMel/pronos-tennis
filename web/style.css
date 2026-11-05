@@ -201,6 +201,9 @@ a.retour-clair { color: #BFD2C9; margin: 0; }
 .chip.live::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: #E5483A; box-shadow: 0 0 0 3px rgba(229, 72, 58, .25); }
 .chip.wait { background: var(--terrain); color: #fff; }
 .chip.open { background: var(--balle); color: #10303A; }
+.chip.fin.termine { background: var(--balle); color: #10303A; }
+.sets.mot-forfait b { width: auto; font-size: .95rem; text-transform: uppercase; letter-spacing: .03em; }
+.sets.gagnant.mot-forfait b { color: var(--balle); }
 
 .terrain { display: grid; grid-template-columns: minmax(96px, 36%) 1fr; gap: 6px; align-items: stretch; }
 .terrain svg.filet { display: block; width: 100%; height: auto; }
