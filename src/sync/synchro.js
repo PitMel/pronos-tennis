@@ -58,6 +58,7 @@ export async function executerSynchro({ api, base, maintenant = new Date(), para
   async function traiter(donnees) {
     const n = normaliserListe(donnees, suivis);
     for (const [k, v] of Object.entries(n.ignores)) resume.ignores += k ? v : 0;
+    if (Object.keys(n.ignores).length) journal(`ignorés : ${JSON.stringify(n.ignores)} (reçus : ${Array.isArray(donnees) ? donnees.length : 0})`);
     await noter(n.anomalies);
     if (n.matchs.length === 0) return;
     if (simulation) {
