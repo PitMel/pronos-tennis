@@ -162,7 +162,7 @@ async function chargerPageTournoi(id) {
   // « qui a parié » : seulement pour les matchs encore ouverts aux paris
   const qui = new Map();
   await Promise.all(matchs
-    .filter((m) => m.statut !== 'termine' && !m.neutralise && !m.verrouille)
+    .filter((m) => !m.neutralise && !m.verrouille)
     .map(async (m) => { qui.set(m.id, regrouperQui(await donnees.quiAParie(m.id))); }));
   const paris = regrouperParis(lignes);
   const classement = classementTournoi({ moteur, tournoi, matchs, paris, archives: archives.filter((r) => r.tournament_id === id), profils });

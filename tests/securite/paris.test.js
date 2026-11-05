@@ -173,9 +173,8 @@ test('premier pari après le début du match : accepté, et il révèle les pari
   assert.deepEqual(joueursVus(await b.voirParis(ID.paul, m)), [ID.andre, ID.jacques, ID.paul].sort(), 'tout le groupe a parié : révélés');
 });
 
-test('verrouillage : statut « terminé » ou forfait interdisent tout nouveau pari', async () => {
+test('verrouillage : un forfait interdit tout nouveau pari ; un match terminé non révélé accepte un premier pari', async () => {
   for (const modif of [
-    "statut = 'termine', vainqueur = 1, sets_joues = 2",
     "fin_match = 'forfait'",
   ]) {
     const m = await b.nouveauMatch();

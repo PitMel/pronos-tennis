@@ -87,7 +87,7 @@ export function htmlPageRegles({ moteur }) {
     <section class="carte carte-regles">
       <h3>5. Qui voit quoi, et jusqu’à quand on peut parier</h3>
       <ul>
-        <li>Tu peux <b>modifier</b> ton pari jusqu’au premier de ces deux moments : le match <b>commence</b>, ou <b>tout le monde a parié</b>. Si tu n’as pas encore parié, tu peux le faire <b>même après le début du match</b>, tant qu’il n’est pas terminé. Il n’y a pas d’heure limite fixe.</li>
+        <li>Tu peux <b>modifier</b> ton pari jusqu’au premier de ces deux moments : le match <b>commence</b>, ou <b>tout le monde a parié</b>. Si tu n’as pas encore parié, tu peux le faire <b>même après le début ou la fin du match</b>, tant que les paris ne sont pas révélés (le résultat reste masqué jusque-là). Il n’y a pas d’heure limite fixe.</li>
         <li>Les paris des autres sont <b>cachés</b> tant que tout le monde n’a pas parié. Ensuite ils sont <b>révélés et figés</b>.</li>
         <li>Le <b>résultat et le score</b> n’apparaissent que quand tout le monde a parié <b>et</b> que le match est terminé.</li>
         <li>Tu vois toujours <b>qui a parié</b> et si le match est verrouillé.</li>

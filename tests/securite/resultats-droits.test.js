@@ -36,7 +36,7 @@ test('match terminé mais paris non révélés : vainqueur, score et sets resten
     assert.equal(v.fin_match, null, 'même le type de fin (abandon) est masqué');
     assert.equal(v.resultat_visible, false);
     assert.equal(v.paris_reveles, false);
-    assert.equal(v.verrouille, true);
+    assert.equal(v.verrouille, uid === ID.andre, 'seul celui qui a parié est verrouillé : les autres peuvent encore parier');
   }
 });
 
@@ -232,7 +232,7 @@ test('le rôle « service » (synchronisation) contourne la sécurité par ligne
   assert.equal(lu.rows[0].n, 1);
   await b.comme(null, "update public.matches set statut = 'en_cours', debut_detecte = now() where id = $1", [m], 'service_role');
   await b.comme(null, "update public.matches set statut = 'termine', vainqueur = 1, sets_joues = 2 where id = $1", [m], 'service_role');
-  await refuse(b.parier(ID.paul, m, 2, 7)); // match terminé : plus de pari
+  assert.equal((await b.parier(ID.paul, m, 2, 7)).affectedRows, 1); // match terminé mais non révélé : premier pari accepté
   await b.comme(null, "insert into public.sync_log (endpoint, ok) values ('/matches', true)", [], 'service_role');
 });
 

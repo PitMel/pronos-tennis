@@ -34,8 +34,8 @@ test('matchsAParier : ouverts, sans pari de moi, où je ne suis pas exclu', () =
   const matchs = [m(1), m(2), m(3, { verrouille: true }), m(4, { neutralise: true }), m(5, { statut: 'en_cours' }), m(6), m(7, { statut: 'termine' })];
   const paris = new Map([[2, new Map([['moi', { choix: 1 }]])]]);
   const qui = new Map([[6, new Map([['autre', true]])]]); // je ne suis pas dans « qui » pour le match 6 : exclu
-  assert.deepEqual([...matchsAParier(matchs, { moi: 'moi', paris, qui })], [1, 5]);
-  assert.deepEqual([...matchsAParier(matchs, { moi: 'moi', paris })].sort(), [1, 5, 6]);
+  assert.deepEqual([...matchsAParier(matchs, { moi: 'moi', paris, qui })], [1, 5, 7]);
+  assert.deepEqual([...matchsAParier(matchs, { moi: 'moi', paris })].sort(), [1, 5, 6, 7]);
   assert.equal(matchsAParier(matchs, { moi: undefined, paris }).size, 0);
 });
 
@@ -68,7 +68,7 @@ test('htmlAccueil : à poser, à jour, prochain tournoi, rien', () => {
 
 test('page tournoi : pastille « à parier » sur les tours où il reste des paris', () => {
   const tournoi = t(1, 'en_cours', null);
-  const matchs = [m(1, { tour: 'R16', statut: 'termine' }), m(2, { tour: 'QF' }), m(3, { tour: 'QF' }), m(4, { tour: 'QF' })];
+  const matchs = [m(1, { tour: 'R16', statut: 'termine', verrouille: true }), m(2, { tour: 'QF' }), m(3, { tour: 'QF' }), m(4, { tour: 'QF' })];
   const ctx = { moi: 'p', moteur, profils: [{ id: 'p', prenom: 'Pierre' }], paris: new Map([[3, new Map([['p', { choix: 1, confiance: 7 }]])]]), qui: new Map() };
   const html = htmlPageTournoi({ tournoi, matchs, joueurs: new Map(), ctx });
   assert.match(html, /Quarts de finale<span class="reste"[^>]*>2 à parier<\/span>/);

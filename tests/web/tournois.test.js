@@ -101,7 +101,7 @@ test('vues : liste des tournois, échappement et lien', () => {
 });
 
 test('vues : le résultat reste masqué tant que resultat_visible est faux', () => {
-  const masque = htmlCarteMatch(m(1, 'QF', { statut: 'termine', vainqueur: 1, score: { games: [[6, 4]] } }), { joueurs });
+  const masque = htmlCarteMatch(m(1, 'QF', { statut: 'termine', verrouille: true, vainqueur: 1, score: { games: [[6, 4]] } }), { joueurs });
   assert.doesNotMatch(masque, /6-4/);
   assert.doesNotMatch(masque, /gagnant/);
   assert.match(masque, /résultat masqué/i);
