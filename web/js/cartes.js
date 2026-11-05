@@ -42,7 +42,7 @@ export function listeFrancaise(noms) {
 export function etatCarte(match, { aParie }) {
   if (match.neutralise) return 'neutralise';
   if (match.statut === 'termine') return match.resultat_visible ? 'termine' : 'termine-masque';
-  if (match.statut === 'en_cours') return 'en-cours';
+  if (match.statut === 'en_cours') return match.verrouille || aParie ? 'en-cours' : 'ouvert';
   if (match.verrouille) return match.paris_reveles ? 'revele' : 'verrouille';
   return aParie ? 'attente' : 'ouvert';
 }
@@ -184,7 +184,7 @@ function brouillonValide(ctx, brouillon) {
 
 function sousTexteCommun(profils, moi, qui) {
   const phrase = phraseQui(profils, moi, qui);
-  return `${phrase ? `${echapper(phrase)} ` : ''}Les paris des autres s’ouvrent quand tout le monde a parié. Modifiable jusqu’au début du match ou jusqu’à ce que tout le monde ait parié.`;
+  return `${phrase ? `${echapper(phrase)} ` : ''}Les paris des autres s’ouvrent quand tout le monde a parié. Un pari posé reste modifiable jusqu’au début du match ou jusqu’à ce que tout le monde ait parié ; un premier pari reste possible pendant le match.`;
 }
 
 /**
@@ -350,7 +350,7 @@ export function matchsAParier(matchs, { moi, paris, qui } = {}) {
   const ids = new Set();
   if (!moi) return ids;
   for (const m of matchs) {
-    if (m.neutralise || m.statut !== 'a_venir' || m.verrouille) continue;
+    if (m.neutralise || m.statut === 'termine' || m.verrouille) continue;
     if (paris?.get(m.id)?.has(moi)) continue;
     const q = qui?.get(m.id);
     if (q && !q.has(moi)) continue;

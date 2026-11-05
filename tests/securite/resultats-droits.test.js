@@ -87,7 +87,9 @@ test('indicateur « verrouillé » : faux avant tout, vrai au début du match ou
   const m = await b.nouveauMatch();
   assert.equal((await vue(ID.andre, m)).verrouille, false);
   await b.demarrer(m);
-  assert.equal((await vue(ID.andre, m)).verrouille, true);
+  assert.equal((await vue(ID.andre, m)).verrouille, false, 'sans pari posé, on peut encore parier pendant le match');
+  await b.parier(ID.andre, m, 1, 8);
+  assert.equal((await vue(ID.andre, m)).verrouille, true, 'pari posé et match commencé : verrouillé');
   const m2 = await b.nouveauMatch();
   for (const uid of TESTS) await b.parier(uid, m2, 1, 8);
   assert.equal((await vue(ID.andre, m2)).verrouille, true);
@@ -229,7 +231,8 @@ test('le rôle « service » (synchronisation) contourne la sécurité par ligne
   const lu = await b.comme(null, 'select count(*)::int as n from public.bets where match_id = $1', [m], 'service_role');
   assert.equal(lu.rows[0].n, 1);
   await b.comme(null, "update public.matches set statut = 'en_cours', debut_detecte = now() where id = $1", [m], 'service_role');
-  await refuse(b.parier(ID.paul, m, 2, 7));
+  await b.comme(null, "update public.matches set statut = 'termine', vainqueur = 1, sets_joues = 2 where id = $1", [m], 'service_role');
+  await refuse(b.parier(ID.paul, m, 2, 7)); // match terminé : plus de pari
   await b.comme(null, "insert into public.sync_log (endpoint, ok) values ('/matches', true)", [], 'service_role');
 });
 

@@ -124,7 +124,7 @@ Les valeurs sont **exactes en interne** (nombres décimaux exacts, pas de flotta
 
 ## 5. Visibilité et verrouillage [Décidé]
 
-1. Un pari est **modifiable** jusqu'au premier de ces deux événements :
+1. Un joueur qui n'a **pas encore parié** peut saisir son pari **jusqu'à la fin du match** (donc aussi après son début), tant que les paris ne sont pas révélés (modifié le 5 nov. 2026). Un pari **déjà posé** est **modifiable** jusqu'au premier de ces deux événements :
    - l'application a **détecté le début du match** (statut `live` dans l'API) ;
    - **tous les joueurs ont parié** sur ce match.
 2. Pas de date limite fixe.

@@ -151,20 +151,30 @@ test('après révélation : paris figés (le dernier joueur a pu parier, plus pe
 
 // ------------------------------------------------------------------ verrouillage au début du match
 
-test('début du match détecté : plus aucun pari ni modification, et les paris restent cachés si tout le monde n’a pas parié', async () => {
+test('début du match détecté : plus de modification d’un pari posé (mais un premier pari reste possible), et les paris restent cachés si tout le monde n’a pas parié', async () => {
   const m = await b.nouveauMatch();
   await b.parier(ID.andre, m, 1, 8);
   await b.demarrer(m);
-  await refuse(b.parier(ID.paul, m, 2, 7));
   const r = await b.comme(ID.andre, 'update public.bets set confiance = 6 where joueur_id = $1 and match_id = $2', [ID.andre, m]);
   assert.equal(r.affectedRows, 0);
   assert.deepEqual(await b.voirParis(ID.paul, m), [], 'paris toujours cachés (Paul n’a pas parié)');
   assert.deepEqual(joueursVus(await b.voirParis(ID.andre, m)), [ID.andre], 'André ne voit que le sien');
 });
 
-test('verrouillage : statut « en_cours », « terminé » ou forfait interdisent tout nouveau pari', async () => {
+test('premier pari après le début du match : accepté, et il révèle les paris quand tout le monde a parié', async () => {
+  const m = await b.nouveauMatch();
+  await b.parier(ID.andre, m, 1, 8);
+  await b.demarrer(m);
+  assert.equal((await b.parier(ID.paul, m, 2, 7)).affectedRows, 1);
+  assert.deepEqual(joueursVus(await b.voirParis(ID.paul, m)), [ID.paul], 'Jacques n’a pas parié : toujours cachés');
+  assert.equal((await b.parier(ID.jacques, m, 1, 6)).affectedRows, 1);
+  const r = await b.comme(ID.paul, 'update public.bets set confiance = 6 where joueur_id = $1 and match_id = $2', [ID.paul, m]);
+  assert.equal(r.affectedRows, 0, 'une fois posé, le pari n’est plus modifiable');
+  assert.deepEqual(joueursVus(await b.voirParis(ID.paul, m)), [ID.andre, ID.jacques, ID.paul].sort(), 'tout le groupe a parié : révélés');
+});
+
+test('verrouillage : statut « terminé » ou forfait interdisent tout nouveau pari', async () => {
   for (const modif of [
-    "statut = 'en_cours'",
     "statut = 'termine', vainqueur = 1, sets_joues = 2",
     "fin_match = 'forfait'",
   ]) {

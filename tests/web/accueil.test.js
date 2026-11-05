@@ -34,8 +34,8 @@ test('matchsAParier : ouverts, sans pari de moi, où je ne suis pas exclu', () =
   const matchs = [m(1), m(2), m(3, { verrouille: true }), m(4, { neutralise: true }), m(5, { statut: 'en_cours' }), m(6), m(7, { statut: 'termine' })];
   const paris = new Map([[2, new Map([['moi', { choix: 1 }]])]]);
   const qui = new Map([[6, new Map([['autre', true]])]]); // je ne suis pas dans « qui » pour le match 6 : exclu
-  assert.deepEqual([...matchsAParier(matchs, { moi: 'moi', paris, qui })], [1]);
-  assert.deepEqual([...matchsAParier(matchs, { moi: 'moi', paris })].sort(), [1, 6]);
+  assert.deepEqual([...matchsAParier(matchs, { moi: 'moi', paris, qui })], [1, 5]);
+  assert.deepEqual([...matchsAParier(matchs, { moi: 'moi', paris })].sort(), [1, 5, 6]);
   assert.equal(matchsAParier(matchs, { moi: undefined, paris }).size, 0);
 });
 

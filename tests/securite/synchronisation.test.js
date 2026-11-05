@@ -105,7 +105,7 @@ test('début détecté : les paris se verrouillent ; il ne s’efface jamais et 
   const l = await ligne('B1');
   assert.equal(l.statut, 'en_cours');
   assert.notEqual(l.debut_detecte, null);
-  await refuse(b.parier(ID.paul, id, 1, 8)); // match commencé : plus de pari
+  assert.equal((await b.comme(ID.andre, 'update public.bets set confiance = 5 where joueur_id = $1 and match_id = $2', [ID.andre, id])).affectedRows, 0); // pari posé et match commencé : plus modifiable
   const debut = l.debut_detecte;
   await appliquer([{ ...m, statut: 'a_venir' }]); // l'API « recule »
   const l2 = await ligne('B1');
