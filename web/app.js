@@ -10,7 +10,7 @@
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
 import { SUPABASE_URL, SUPABASE_CLE_PUBLIABLE } from './config.js';
 import { emailTechnique, messageErreurConnexion } from './js/identifiants.js';
-import { echapper, anneeCourante, dateDuJour } from './js/outils.js';
+import { echapper, anneeCourante, dateDuJour, formaterMaj } from './js/outils.js';
 import { construireRace, classementTournoi, detailRace } from './js/classement.js';
 import { statsRace } from './js/stats-race.js';
 import { monPalmares } from './js/mon-palmares.js';
@@ -102,7 +102,7 @@ function afficherConnexion(message = '') {
 function afficherCadre(profil) {
   racine.innerHTML = `
     <header class="bandeau">
-      <h1><a href="#/">Pronos <span>Tennis</span></a></h1>
+      <h1><a href="#/">Pronos <span>Tennis</span></a> <small class="maj" id="maj-synchro" hidden></small></h1>
       ${profil.is_test ? '<span class="mention-test">Compte de test</span>' : ''}
       ${htmlPastille(profil)}
       <button class="discret" id="deconnexion" type="button">Déconnexion</button>
@@ -454,6 +454,17 @@ async function gererClotureAdmin(bouton) {
     flashAdmin = clos ? 'Clôture corrigée : archive mise à jour.' : 'Tournoi clôturé.';
     await afficherRoute({ silencieux: true });
   } catch (e) { redessinerCloture({ imposes, erreurs: [messageErreurCloture(e)] }); }
+}
+
+/* ---------- Bandeau : heure du dernier appel à l'API (« MAJ HH:MM », heure de Paris) ---------- */
+async function majHeureSynchro() {
+  const zone = document.getElementById('maj-synchro');
+  if (!zone) return;
+  try {
+    const texte = formaterMaj(await donnees.derniereSynchro());
+    zone.textContent = texte;
+    zone.hidden = !texte;
+  } catch { zone.hidden = true; } // simple confort d'affichage : une erreur ne doit jamais gêner l'application
 }
 
 /* ---------- Profil : photo et couleur ---------- */
@@ -911,6 +922,7 @@ async function demarrer() {
   }
   profilCourant = profil;
   afficherCadre(profil);
+  majHeureSynchro();
   await afficherRoute();
 }
 

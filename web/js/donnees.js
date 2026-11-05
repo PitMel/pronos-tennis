@@ -140,6 +140,13 @@ export function creerDonnees(supabase) {
         .select('id, date_appel, endpoint, http_status, ok, quota_restant, message, reset_a').order('id', { ascending: false }).limit(limite));
     },
 
+    /** Date (ISO) du dernier appel à l'API, ou null : visible de tous les comptes connectés (le journal complet reste réservé à l'administrateur). */
+    async derniereSynchro() {
+      const { data, error } = await supabase.rpc('derniere_synchro');
+      if (error) throw error;
+      return data ?? null;
+    },
+
     /** Identifiants de l'API rattachés à un tournoi (lecture ouverte, écriture administrateur). */
     async idsApi(tournoiId) {
       const lignes = await lire(supabase.from('tournament_api_ids').select('api_id').eq('tournament_id', tournoiId));

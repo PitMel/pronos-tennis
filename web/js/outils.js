@@ -19,6 +19,18 @@ export function formaterHeureParis(iso) {
   return `${p.weekday} ${p.day} ${p.month} · ${p.hour}h${p.minute}`;
 }
 
+/** « MAJ 21:35 » (heure de Paris) ; chaîne vide si la date est inconnue. */
+export function formaterMaj(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  const p = Object.fromEntries(
+    new Intl.DateTimeFormat('fr-FR', { timeZone: FUSEAU, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' })
+      .formatToParts(d).map((x) => [x.type, x.value]),
+  );
+  return `MAJ ${p.hour}:${p.minute}`;
+}
+
 function dateUtc(ymd) {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(ymd ?? ''));
   return m ? new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]), 12)) : null;

@@ -40,6 +40,7 @@ body {
 .bandeau { gap: 8px 10px; }
 .mention-test { white-space: nowrap; }
 .bandeau h1 span { color: var(--balle); }
+.bandeau .maj { font-size: .68rem; font-weight: 600; opacity: .8; margin-left: 4px; white-space: nowrap; }
 
 .pastille {
   width: 34px; height: 34px; border-radius: 50%;

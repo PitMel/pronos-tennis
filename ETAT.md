@@ -172,6 +172,12 @@ Choix de conception faits par Claude (à signaler à Pierre s'ils le gênent) :
 
 Choix de conception de l'étape 3.3 (à signaler à Pierre) : la maquette 1 n'est pas lisible par Claude (PNG indisponible) ; barres du terrain conformes au cahier §12.1 (une barre par parieur, hauteur = confiance) plutôt que des balles. Le terrain est condensé en hauteur (24 px par cran). Le glissement tactile est désactivé (il bloquerait le défilement) : au doigt on touche, à la souris on peut aussi glisser. `qui_a_parie` est appelé une fois par match ouvert (à regrouper plus tard si lent). Pari tournoi : si un joueur tente de choisir quelqu'un qui vient de perdre un match dont le résultat lui est encore masqué, la base refuse (message « éliminé ») : cas rare, qui révèle indirectement ce résultat ; à reprendre si cela gêne. Pierre seul dans le groupe réel : son pari serait révélé et figé aussitôt (avertissement affiché sur la carte).
 
+## Bandeau « MAJ HH:MM » (fait le 5 nov. 2026, demandé par Pierre)
+
+- Migration `0014_derniere_synchro.sql` : fonction `derniere_synchro()` (security definer) qui ne renvoie que la date du dernier appel de `sync_log` ; appelable par les comptes connectés, pas par `anon`. Le journal complet reste réservé à l'administrateur. **Installée et vérifiée sur le vrai projet.**
+- Interface : `formaterMaj()` (`web/js/outils.js`, heure de Paris) ; texte « MAJ 21:35 » à côté de « Pronos Tennis » dans le bandeau, lu une fois au chargement de l'application ; masqué si inconnu ou en cas d'erreur. Tests : `tests/web/maj-synchro.test.js`.
+- Limite connue : l'heure est celle du dernier chargement de la page (pas de rafraîchissement automatique) ; elle ne bouge pas hors de la fenêtre 1 h – 7 h (aucun appel).
+
 ## Idées pour plus tard (demandées par Pierre le 25 oct. 2026)
 
 **Hors cahier des charges, à étudier seulement une fois tout le reste accompli** (priorité : application fonctionnelle en ligne). Rien ne se code sans son accord : citation à l'ouverture de la page ; images des tournois ; dates des tournois (affichage ; la saisie admin des dates est déjà prévue au cahier) ; photos des joueurs de tennis ; confrontations directes (H2H) ; notification à l'ouverture d'un tournoi (voir point ouvert n° 10 : e-mail/push, gratuit uniquement) ; couleurs de la page selon le tournoi ; armoire des trophées (à rapprocher des trophées du palmarès, section 12.2).
