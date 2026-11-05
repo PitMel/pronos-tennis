@@ -174,3 +174,12 @@ test('forfait : pas de H2H, « Forfait » à la place du score du joueur forfait
   assert.match(htmlCarteMatch({ ...m, fin_match: 'normal', score: { games: [[6, 4]] } }, { joueurs, profils: [] }), /chip fin termine/);
   assert.match(htmlCarteMatch({ id: 9, tour: 'R16', statut: 'a_venir', paris_reveles: true, verrouille: true, p1_id: 1, p2_id: 2 }, { joueurs, profils: [] }), /Match à venir/);
 });
+
+test('match terminé : le H2H disparaît même quand le score est masqué', async () => {
+  const { htmlCarteMatch } = await import('../../web/js/cartes.js');
+  const joueurs = new Map([[1, { nom: 'Taylor Fritz' }], [2, { nom: 'Arthur Fils' }]]);
+  const h2h = new Map([['1-2', { statut: 'ok', victoires_a: 1, victoires_b: 0, par_surface: [], rencontres: [], joueur_a: 1, joueur_b: 2 }]]);
+  const m = { id: 5, tour: 'R16', statut: 'termine', fin_match: 'normal', resultat_visible: false, paris_reveles: false, verrouille: true, p1_id: 1, p2_id: 2 };
+  assert.doesNotMatch(htmlCarteMatch(m, { joueurs, profils: [], h2h }), /btn-h2h|h2h-nb|H2H indisponible/);
+  assert.match(htmlCarteMatch({ ...m, statut: 'a_venir' }, { joueurs, profils: [], h2h }), /h2h/);
+});

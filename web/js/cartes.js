@@ -128,7 +128,8 @@ function htmlTableauScore(match, p1, p2, gagnant, h2h = undefined) {
     return `<div class="tableau-score">${nom(p1, 1)}${mot(1)}<div class="filet-ligne"></div>${mot(2)}${nom(p2, 2)}</div>`;
   }
   // pas encore de score : le face-à-face prend la place des jeux (h2h indéfini = fonction non activée, ex. tests)
-  if (!jeux.length && h2h !== undefined) return `<div class="tableau-score">${nom(p1, 1)}${htmlCompteurH2H(match, h2h)}${nom(p2, 2)}</div>`;
+  // match terminé (score masqué ou non) : plus de face-à-face
+  if (!jeux.length && h2h !== undefined && match.statut !== 'termine') return `<div class="tableau-score">${nom(p1, 1)}${htmlCompteurH2H(match, h2h)}${nom(p2, 2)}</div>`;
   return `<div class="tableau-score">${nom(p1, 1)}${score(1, 0)}<div class="filet-ligne"></div>${score(2, 1)}${nom(p2, 2)}</div>`;
 }
 

@@ -393,3 +393,20 @@ test('saison terminée : « Classement final », trophées Champion et Vice-cham
   assert.match(htmlRace(enCours), /<h3>Race 2026<\/h3>/);
   assert.ok(enCours.lignes.every((l) => !l.trophees.some((t) => /champion/.test(t.categorie))));
 });
+
+test('classement du tournoi : une colonne de points par tour (Huitièmes, Quarts…) au lieu de « Matchs »', () => {
+  const match = (id, tour, vainqueur) => ({ id, tour, p1_id: 1, p2_id: 2, statut: 'termine', neutralise: false, paris_reveles: true, verrouille: true, resultat_visible: true, vainqueur, sets_joues: 2, fin_match: 'normal' });
+  const bet = (joueur, choix, confiance) => [joueur, { choix, confiance, sets: null }];
+  const matchs = [match(1, 'R16', 1), match(2, 'QF', 2), { ...match(3, 'SF', null), statut: 'a_venir', resultat_visible: false, paris_reveles: false }];
+  const paris = new Map([[1, new Map([bet('p', 1, 8)])], [2, new Map([bet('p', 2, 7)])]]);
+  const c = classementTournoi({ moteur, tournoi: { id: 1, etat: 'en_cours', categorie: 'masters_1000' }, matchs, paris, archives: [], profils: quatre });
+  assert.deepEqual(c.tours.map((t) => t.tour), ['R16', 'QF'], 'seuls les tours comptés ont une colonne');
+  const html = htmlClassementTournoi(c, {});
+  assert.match(html, /<th>Huitièmes<\/th><th>Quarts<\/th>/);
+  assert.doesNotMatch(html, /<th>Matchs<\/th>/);
+  const p = c.lignes.find((l) => l.prenom === 'Pierre');
+  assert.ok(p.parTour.R16 && p.parTour.QF);
+  // sans matchs fournis (liste des tournois) : retour à la colonne unique
+  const sans = classementTournoi({ moteur, tournoi: { id: 1, etat: 'en_cours', categorie: 'masters_1000' }, matchs: [], paris: new Map(), archives: [], profils: quatre });
+  assert.match(htmlClassementTournoi(sans, {}), /<th>Matchs<\/th>/);
+});

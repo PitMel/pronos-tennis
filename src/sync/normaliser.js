@@ -12,6 +12,37 @@ const entier = (x) => {
   return Number.isInteger(n) ? n : null;
 };
 
+const maximum = (a, b) => Math.max(Number(a) || 0, Number(b) || 0);
+const minimum = (a, b) => Math.min(Number(a) || 0, Number(b) || 0);
+/** Un set est joué jusqu'au bout (6-x avec 2 jeux d'écart, 7-5, 7-6, ou plus long) ; sinon il est en cours. */
+const setTermine = (a, b) => (maximum(a, b) >= 6 && maximum(a, b) - minimum(a, b) >= 2) || (maximum(a, b) === 7 && minimum(a, b) >= 5);
+const sets = (paires) => {
+  const r = [0, 0];
+  for (const [a, b] of paires) if (setTermine(a, b)) r[Number(a) > Number(b) ? 0 : 1] += 1;
+  return r;
+};
+
+/**
+ * Remet les jeux dans la forme unique attendue par l'appli : un couple [jeux du joueur 1, jeux du joueur 2] PAR SET.
+ * L'API renvoie parfois l'autre orientation (constatée le 5 nov. 2026, Paris) : DEUX listes, une par joueur
+ * ([[6, 6], [3, 4]] = joueur 1 : 6 et 6 jeux, joueur 2 : 3 et 4 jeux, soit 6-3 6-4). Quand les deux lectures sont
+ * possibles (match en 2 sets), on garde celle qui donne le bon nombre de sets gagnés (`score.sets`) ; à défaut, la forme par set.
+ */
+export function orienterJeux(games, setsGagnes) {
+  if (!Array.isArray(games) || games.length === 0 || !games.every(Array.isArray)) return games ?? null;
+  const parSet = games.every((s) => s.length === 2);
+  const parJoueur = games.length === 2 && games[0].length === games[1].length && games[0].length >= 1;
+  if (!parJoueur) return games;
+  const transposee = games[0].map((_, i) => [games[0][i], games[1][i]]);
+  if (!parSet) return transposee; // ex. [[3, 6, 7], [6, 4, 6]] : ne peut être qu'une liste par joueur
+  if (Array.isArray(setsGagnes) && setsGagnes.length === 2) {
+    const attendu = setsGagnes.map(Number);
+    const ok = (p) => { const s = sets(p); return s[0] === attendu[0] && s[1] === attendu[1]; };
+    if (ok(transposee) && !ok(games)) return transposee;
+  }
+  return games;
+}
+
 /**
  * Nombre de sets joués d'après les jeux par set (un set entamé compte), à défaut d'après le score en sets.
  * Forme réelle de l'API (constatée le 25 oct. 2026) : `games` = un couple [jeux du joueur 1, jeux du joueur 2] PAR SET,
@@ -105,7 +136,8 @@ export function normaliserMatch(m, tournoisSuivis) {
 
   const { statut, fin_match: fin, anomalies } = interpreterStatut(m);
   const vainqueur = entier(m.winner);
-  const score = m.score && typeof m.score === 'object' ? { sets: m.score.sets ?? null, games: m.score.games ?? null } : null;
+  const score = m.score && typeof m.score === 'object'
+    ? { sets: m.score.sets ?? null, games: orienterJeux(m.score.games ?? null, m.score.sets ?? null) } : null;
   const heure = typeof m.scheduled_time === 'string' && !Number.isNaN(Date.parse(m.scheduled_time)) ? new Date(m.scheduled_time).toISOString() : null;
 
   return {
@@ -116,7 +148,7 @@ export function normaliserMatch(m, tournoisSuivis) {
       heure_prevue: heure,
       statut,
       vainqueur: vainqueur === 1 || vainqueur === 2 ? vainqueur : null,
-      sets_joues: statut === 'termine' ? compterSets(m.score) : null,
+      sets_joues: statut === 'termine' ? compterSets(score) : null,
       score: score && (score.sets || score.games) ? score : null,
       fin_match: fin,
       p1: joueur(m.players?.p1),

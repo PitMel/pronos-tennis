@@ -146,14 +146,15 @@ const casePoints = (c, classe = '') => `<td class="${[classe, c.negatif ? 'neg' 
 export function htmlClassementTournoi(classement, { moi = null, tournoi = null } = {}) {
   if (!classement || classement.lignes.length === 0) return '';
   const clos = classement.cloture;
+  const tours = classement.tours ?? [];
   // tournoi terminé : le trophée suit le nom du (ou des) premier(s) du classement
   const trophee = tournoi && clos ? htmlTrophee(tournoi.categorie, tournoi.nom, tournoi) : '';
   const nom = (l) => `${htmlPastille(l, 'pastille pastille-petite')}<span>${echapper(l.prenom)}</span>${trophee && l.rang === 1 ? `<span class="trophee-vainqueur">${trophee}</span>` : ''}`;
   const lignes = classement.lignes.map((l) => `
       <tr class="${l.id === moi ? 'isme' : ''}"><td class="rang">${echapper(l.rang)}</td><th scope="row">${nom(l)}</th>
-        ${casePoints(l.matchs)}${clos ? `${casePoints(l.pari)}${casePoints(l.bonus)}${casePoints(l.final, 'final')}` : ''}</tr>`).join('');
+        ${tours.length ? tours.map((t) => casePoints(l.parTour[t.tour])).join('') : casePoints(l.matchs)}${clos ? `${casePoints(l.pari)}${casePoints(l.bonus)}${casePoints(l.final, 'final')}` : ''}</tr>`).join('');
   let note;
-  if (clos) note = 'Score final = points des matchs + pari tournoi + bonus de classement. Les chiffres sont figés à la clôture.';
+  if (clos) note = 'Score final = points des matchs (par tour) + pari tournoi + bonus de classement. Les chiffres sont figés à la clôture.';
   else if (tournoi?.etat === 'clos') note = 'Aucun score archivé pour ton groupe sur ce tournoi.';
   else if (classement.matchsComptes === 0) note = 'Aucun match compté pour l’instant. Le classement évolue à mesure que les matchs sont terminés ; le pari tournoi et le bonus de classement s’ajoutent à la clôture.';
   else note = `Points de ${classement.matchsComptes} match${classement.matchsComptes > 1 ? 's' : ''} déjà compté${classement.matchsComptes > 1 ? 's' : ''}. Le pari tournoi et le bonus de classement s’ajoutent à la clôture du tournoi ; la Race ne bouge qu’à ce moment-là.`;
@@ -161,7 +162,7 @@ export function htmlClassementTournoi(classement, { moi = null, tournoi = null }
     <section class="carte carte-classement">
       <h3>Classement du tournoi</h3>
       <div class="tableau-defilant"><table class="classement-tournoi">
-        <thead><tr><th></th><th></th><th>Matchs</th>${clos ? '<th>Pari tournoi</th><th>Bonus</th><th>Score</th>' : ''}</tr></thead>
+        <thead><tr><th></th><th></th>${tours.length ? tours.map((t) => `<th>${echapper(t.libelle)}</th>`).join('') : '<th>Matchs</th>'}${clos ? '<th>Pari tournoi</th><th>Bonus</th><th>Score</th>' : ''}</tr></thead>
         <tbody>${lignes}</tbody>
       </table></div>
       <p class="small">${echapper(note)}</p>

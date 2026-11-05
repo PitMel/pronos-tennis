@@ -117,3 +117,16 @@ test('normaliserListe : doublons d\'identifiant (le dernier gagne), compte des i
   assert.deepEqual(normaliserListe(null, suivis), { matchs: [], anomalies: [], ignores: {} });
   assert.deepEqual(normaliserListe({ data: [] }, suivis).matchs, []);
 });
+
+test('orienterJeux : jeux par joueur (API du 5 nov.) remis en couples par set ; forme par set inchangée', async () => {
+  const { orienterJeux, compterSets } = await import('../../src/sync/normaliser.js');
+  assert.deepEqual(orienterJeux([[6, 6], [3, 4]], [2, 0]), [[6, 3], [6, 4]], 'Fritz–Fils');
+  assert.deepEqual(orienterJeux([[3, 6, 7], [6, 4, 6]], [2, 1]), [[3, 6], [6, 4], [7, 6]], 'trois sets : sans ambiguïté');
+  assert.deepEqual(orienterJeux([[0, 2], [6, 6]], [0, 2]), [[0, 6], [2, 6]]);
+  assert.deepEqual(orienterJeux([[3, 2], [6, 1]], [0, 1]), [[3, 6], [2, 1]], 'match en cours');
+  assert.deepEqual(orienterJeux([[7, 6], [6, 4]], [2, 0]), [[7, 6], [6, 4]], 'forme par set : inchangée');
+  assert.deepEqual(orienterJeux([[6, 4], [6, 3]], [2, 0]), [[6, 4], [6, 3]]);
+  assert.deepEqual(orienterJeux([[6, 4], [3, 6], [7, 6]], [2, 1]), [[6, 4], [3, 6], [7, 6]]);
+  assert.equal(orienterJeux(null, null), null);
+  assert.equal(compterSets({ games: orienterJeux([[3, 6, 7], [6, 4, 6]], [2, 1]) }), 3);
+});

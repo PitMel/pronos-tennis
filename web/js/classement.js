@@ -2,6 +2,7 @@
 // Le moteur est passé en paramètre (injection) : dans le navigateur c'est /moteur/index.js, dans les tests c'est src/moteur.
 // Jalon 3.5 : classement d'un tournoi en trois temps (matchs, + pari tournoi, + bonus = score final) et détail de la Race.
 import { bilanDuTour } from './cartes.js';
+import { LIBELLES_COURTS } from './tournois.js';
 
 const ORDRE_CATEGORIES = { grand_slam: 0, masters_1000: 1, atp_finals: 2 };
 
@@ -87,6 +88,20 @@ function cellule(moteur, valeur, { signe = true } = {}) {
  * @param {Array<{id:string, prenom:string, couleur?:string|null}>} p.profils
  * @returns {{cloture:boolean, matchsComptes:number, lignes:Array}}
  */
+const ORDRE_TOURS = ['RR', 'R16', 'QF', 'SF', 'F'];
+
+/** Points de chaque joueur PAR TOUR (colonnes « Huitièmes », « Quarts »…) : seuls les tours où au moins un match est compté. */
+function pointsParTour({ moteur, tournoi, matchs, paris, profils }) {
+  const tours = [];
+  for (const tour of ORDRE_TOURS) {
+    const duTour = matchs.filter((m) => m.tour === tour);
+    if (!duTour.some((m) => m.neutralise || (m.statut === 'termine' && m.resultat_visible))) continue;
+    const bilan = bilanDuTour(duTour, { moteur, categorie: tournoi.categorie, paris });
+    tours.push({ tour, libelle: LIBELLES_COURTS[tour] ?? tour, points: new Map(profils.map((x) => [x.id, bilan?.get(x.id) ?? moteur.ZERO])) });
+  }
+  return tours;
+}
+
 export function classementTournoi({ moteur, tournoi, matchs, paris, archives, profils }) {
   const { Fraction, ZERO } = moteur;
   const ids = new Set(profils.map((x) => x.id));
@@ -96,10 +111,15 @@ export function classementTournoi({ moteur, tournoi, matchs, paris, archives, pr
   if (cloture) {
     const finals = Object.fromEntries(profils.map((x) => [x.id, Fraction.de(archive.get(x.id)?.score_final ?? '0')]));
     const rangs = moteur.rangs(finals);
+    // colonnes par tour si elles s'additionnent exactement aux points de matchs archivés ; sinon une seule colonne « Matchs »
+    let tours = pointsParTour({ moteur, tournoi, matchs, paris, profils });
+    const somme = (id) => tours.reduce((s, t) => s.plus(t.points.get(id)), ZERO);
+    if (tours.length === 0 || profils.some((x) => somme(x.id).comparer(Fraction.de(archive.get(x.id)?.points_matchs ?? '0')) !== 0)) tours = [];
     const lignes = profils.map((x) => {
       const r = archive.get(x.id);
       const v = (texte) => Fraction.de(texte ?? '0');
       return {
+        parTour: Object.fromEntries(tours.map((t) => [t.tour, cellule(moteur, t.points.get(x.id))])),
         id: x.id, prenom: x.prenom, couleur: x.couleur ?? null, photo_url: x.photo_url ?? null, rang: rangs[x.id],
         matchs: cellule(moteur, v(r?.points_matchs)),
         pari: cellule(moteur, v(r?.points_pari_tournoi)),
@@ -109,18 +129,20 @@ export function classementTournoi({ moteur, tournoi, matchs, paris, archives, pr
         avantBonus: cellule(moteur, v(r?.points_matchs).plus(v(r?.points_pari_tournoi)), { signe: false }),
       };
     }).sort((a, b) => a.rang - b.rang || a.prenom.localeCompare(b.prenom, 'fr'));
-    return { cloture: true, matchsComptes: matchs.length, lignes };
+    return { cloture: true, matchsComptes: matchs.length, tours: tours.map(({ tour, libelle }) => ({ tour, libelle })), lignes };
   }
 
   const bilan = bilanDuTour(matchs, { moteur, categorie: tournoi.categorie, paris });
   const points = Object.fromEntries(profils.map((x) => [x.id, bilan?.get(x.id) ?? ZERO]));
   const rangs = moteur.rangs(points);
+  const tours = pointsParTour({ moteur, tournoi, matchs, paris, profils });
   const lignes = profils.map((x) => ({
     id: x.id, prenom: x.prenom, couleur: x.couleur ?? null, photo_url: x.photo_url ?? null, rang: rangs[x.id],
+    parTour: Object.fromEntries(tours.map((t) => [t.tour, cellule(moteur, t.points.get(x.id))])),
     matchs: cellule(moteur, points[x.id]), pari: null, bonus: null, final: null, avantBonus: null,
   })).sort((a, b) => a.rang - b.rang || a.prenom.localeCompare(b.prenom, 'fr'));
   const comptes = matchs.filter((m) => m.neutralise || (m.statut === 'termine' && m.resultat_visible)).length;
-  return { cloture: false, matchsComptes: comptes, lignes };
+  return { cloture: false, matchsComptes: comptes, tours: tours.map(({ tour, libelle }) => ({ tour, libelle })), lignes };
 }
 
 /**
