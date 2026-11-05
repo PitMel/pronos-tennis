@@ -229,13 +229,11 @@ test('les joueurs de tennis sont mis à jour (classement, nom) sans écraser par
 
 // ------------------------------------------------------------------ états des tournois
 
-test('le pari tournoi s’ouvre quand les 8 huitièmes sont connus, puis le tournoi passe « en cours » au premier match', async () => {
+test('le pari tournoi s’ouvre dès la première affiche des huitièmes, puis le tournoi passe « en cours » au premier match', async () => {
   const t = TOURNOI.chelem;
   const huit = Array.from({ length: 8 }, (_, i) => mt({ api_id: `GC${i}`, tournoi: '9001', tour: 'R16', a: 700 + i * 2 }));
-  await appliquer(huit.slice(0, 7));
-  assert.equal((await b.admin('select etat from public.tournaments where id = $1', [t])).rows[0].etat, 'a_venir');
   await refuse(b.comme(ID.andre, 'insert into public.tournament_bets (tournament_id, joueur_id, vainqueur_id, finaliste_id) values ($1, $2, 1, 2)', [t, ID.andre]));
-  await appliquer([huit[7]]);
+  await appliquer(huit.slice(0, 1));
   assert.equal((await b.admin('select etat from public.tournaments where id = $1', [t])).rows[0].etat, 'pari_tournoi_ouvert');
   assert.equal((await b.comme(ID.andre, 'insert into public.tournament_bets (tournament_id, joueur_id, vainqueur_id, finaliste_id) values ($1, $2, 1, 2)', [t, ID.andre])).affectedRows, 1);
   await appliquer([{ ...huit[0], statut: 'en_cours' }]);
@@ -244,12 +242,11 @@ test('le pari tournoi s’ouvre quand les 8 huitièmes sont connus, puis le tour
   assert.equal((await b.admin('select etat from public.tournaments where id = $1', [t])).rows[0].etat, 'en_cours', 'jamais de retour en arrière');
 });
 
-test('ATP Finals : le pari tournoi s’ouvre avec 4 matchs de poule connus', async () => {
+test('ATP Finals : le pari tournoi s’ouvre dès le premier match de poule connu', async () => {
   const t = TOURNOI.finals;
   const poules = Array.from({ length: 4 }, (_, i) => mt({ api_id: `RR${i}`, tournoi: '2794', tour: 'RR', a: 800 + i * 2 }));
-  await appliquer(poules.slice(0, 3));
   assert.equal((await b.admin('select etat from public.tournaments where id = $1', [t])).rows[0].etat, 'a_venir');
-  await appliquer([poules[3]]);
+  await appliquer(poules.slice(0, 1));
   assert.equal((await b.admin('select etat from public.tournaments where id = $1', [t])).rows[0].etat, 'pari_tournoi_ouvert');
 });
 

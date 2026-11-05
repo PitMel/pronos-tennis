@@ -157,7 +157,7 @@ export function htmlSectionPariTournoi({ tournoi, matchs, joueurs, ctx = {} }) {
     </section>`;
 
   if (etat === 'a-venir') {
-    return section(`<h4>Pas encore ouvert</h4><p>Le pari tournoi ouvre quand toutes les affiches des huitièmes sont connues (pour les ATP Finals : quand les 4 premiers matchs de poule sont connus).</p><p class="small">${echapper(regle)}</p>`);
+    return section(`<h4>Pas encore ouvert</h4><p>Le pari tournoi ouvre dès qu’une affiche des huitièmes est connue (pour les ATP Finals : dès qu’un match de poule est connu).</p><p class="small">${echapper(regle)}</p>`);
   }
 
   const resultat = tournoi.etat === 'clos' && tournoi.vainqueur_id

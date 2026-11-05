@@ -97,7 +97,7 @@ export function htmlPageRegles({ moteur }) {
 
     <section class="carte carte-regles">
       <h3>6. Le pari tournoi</h3>
-      <p>Tu choisis <b>un vainqueur</b> et <b>un finaliste</b> (deux joueurs différents, encore en lice). Le pari ouvre quand toutes les affiches des huitièmes sont connues (aux ATP Finals : quand les 4 premiers matchs de poule sont connus). Même logique de visibilité que pour un match : modifiable jusqu’à ce que tout le monde ait parié, puis révélé et figé. Les joueurs éliminés sont barrés.</p>
+      <p>Tu choisis <b>un vainqueur</b> et <b>un finaliste</b> (deux joueurs différents, encore en lice). Le pari ouvre dès qu’une affiche des huitièmes est connue (aux ATP Finals : dès qu’un match de poule est connu) ; les joueurs dont l’affiche n’est pas encore connue se choisissent au fur et à mesure. Même logique de visibilité que pour un match : modifiable jusqu’à ce que tout le monde ait parié, puis révélé et figé. Les joueurs éliminés sont barrés.</p>
       <p>Points <b>versés à la fin du tournoi</b>, sans multiplicateur :</p>
       ${tablePari}
       <p class="small">Si tes deux joueurs jouent la finale mais dans le mauvais ordre (vainqueur et finaliste inversés), tu gardes les points de présence en finale et tu perds le bonus du vainqueur.</p>

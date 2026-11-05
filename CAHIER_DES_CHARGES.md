@@ -137,7 +137,7 @@ Les valeurs sont **exactes en interne** (nombres décimaux exacts, pas de flotta
 
 ## 6. Pari tournoi (vainqueur + finaliste) [Décidé]
 
-- **Ouverture** : quand toutes les affiches des huitièmes sont connues. **ATP Finals** : quand les 4 premiers matchs de poule sont connus.
+- **Ouverture** : dès qu'**une** affiche des huitièmes est connue (modifié le 5 nov. 2026). **ATP Finals** : dès qu'un match de poule est connu. Les joueurs dont l'affiche n'est pas encore connue ne sont sélectionnables qu'une fois leur affiche publiée.
 - Le joueur choisit **un vainqueur** et **un finaliste**. Seuls les joueurs **encore en lice** sont sélectionnables.
 - **Modifiable** jusqu'à ce que tout le monde ait parié ; ensuite **révélé et figé** (même logique que les paris de match).
 - Espace séparé dans l'appli (« Pari tournoi »). Joueurs choisis **barrés** quand ils sont éliminés.
