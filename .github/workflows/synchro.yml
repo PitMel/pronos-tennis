@@ -55,6 +55,15 @@ jobs:
             h2h|h2h-simulation|h2h-essai) echo "Synchronisation de l'API ignorée (mode $MODE)." ;;
             *)          node src/sync/cli.js ;;
           esac
+      # Notifications par e-mail (Brevo). Sans clé ou sans adresse d'expéditeur, cette étape ne fait rien. Elle n'échoue jamais.
+      - name: Notifications par e-mail
+        if: ${{ !cancelled() && inputs.mode != 'diagnostic' && inputs.mode != 'sonde' && !startsWith(inputs.mode, 'h2h') }}
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
+          NOTIF_EXPEDITEUR: ${{ secrets.NOTIF_EXPEDITEUR }}
+        run: node src/sync/notif-cli.js
       # Face-à-face (H2H) : seulement s'il y a des paires de joueurs à calculer ; les fichiers de résultats ATP sont gardés dans le cache
       # de GitHub Actions (jamais dans le dépôt : leur licence interdit de les redistribuer).
       - name: H2H — des paires à calculer ?

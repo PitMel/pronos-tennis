@@ -68,6 +68,18 @@ export function creerDonnees(supabase) {
       try { await supabase.storage.from('avatars').remove([`${profilId}.jpg`]); } catch { /* le profil n'affiche déjà plus la photo */ }
     },
 
+    /** Mes préférences de notification (null si jamais enregistrées). */
+    async notifPreferences(id) {
+      const { data, error } = await supabase.from('notif_preferences').select('email, tour_ouvert, paris_visibles, tournoi_termine').eq('joueur_id', id).maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+
+    async enregistrerNotifPreferences(id, valeurs) {
+      const { error } = await supabase.from('notif_preferences').upsert({ joueur_id: id, ...valeurs, updated_at: new Date().toISOString() });
+      if (error) throw error;
+    },
+
     /** Administrateur : modifie les colonnes autorisées d'un profil (couleur, actif, groupe test). */
     async enregistrerCompte(id, valeurs) {
       const { data, error } = await supabase.from('profiles').update(valeurs).eq('id', id).select('id');

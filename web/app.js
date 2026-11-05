@@ -27,7 +27,7 @@ import { h2hDuMatch, htmlFenetreH2H } from './js/h2h.js';
 import { htmlAdminAccueil, htmlAccesRefuse } from './js/admin.js';
 import { validerTournoi, tournoiPourBase, messageErreurAdmin, htmlCalendrierAdmin, htmlFormulaireTournoi } from './js/admin-calendrier.js';
 import { construirePalmares, htmlPalmares } from './js/palmares.js';
-import { htmlPageProfil, htmlBlocPhoto, htmlBlocCouleur, erreurFichierPhoto, messageErreurPhoto, reduirePhoto } from './js/profil.js';
+import { emailValide, htmlPageProfil, htmlBlocPhoto, htmlBlocCouleur, erreurFichierPhoto, messageErreurPhoto, reduirePhoto } from './js/profil.js';
 import { validerMotDePasse, messageErreurMotDePasse } from './js/mot-de-passe.js';
 import { htmlComptesAdmin, htmlFormulaireCompte, validerCompte, comptePourBase, messageErreurCompte } from './js/admin-comptes.js';
 import { htmlParisAdmin, validerCorrectionPari, pariPourBase, validerCorrectionPariTournoi, messageErreurParisAdmin } from './js/admin-paris.js';
@@ -121,6 +121,7 @@ function afficherCadre(profil) {
   document.getElementById('contenu').addEventListener('click', gererClicAdmin);
   document.getElementById('contenu').addEventListener('submit', gererSoumissionAdmin);
   document.getElementById('contenu').addEventListener('submit', gererChangementMotDePasse);
+  document.getElementById('contenu').addEventListener('submit', gererNotifications);
   document.getElementById('contenu').addEventListener('submit', gererCouleur);
   document.getElementById('contenu').addEventListener('change', gererPhoto);
   document.getElementById('contenu').addEventListener('click', gererClicProfil);
@@ -462,7 +463,7 @@ function majBandeau() {
 }
 
 function redessinerProfil(options = {}) {
-  document.getElementById('contenu').innerHTML = htmlPageProfil({ profil: profilCourant, ...options });
+  document.getElementById('contenu').innerHTML = htmlPageProfil({ profil: profilCourant, notifications: { prefs: notifPrefs }, ...options });
 }
 
 /** Remplace le bloc photo affiché (page Profil ou fiche de compte de l'administrateur). */
@@ -524,6 +525,22 @@ async function gererCouleur(e) {
   } catch (erreur) { redessinerProfil({ couleur: { erreur: messageErreurPhoto(erreur) } }); }
 }
 
+let notifPrefs = null;
+async function gererNotifications(e) {
+  const form = e.target.closest?.('form[data-profil-notif]');
+  if (!form) return;
+  e.preventDefault();
+  const f = new FormData(form);
+  const email = String(f.get('email') ?? '').trim();
+  const valeurs = { email: email || null, tour_ouvert: f.has('tour_ouvert'), paris_visibles: f.has('paris_visibles'), tournoi_termine: f.has('tournoi_termine') };
+  if (!emailValide(email)) { redessinerProfil({ notifications: { prefs: { ...valeurs, email }, erreur: 'Cette adresse e-mail n’a pas l’air valide.' } }); return; }
+  try {
+    await donnees.enregistrerNotifPreferences(profilCourant.id, valeurs);
+    notifPrefs = valeurs;
+    redessinerProfil({ notifications: { prefs: valeurs, message: 'Préférences enregistrées.' } });
+  } catch { redessinerProfil({ notifications: { prefs: valeurs, erreur: 'Enregistrement impossible : réessaie dans un instant.' } }); }
+}
+
 async function gererChangementMotDePasse(e) {
   const form = e.target.closest?.('form[data-mdp]');
   if (!form) return;
@@ -531,13 +548,13 @@ async function gererChangementMotDePasse(e) {
   const contenu = document.getElementById('contenu');
   const brut = Object.fromEntries(new FormData(form));
   const erreurs = validerMotDePasse(brut);
-  if (erreurs.length) { contenu.innerHTML = htmlPageProfil({ profil: profilCourant, motDePasse: { erreurs } }); return; }
+  if (erreurs.length) { contenu.innerHTML = htmlPageProfil({ profil: profilCourant, notifications: { prefs: notifPrefs }, motDePasse: { erreurs } }); return; }
   const bouton = form.querySelector('button');
   bouton.disabled = true;
   const verification = await supabase.auth.signInWithPassword({ email: emailTechnique(profilCourant.prenom), password: brut.actuel });
-  if (verification.error) { contenu.innerHTML = htmlPageProfil({ profil: profilCourant, motDePasse: { erreurs: [messageErreurMotDePasse(verification.error, { etape: 'verification' })] } }); return; }
+  if (verification.error) { contenu.innerHTML = htmlPageProfil({ profil: profilCourant, notifications: { prefs: notifPrefs }, motDePasse: { erreurs: [messageErreurMotDePasse(verification.error, { etape: 'verification' })] } }); return; }
   const { error } = await supabase.auth.updateUser({ password: brut.nouveau });
-  contenu.innerHTML = htmlPageProfil({ profil: profilCourant, motDePasse: error ? { erreurs: [messageErreurMotDePasse(error)] } : { message: 'Mot de passe modifié.' } });
+  contenu.innerHTML = htmlPageProfil({ profil: profilCourant, notifications: { prefs: notifPrefs }, motDePasse: error ? { erreurs: [messageErreurMotDePasse(error)] } : { message: 'Mot de passe modifié.' } });
 }
 
 async function gererSoumissionAdmin(e) {
@@ -773,7 +790,8 @@ async function afficherRoute({ silencieux = false } = {}) {
       }), { prenom: profilCourant.prenom });
     } else if (route.nom === 'profil') {
       page = null;
-      contenu.innerHTML = htmlPageProfil({ profil: profilCourant });
+      try { notifPrefs = await donnees.notifPreferences(profilCourant.id); } catch { notifPrefs = null; }
+      contenu.innerHTML = htmlPageProfil({ profil: profilCourant, notifications: { prefs: notifPrefs } });
     } else if (route.nom === 'regles') {
       page = null;
       contenu.innerHTML = htmlPageRegles({ moteur: await import('./moteur/index.js') });

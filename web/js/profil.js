@@ -73,6 +73,38 @@ export function htmlBlocCouleur({ profil, message = '', erreur = '' }) {
     </section>`;
 }
 
+export const NOTIFICATIONS = [
+  ['tour_ouvert', 'Les affiches d’un tour sont toutes connues (pour parier)'],
+  ['paris_visibles', 'Les paris d’un tour sont tous visibles (tout le monde a parié)'],
+  ['tournoi_termine', 'Un tournoi est terminé (résultat et état de la Race)'],
+];
+
+/** Adresse e-mail valide (même règle que la base) ? Chaîne vide acceptée (= pas de notification). */
+export function emailValide(texte) {
+  const t = String(texte ?? '').trim();
+  return t === '' || /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(t);
+}
+
+/** Bloc « Notifications par e-mail » : adresse + une case par notification (toutes cochées par défaut). */
+export function htmlBlocNotifications({ prefs = null, message = '', erreur = '' } = {}) {
+  const p = prefs ?? { email: '', tour_ouvert: true, paris_visibles: true, tournoi_termine: true };
+  const cases = NOTIFICATIONS.map(([cle, texte]) => `
+        <label class="radio"><input type="checkbox" name="${cle}"${p[cle] !== false ? ' checked' : ''}> ${echapper(texte)}</label>`).join('');
+  return `
+    <section class="carte carte-admin">
+      <h3>Notifications par e-mail</h3>
+      <form class="formulaire-admin" data-profil-notif novalidate>
+        <label for="notif-email">Mon adresse e-mail</label>
+        <input id="notif-email" name="email" type="email" autocomplete="email" inputmode="email" value="${echapper(p.email ?? '')}" placeholder="prenom@exemple.fr">
+        <p class="small">Elle ne sert qu’aux notifications (ce n’est pas ton identifiant de connexion) et n’est visible que de toi et de l’administrateur. Laisse vide pour ne rien recevoir.</p>
+        <fieldset class="couleurs-admin"><legend class="small">Je veux être prévenu quand :</legend>${cases}</fieldset>
+        ${message ? `<p class="succes" role="status">${echapper(message)}</p>` : ''}
+        ${erreur ? `<p class="erreur" role="alert">${echapper(erreur)}</p>` : ''}
+        <button type="submit" class="btn-petit principal">Enregistrer</button>
+      </form>
+    </section>`;
+}
+
 /** Bloc « Installer l'appli » : explications statiques (Android / iPhone). */
 export function htmlBlocInstallation() {
   return `
@@ -88,11 +120,12 @@ export function htmlBlocInstallation() {
 }
 
 /** Page Profil complète. */
-export function htmlPageProfil({ profil, photo = {}, couleur = {}, motDePasse = {} }) {
+export function htmlPageProfil({ profil, photo = {}, couleur = {}, motDePasse = {}, notifications = {} }) {
   return `
     <section class="hero hero-admin"><h2 class="hero-titre">${echapper(profil.prenom)}</h2><p class="hero-details">Ton profil</p></section>
     ${htmlBlocPhoto({ profil, ...photo })}
     ${htmlBlocCouleur({ profil, ...couleur })}
+    ${htmlBlocNotifications(notifications)}
     ${htmlPageMotDePasse(motDePasse)}
     ${htmlBlocInstallation()}`;
 }
