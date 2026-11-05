@@ -175,6 +175,8 @@ Choix de conception de l'étape 3.3 (à signaler à Pierre) : la maquette 1 n'es
 
 **Ajoutée le 5 nov. 2026 (Pierre)** : classement ATP des joueurs **à l'époque** des matchs passés (disponible dans les CSV TennisMyLife : winner_rank / loser_rank et points), à afficher éventuellement dans la fenêtre H2H. Rien ne se code sans son accord.
 
+**Ajoutée le 5 nov. 2026 (Pierre)** : revoir la possibilité de parier sur un match **forfait** (aujourd'hui refusée : `pari_saisissable_match` exclut `fin_match = 'forfait'`). À rediscuter avec lui avant tout changement.
+
 **Ajoutées le 29 oct. 2026 (Pierre)**, même statut (rien ne se code sans son accord) :
 - **Sauvegarde automatique de la base** : l'offre gratuite de Supabase n'en propose pas (voir `ENTRETIEN.md`, « Ce qui n'est PAS couvert »). À étudier : une exportation régulière (par exemple un workflow GitHub planifié), à condition qu'elle reste gratuite et que les données (pronostics et résultats) ne se retrouvent jamais dans le dépôt public.
 - **Création de compte par le joueur lui-même** : aujourd'hui impossible, seul l'administrateur crée les comptes. Piste déjà notée le 28 oct. : demande d'inscription validée par l'administrateur (nécessite une migration et la réactivation des inscriptions côté Supabase, désactivées volontairement pour la sécurité).
