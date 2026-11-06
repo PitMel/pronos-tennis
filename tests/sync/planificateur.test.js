@@ -38,11 +38,14 @@ test('matchsASurveiller : en cours, bientôt, en retard raisonnable ; pas les ma
   assert.deepEqual(matchsASurveiller(e, now).map((m) => m.api_id), ['encours', 'bientot', 'retard', 'sansheure']);
 });
 
-test('afficheDue : jamais lue = due ; intervalle de 3 h en tournoi, 20 h hors tournoi ; finale terminée = jamais', () => {
+test('afficheDue : jamais lue = due ; intervalle d\'1 h en tournoi (tolérance 5 min), 20 h hors tournoi ; finale terminée = jamais', () => {
   const now = d('2026-10-28T12:00:00Z');
   assert.equal(afficheDue(tournoi(), etat(), now).due, true);
-  assert.equal(afficheDue(tournoi({ derniere_decouverte: '2026-10-28T09:30:00Z' }), etat(), now).due, false); // 2 h 30
-  assert.equal(afficheDue(tournoi({ derniere_decouverte: '2026-10-28T08:59:00Z' }), etat(), now).due, true); // 3 h 01
+  assert.equal(afficheDue(tournoi({ derniere_decouverte: '2026-10-28T11:30:00Z' }), etat(), now).due, false); // 30 min
+  assert.equal(afficheDue(tournoi({ derniere_decouverte: '2026-10-28T11:06:00Z' }), etat(), now).due, false); // 54 min : encore trop tôt
+  assert.equal(afficheDue(tournoi({ derniere_decouverte: '2026-10-28T11:05:00Z' }), etat(), now).due, true); // 55 min : dans la tolérance du cron
+  assert.equal(afficheDue(tournoi({ derniere_decouverte: '2026-10-28T10:59:00Z' }), etat(), now).due, true); // 1 h 01
+  assert.equal(afficheDue(tournoi({ derniere_decouverte: '2026-10-28T09:30:00Z' }), etat(), now).due, true); // 2 h 30 : l'ancien rythme (3 h) ne s'applique plus
   const hors = tournoi({ etat: 'a_venir', date_debut: '2027-03-01', date_fin: '2027-03-08' });
   assert.equal(afficheDue({ ...hors, derniere_decouverte: '2026-10-28T00:00:00Z' }, etat(), now).due, false);
   assert.equal(afficheDue({ ...hors, derniere_decouverte: '2026-10-27T10:00:00Z' }, etat(), now).due, true); // 26 h
@@ -125,4 +128,25 @@ test('paramètres par défaut conformes au cahier des charges', () => {
   assert.equal(PARAMETRES.reserve, 10);
   assert.equal(PARAMETRES.heureDebut, 7);
   assert.equal(PARAMETRES.heureFin, 1);
+  assert.equal(PARAMETRES.intervalleAffichesActifMin, 60, 'affiches : une relecture par heure pendant un tournoi (demande de Pierre, 5 nov. 2026)');
+});
+
+test('decider : sur une journée entière (cron toutes les 30 min, heure d\'hiver), les affiches sont relues une fois par heure de 7 h à 1 h, jamais la nuit', () => {
+  // Journée du 6 nov. 2026 à Paris (UTC+1) : du 5 nov. 22 h UTC (= 23 h Paris) au 6 nov. 23 h UTC. Un seul tournoi, 2 identifiants d'API, aucun match à surveiller.
+  let derniere = null;
+  const lectures = []; // heures de Paris (HH:MM) des relectures d'affiches
+  for (let t = Date.parse('2026-11-05T23:00:00Z'); t < Date.parse('2026-11-06T23:00:00Z'); t += 30 * 60000) {
+    const maintenant = new Date(t);
+    const plan = decider({ maintenant, etat: etat({ tournois: [tournoi({ date_debut: '2026-11-02', date_fin: '2026-11-08', derniere_decouverte: derniere })] }) });
+    const affiches = plan.actions.filter((a) => a.type === 'affiches');
+    if (affiches.length > 0) {
+      assert.equal(affiches.length, 2, 'un appel par identifiant d\'API (1725 et 1726)');
+      derniere = maintenant.toISOString();
+      const h = heureLocale(maintenant);
+      lectures.push(`${String(h.heure).padStart(2, '0')}:${String(h.minute).padStart(2, '0')}`);
+    }
+  }
+  assert.ok(lectures.every((l) => { const h = Number(l.slice(0, 2)); return h >= 7 || h < 1; }), `aucune relecture entre 1 h et 7 h : ${lectures.join(' ')}`);
+  assert.deepEqual(lectures, ['00:00', '07:00', '08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00', '23:00']);
+  assert.equal(lectures.length * 2, 36, '36 appels d\'affiches par jour de tournoi, pour 90 disponibles');
 });

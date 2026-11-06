@@ -3,7 +3,7 @@
 //   * aucun appel entre 1 h et 7 h (heure de Paris) ;
 //   * régime « actif » : toutes les 30 min (cadence du cron) dès qu'un match suivi est prévu et non terminé :
 //       - 1 lecture des matchs en direct si un match est à surveiller (en cours, ou qui commence dans moins de 30 min, ou en retard) ;
-//       - relecture des affiches (matchs à venir d'un tournoi) toutes les 3 h pendant un tournoi ;
+//       - relecture des affiches (matchs à venir d'un tournoi) toutes les heures pendant un tournoi (7 h – 1 h seulement) ;
 //       - le détail d'un match (GET /matches/{id}) pour confirmer la fin des matchs qui ont disparu du direct (planifié après la lecture du direct) ;
 //   * régime « quotidien » sinon : une relecture des affiches par jour et par tournoi ;
 //   * jamais plus que le quota du jour moins une réserve ; arrêt immédiat si l'API a annoncé un quota épuisé.
@@ -16,8 +16,9 @@ export const PARAMETRES = {
   heureFin: 1, // dernier créneau actif : jusqu'à 1 h (exclue)
   avanceMinutes: 30, // surveiller un match qui commence dans moins de 30 minutes
   retardMaxHeures: 8, // un match prévu depuis plus de 8 h n'est plus surveillé automatiquement
-  intervalleAffichesActifMin: 180,
+  intervalleAffichesActifMin: 60, // une relecture des affiches par heure pendant un tournoi (était 180 jusqu'au 5 nov. 2026)
   intervalleAffichesQuotidienMin: 20 * 60,
+  toleranceAffichesMin: 5, // le cron de GitHub se déclenche à quelques minutes près : un passage à 58 min compte comme « une heure »
   maxDetailsParCycle: 6,
 };
 
@@ -64,7 +65,7 @@ export function afficheDue(t, etat, now, p = PARAMETRES) {
   const actif = enCours || aDesMatchsSuivis || jourDansLaFenetre(t, heureLocale(now, p.fuseau).jour);
   const intervalle = actif ? p.intervalleAffichesActifMin : p.intervalleAffichesQuotidienMin;
   const derniere = date(t.derniere_decouverte);
-  const due = !derniere || minutes(now, derniere) >= intervalle;
+  const due = !derniere || minutes(now, derniere) >= intervalle - (p.toleranceAffichesMin ?? 0);
   return { due, actif };
 }
 
