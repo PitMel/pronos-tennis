@@ -26,11 +26,12 @@ test('1. première passe : relit les affiches de chaque tournoi suivi, crée les
     Q('W1', { tour: 'wta' }), Q('R1', { round_code: 'R32' }), Q('D1', { draw: 'doubles' }), Q('X1', { is_qualifying: true })];
   const r = await passer();
   assert.equal(r.code, 0, r.texte);
-  assert.deepEqual(w.chemins().map((c) => c.split('&')[0]), ['/matches?tournament_id=1725', '/matches?tournament_id=1726', '/matches?tournament_id=2794']);
+  // aucun identifiant n'a encore fourni de match : 1725 et 1726 sont lus ; les ATP Finals (dans 200 jours) ne sont pas regardés avant J-3
+  assert.deepEqual(w.chemins().map((c) => c.split('&')[0]), ['/matches?tournament_id=1725', '/matches?tournament_id=1726']);
   assert.ok(w.appelsApi.includes('/usage'));
   assert.deepEqual((await matchsBase()).map((m) => [m.api_id, m.statut]), [['Q1', 'a_venir'], ['Q2', 'a_venir'], ['Q3', 'a_venir'], ['Q4', 'a_venir']]);
   const j = await journal();
-  assert.equal(j.filter((x) => x.endpoint.startsWith('/matches')).length, 3, 'chaque requête HTTP est journalisée');
+  assert.equal(j.filter((x) => x.endpoint.startsWith('/matches')).length, 2, 'chaque requête HTTP est journalisée');
   assert.ok(j.every((x) => x.ok));
   assert.match(r.texte, /régime actif/);
 });
@@ -41,6 +42,17 @@ test('2. deuxième passe aussitôt : rien n\'est dû, aucun appel à l\'API', as
   assert.equal(r.code, 0);
   assert.deepEqual(w.appelsApi, []);
   assert.match(r.texte, /rien à faire/);
+});
+
+test('2b. une heure plus tard : 1725 a fourni les matchs, 1726 n\'est plus appelé (identifiant confirmé), les ATP Finals toujours pas', async () => {
+  const base = (await w.b.admin('select api_id, api_tournament_id from public.matches order by api_id')).rows;
+  assert.deepEqual(base.map((m) => m.api_tournament_id), ['1725', '1725', '1725', '1725'], 'l\'identifiant d\'origine est enregistré');
+  await vieillir(2);
+  w.reinitialiserAppels();
+  const r = await passer();
+  assert.equal(r.code, 0, r.texte);
+  assert.deepEqual(w.chemins().map((c) => c.split('&')[0]), ['/matches?tournament_id=1725'], 'une seule relecture des affiches, sur l\'identifiant confirmé');
+  assert.ok(!w.chemins().some((c) => c.includes('1726') || c.includes('2794')));
 });
 
 test('3. un match va commencer : lecture du direct, passage « en cours » ; la base ne recule jamais', async () => {

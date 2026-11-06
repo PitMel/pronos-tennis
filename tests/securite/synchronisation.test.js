@@ -332,3 +332,43 @@ test('0015 : un match corrigé à la main reçoit aussi son identifiant d’orig
   assert.equal(l.api_tournament_id, '1726');
   assert.deepEqual([l.statut, l.vainqueur, l.modifie_manuellement], ['termine', 1, true]);
 });
+
+// ------------------------------------------------------------------ migration 0016 : identifiants confirmés, H2H avec classements
+
+test('0016 : sync_etat expose, par tournoi, les identifiants d\'API qui ont réellement fourni des matchs', async () => {
+  await b.admin(`insert into public.tournament_api_ids (api_id, tournament_id) values ('2795', ${TOURNOI.finals}) on conflict do nothing`);
+  assert.deepEqual((await etat()).tournois.find((t) => t.id === TOURNOI.finals).api_ids, ['2794', '2795']);
+  await appliquer([mt({ api_id: 'CONF-1', tournoi: '2794', tour: 'RR' }), mt({ api_id: 'CONF-2', tournoi: '2794', tour: 'RR' })]);
+  const apres = (await etat()).tournois.find((t) => t.id === TOURNOI.finals);
+  assert.deepEqual(apres.api_ids_confirmes, ['2794'], 'seul 2794 a donné des matchs (sans doublon)');
+  assert.deepEqual(apres.api_ids, ['2794', '2795'], 'la liste complète reste disponible');
+  await appliquer([mt({ api_id: 'CONF-3', tournoi: '2795', tour: 'RR' })]);
+  assert.deepEqual((await etat()).tournois.find((t) => t.id === TOURNOI.finals).api_ids_confirmes, ['2794', '2795'], 'dès que le second fournit un match, les deux sont gardés');
+});
+
+test('0016 : une ligne H2H sans le classement de l\'époque est de nouveau « à calculer » ; à jour, indisponible ou sans rencontre : non', async () => {
+  const m = await ligne('CONF-1');
+  const [a, b2] = [Math.min(m.p1_id, m.p2_id), Math.max(m.p1_id, m.p2_id)];
+  const aCalculer = async () => (await service('select public.sync_h2h_a_calculer() as r')).rows[0].r.filter((x) => x.joueur_a === a && x.joueur_b === b2);
+  const poser = (statut, rencontres) => b.admin(
+    `insert into public.h2h (joueur_a, joueur_b, statut, victoires_a, victoires_b, rencontres) values ($1, $2, $3, 1, 0, $4::jsonb)
+     on conflict (joueur_a, joueur_b) do update set statut = excluded.statut, rencontres = excluded.rencontres`, [a, b2, statut, JSON.stringify(rencontres)]);
+  assert.equal((await aCalculer()).length, 1, 'pas de ligne : à calculer');
+  await poser('ok', [{ annee: 2025, tournoi: 'Paris', score: '6-4 6-4', vainqueur: 'a' }]);
+  assert.equal((await aCalculer()).length, 1, 'ancienne ligne (sans classement) : à recalculer');
+  await poser('ok', [{ annee: 2025, tournoi: 'Paris', score: '6-4 6-4', vainqueur: 'a', classement_vainqueur: 3, classement_vaincu: 12 }]);
+  assert.equal((await aCalculer()).length, 0, 'ligne avec classements : à jour');
+  await poser('ok', [{ annee: 2025, tournoi: 'Paris', score: '6-4 6-4', vainqueur: 'a', classement_vainqueur: null, classement_vaincu: null }]);
+  assert.equal((await aCalculer()).length, 0, 'classements inconnus (null) mais calculés : à jour, on ne recalcule pas sans fin');
+  await poser('ok', []);
+  assert.equal((await aCalculer()).length, 0, 'aucune rencontre : rien à ajouter');
+  await poser('indisponible', [{ annee: 2025 }]);
+  assert.equal((await aCalculer()).length, 0, 'indisponible : on ne réessaie pas');
+});
+
+test('0016 : les deux fonctions restent réservées au rôle service', async () => {
+  for (const f of ['select public.sync_etat()', 'select public.sync_h2h_a_calculer()']) {
+    await refuse(b.comme(ID.pierre, f));
+    await refuse(b.comme(null, f, [], 'anon'));
+  }
+});

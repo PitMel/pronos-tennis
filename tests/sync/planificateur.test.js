@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { PARAMETRES, heureLocale, dansLaFenetre, matchsASurveiller, afficheDue, decider, selectionnerDetails } from '../../src/sync/planificateur.js';
+import { PARAMETRES, heureLocale, dansLaFenetre, matchsASurveiller, afficheDue, decider, selectionnerDetails, idsAInterroger, tropTotPourLesAffiches } from '../../src/sync/planificateur.js';
 
 const d = (s) => new Date(s);
 // Heures d'été à Paris = UTC+2 (jusqu'au 25 oct. 2026 à 3 h), heures d'hiver = UTC+1 (ensuite).
@@ -46,9 +46,11 @@ test('afficheDue : jamais lue = due ; intervalle d\'1 h en tournoi (tolérance 5
   assert.equal(afficheDue(tournoi({ derniere_decouverte: '2026-10-28T11:05:00Z' }), etat(), now).due, true); // 55 min : dans la tolérance du cron
   assert.equal(afficheDue(tournoi({ derniere_decouverte: '2026-10-28T10:59:00Z' }), etat(), now).due, true); // 1 h 01
   assert.equal(afficheDue(tournoi({ derniere_decouverte: '2026-10-28T09:30:00Z' }), etat(), now).due, true); // 2 h 30 : l'ancien rythme (3 h) ne s'applique plus
-  const hors = tournoi({ etat: 'a_venir', date_debut: '2027-03-01', date_fin: '2027-03-08' });
+  const hors = tournoi({ etat: 'a_venir', date_debut: '2026-10-31', date_fin: '2026-11-07' }); // commence dans 3 jours : une relecture par jour
   assert.equal(afficheDue({ ...hors, derniere_decouverte: '2026-10-28T00:00:00Z' }, etat(), now).due, false);
   assert.equal(afficheDue({ ...hors, derniere_decouverte: '2026-10-27T10:00:00Z' }, etat(), now).due, true); // 26 h
+  const lointain = tournoi({ etat: 'a_venir', date_debut: '2027-03-01', date_fin: '2027-03-08' });
+  assert.equal(afficheDue(lointain, etat(), now).due, false, 'plus de 3 jours avant le début : jamais lu, même sans lecture précédente');
   assert.equal(afficheDue(tournoi({ finale_terminee: true }), etat(), now).due, false);
   // la veille et le lendemain du tournoi comptent comme « actif »
   const veille = tournoi({ etat: 'a_venir', date_debut: '2026-10-29', date_fin: '2026-11-01', derniere_decouverte: '2026-10-28T08:00:00Z' });
@@ -87,7 +89,7 @@ test('decider : régime actif = direct si match à surveiller + affiches dues (u
 
 test('decider : régime quotidien hors tournoi, et le tournoi en cours passe en premier', () => {
   const jour = d('2026-10-28T12:00:00Z');
-  const loin = tournoi({ id: 2, nom: 'Turin', etat: 'a_venir', date_debut: '2027-03-01', date_fin: '2027-03-08', api_ids: ['2794'] });
+  const loin = tournoi({ id: 2, nom: 'Turin', etat: 'a_venir', date_debut: '2026-10-31', date_fin: '2026-11-07', api_ids: ['2794'] }); // commence dans 3 jours : on le regarde, une fois par jour
   const p = decider({ maintenant: jour, etat: etat({ tournois: [loin] }) });
   assert.deepEqual([p.regime, p.actions.length], ['quotidien', 1]);
   const mix = decider({ maintenant: jour, etat: etat({ tournois: [loin, tournoi()] }) });
@@ -149,4 +151,32 @@ test('decider : sur une journée entière (cron toutes les 30 min, heure d\'hive
   assert.ok(lectures.every((l) => { const h = Number(l.slice(0, 2)); return h >= 7 || h < 1; }), `aucune relecture entre 1 h et 7 h : ${lectures.join(' ')}`);
   assert.deepEqual(lectures, ['00:00', '07:00', '08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00', '23:00']);
   assert.equal(lectures.length * 2, 36, '36 appels d\'affiches par jour de tournoi, pour 90 disponibles');
+});
+
+test('affiches : un tournoi pas commencé n\'est regardé qu\'à partir de 3 jours avant son début (calendrier), pas avant', () => {
+  const finals = tournoi({ id: 12, nom: 'ATP Finals', categorie: 'atp_finals', etat: 'a_venir', date_debut: '2026-11-15', date_fin: '2026-11-22', api_ids: ['2794', '2795'] });
+  // 15 nov. − 3 jours = 12 nov. (jour de Paris)
+  const veille = d('2026-11-11T22:30:00Z'); // 11 nov., 23 h 30 à Paris : fenêtre horaire fermée de toute façon, on teste le jour avec une heure ouverte juste après
+  assert.equal(heureLocale(d('2026-11-11T12:00:00Z')).jour, '2026-11-11');
+  assert.deepEqual(afficheDue(finals, etat(), d('2026-11-11T12:00:00Z')), { due: false, tropTot: true }, 'J-4 : trop tôt');
+  assert.equal(afficheDue(finals, etat(), veille).due, false, 'encore le 11 nov. à Paris : trop tôt');
+  assert.equal(afficheDue(finals, etat(), d('2026-11-12T06:30:00Z')).due, true, 'J-3, 7 h 30 à Paris : on commence');
+  assert.equal(decider({ maintenant: d('2026-11-11T12:00:00Z'), etat: etat({ tournois: [finals] }) }).actions.length, 0, 'aucun appel avant J-3');
+  assert.deepEqual(decider({ maintenant: d('2026-11-12T06:30:00Z'), etat: etat({ tournois: [finals] }) }).actions.map((a) => a.api_id), ['2794', '2795']);
+  // pari tournoi déjà ouvert mais tournoi loin : pas de relecture non plus
+  assert.equal(tropTotPourLesAffiches({ ...finals, etat: 'pari_tournoi_ouvert' }, '2026-11-10'), true);
+  // un tournoi en cours, lui, n'est jamais « trop tôt » ; sans date de début, la règle ne s'applique pas
+  assert.equal(tropTotPourLesAffiches(tournoi({ etat: 'en_cours', date_debut: '2026-12-25' }), '2026-11-10'), false);
+  assert.equal(tropTotPourLesAffiches({ ...finals, date_debut: null }, '2026-11-10'), false);
+  assert.equal(PARAMETRES.joursAvantDebutAffiches, 3);
+});
+
+test('identifiants d\'API : dès qu\'un identifiant a fourni des matchs, les autres ne sont plus interrogés ; sinon tous', () => {
+  assert.deepEqual(idsAInterroger(tournoi()), ['1725', '1726'], 'rien de confirmé : on les interroge tous');
+  assert.deepEqual(idsAInterroger(tournoi({ api_ids_confirmes: ['1725'] })), ['1725'], 'Paris : seul 1725 a donné des matchs');
+  assert.deepEqual(idsAInterroger(tournoi({ api_ids_confirmes: ['1725', '1726'] })), ['1725', '1726'], 'les deux ont donné des matchs : on garde les deux');
+  assert.deepEqual(idsAInterroger(tournoi({ api_ids_confirmes: ['9999'] })), ['1725', '1726'], 'un identifiant confirmé inconnu de la table ne restreint rien');
+  assert.deepEqual(idsAInterroger(tournoi({ api_ids_confirmes: null })), ['1725', '1726']);
+  const p = decider({ maintenant: d('2026-10-28T12:50:00Z'), etat: etat({ tournois: [tournoi({ api_ids_confirmes: ['1725'] })] }) });
+  assert.deepEqual(p.actions.map((a) => a.api_id), ['1725'], 'une seule relecture d\'affiches au lieu de deux');
 });

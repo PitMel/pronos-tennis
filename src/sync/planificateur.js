@@ -18,6 +18,7 @@ export const PARAMETRES = {
   retardMaxHeures: 8, // un match prévu depuis plus de 8 h n'est plus surveillé automatiquement
   intervalleAffichesActifMin: 60, // une relecture des affiches par heure pendant un tournoi (était 180 jusqu'au 5 nov. 2026)
   intervalleAffichesQuotidienMin: 20 * 60,
+  joursAvantDebutAffiches: 3, // tournoi pas commencé : ses affiches ne sont regardées qu'à partir de 3 jours avant son début (calendrier)
   toleranceAffichesMin: 5, // le cron de GitHub se déclenche à quelques minutes près : un passage à 58 min compte comme « une heure »
   maxDetailsParCycle: 6,
 };
@@ -51,15 +52,35 @@ export function matchsASurveiller(etat, now, p = PARAMETRES) {
   });
 }
 
+const ajouterJours = (j, n) => new Date(Date.parse(`${j}T00:00:00Z`) + n * 86400000).toISOString().slice(0, 10);
+
 function jourDansLaFenetre(t, jourParis) {
   if (!t.date_debut || !t.date_fin) return false;
-  const ajouter = (j, n) => new Date(Date.parse(`${j}T00:00:00Z`) + n * 86400000).toISOString().slice(0, 10);
-  return jourParis >= ajouter(t.date_debut, -1) && jourParis <= ajouter(t.date_fin, 1);
+  return jourParis >= ajouterJours(t.date_debut, -1) && jourParis <= ajouterJours(t.date_fin, 1);
+}
+
+/**
+ * Identifiants d'API à interroger pour un tournoi. Un même tournoi peut en avoir plusieurs dans l'API (ex. Paris : 1725 et 1726) ;
+ * dès qu'au moins un d'eux a fourni des matchs (identifiant d'origine enregistré dans la base), on ne garde que ceux-là.
+ * Tant qu'aucun n'est confirmé, on les interroge tous.
+ */
+export function idsAInterroger(t) {
+  const tous = (t.api_ids ?? []).map(String);
+  const confirmes = (t.api_ids_confirmes ?? []).map(String).filter((id) => tous.includes(id));
+  return confirmes.length > 0 ? confirmes : tous;
+}
+
+/** Tournoi pas encore commencé et encore trop loin de son début (calendrier) : ses affiches ne sont pas regardées. */
+export function tropTotPourLesAffiches(t, jourParis, p = PARAMETRES) {
+  const pasCommence = t.etat === 'a_venir' || t.etat === 'pari_tournoi_ouvert';
+  if (!pasCommence || !t.date_debut) return false;
+  return jourParis < ajouterJours(t.date_debut, -p.joursAvantDebutAffiches);
 }
 
 /** Les affiches de ce tournoi doivent-elles être relues maintenant ? */
 export function afficheDue(t, etat, now, p = PARAMETRES) {
   if (t.finale_terminee) return { due: false };
+  if (tropTotPourLesAffiches(t, heureLocale(now, p.fuseau).jour, p)) return { due: false, tropTot: true };
   const aDesMatchsSuivis = (etat.matchs ?? []).some((m) => m.tournament_id === t.id);
   const enCours = t.etat === 'en_cours' || t.etat === 'pari_tournoi_ouvert';
   const actif = enCours || aDesMatchsSuivis || jourDansLaFenetre(t, heureLocale(now, p.fuseau).jour);
@@ -104,7 +125,7 @@ export function decider({ maintenant, etat, usage = null, parametres = {} }) {
     .filter((x) => x.due)
     .sort((a, b) => Number(b.t.etat === 'en_cours') - Number(a.t.etat === 'en_cours'));
   for (const { t } of dus) {
-    for (const apiId of t.api_ids ?? []) actions.push({ type: 'affiches', tournoi_id: t.id, nom: t.nom, api_id: String(apiId) });
+    for (const apiId of idsAInterroger(t)) actions.push({ type: 'affiches', tournoi_id: t.id, nom: t.nom, api_id: String(apiId) });
   }
 
   const retenues = actions.slice(0, restant);
