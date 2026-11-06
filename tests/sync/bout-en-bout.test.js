@@ -182,7 +182,12 @@ test('14. mode diagnostic : quelques appels à l\'API seulement, structure affic
   assert.equal(r.code, 0, r.texte);
   assert.deepEqual(w.appelsBase, []);
   assert.equal(w.appelsApi.filter((c) => c === '/usage').length, 2, '/usage avant et après');
-  assert.equal(w.chemins().filter((c) => c.startsWith('/matches?tournament_id=')).length, 5, '4 tournois à venir + 1 sans filtre de statut');
+  assert.equal(w.chemins().filter((c) => c.startsWith('/matches?tournament_id=')).length, 4, '1 appel par identifiant (1725, 1726, 2794, 2795), sans filtre de statut');
+  assert.ok(w.chemins().filter((c) => c.startsWith('/matches?tournament_id=')).every((c) => !c.includes('status=')), 'aucun filtre de statut');
+  assert.match(r.texte, /tournoi 1725 — tous statuts/);
+  assert.match(r.texte, /tournoi 1726 — tous statuts/);
+  assert.match(r.texte, /matchs par tour et statut/);
+  assert.match(r.texte, /"QF": \{[^}]*"upcoming": \[[^\]]*"Q1"[^\]]*"Q2"/, 'répartition par tour : les identifiants de match sont listés');
   assert.ok(w.chemins().includes('/matches/Q1'), 'détail d\'un match pour savoir s\'il coûte un appel');
   assert.match(r.texte, /\[avant\]/);
   assert.match(r.texte, /\[après\]/);

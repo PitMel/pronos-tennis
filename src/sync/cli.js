@@ -60,6 +60,17 @@ export function resumerMatchs(liste) {
   };
 }
 
+/** Répartition des matchs par tour et par statut : { QF: { upcoming: ['215465', …], live: […] } } (identifiants de match de l'API). */
+export function repartitionParTour(liste) {
+  const r = {};
+  for (const m of liste) {
+    const tour = m.round_code ?? '(sans tour)';
+    const statut = m.status ?? '(sans statut)';
+    ((r[tour] ??= {})[statut] ??= []).push(String(m.id));
+  }
+  return r;
+}
+
 export async function diagnostic({ api, ecrire, tournois = TOURNOIS_DIAGNOSTIC }) {
   const usage = async (titre) => {
     try {
@@ -71,30 +82,24 @@ export async function diagnostic({ api, ecrire, tournois = TOURNOIS_DIAGNOSTIC }
   };
   await usage('[avant]');
 
+  // Un appel par identifiant, SANS filtre de statut (1 appel chacun) : on voit tous les statuts que l'API renvoie,
+  // et surtout comment les matchs d'un même tournoi se répartissent entre ses identifiants (ex. Paris : 1725 / 1726).
   let premier = null;
   for (const id of tournois) {
     try {
-      const r = await api.get('/matches', { tournament_id: id, status: 'upcoming', draw: 'singles', limit: 200 });
+      const r = await api.get('/matches', { tournament_id: id, draw: 'singles', limit: 200 });
       const l = Array.isArray(r.json?.data) ? r.json.data : Array.isArray(r.json) ? r.json : [];
-      ecrire(`tournoi ${id} — à venir : ${court(resumerMatchs(l), 1500)}`);
+      ecrire(`tournoi ${id} — tous statuts : ${court(resumerMatchs(l), 1500)}`);
+      ecrire(`  matchs par tour et statut (identifiants de match) : ${court(repartitionParTour(l), 1500)}`);
       ecrire(`  forme de la réponse (clés racine) : ${Object.keys(r.json ?? {}).join(', ')}`);
+      if (r.json?.meta) ecrire(`  meta : ${court(r.json.meta, 400)}`);
       if (l[0]) {
         ecrire(`  exemple : ${court(l[0])}`);
         premier ??= l.find((m) => m.round_code) ?? l[0];
       }
     } catch (e) {
-      ecrire(`tournoi ${id} — à venir : ÉCHEC ${e.message}`);
+      ecrire(`tournoi ${id} — tous statuts : ÉCHEC ${e.message}`);
     }
-  }
-
-  // Sans filtre de statut : pour voir s'il existe d'autres statuts que « upcoming » / « live » / « completed ».
-  try {
-    const r = await api.get('/matches', { tournament_id: tournois[0], draw: 'singles', limit: 200 });
-    const l = Array.isArray(r.json?.data) ? r.json.data : [];
-    ecrire(`tournoi ${tournois[0]} — tous statuts : ${court(resumerMatchs(l), 1500)}`);
-    if (r.json?.meta) ecrire(`  meta : ${court(r.json.meta, 400)}`);
-  } catch (e) {
-    ecrire(`tournoi ${tournois[0]} — tous statuts : ÉCHEC ${e.message}`);
   }
 
   try {
