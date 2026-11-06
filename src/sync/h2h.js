@@ -29,6 +29,12 @@ export function normaliserNom(nom) {
   return String(nom ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
 }
 
+/** Classement ATP d'un joueur au moment du match (colonnes winner_rank / loser_rank des fichiers) : entier positif, sinon null (non classé, vide, « NA »). */
+export function rangAtp(x) {
+  const n = Number.parseInt(String(x ?? '').trim(), 10);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
 const SURFACES = { hard: 'Dur', clay: 'Terre battue', grass: 'Gazon', carpet: 'Moquette' };
 const TOURS = { F: 'Finale', SF: 'Demi-finale', QF: 'Quart de finale', R16: 'Huitième de finale', R32: 'Seizième de finale', R64: '1/32e de finale', R128: '1/64e de finale', RR: 'Poule', BR: 'Match pour la 3e place', ER: 'Tour préliminaire', Q1: 'Qualifications', Q2: 'Qualifications', Q3: 'Qualifications' };
 
@@ -56,7 +62,8 @@ export function construireIndex(lignes) {
     if (!l.winner_id || !l.loser_id || /w\/o/i.test(l.score ?? '')) continue;
     const cle = [l.winner_id, l.loser_id].sort().join('|');
     if (!parPaire.has(cle)) parPaire.set(cle, []);
-    parPaire.get(cle).push({ date: l.tourney_date, tournoi: l.tourney_name, surface: l.surface, tour: l.round, score: l.score, gagnant: l.winner_id });
+    parPaire.get(cle).push({ date: l.tourney_date, tournoi: l.tourney_name, surface: l.surface, tour: l.round, score: l.score, gagnant: l.winner_id,
+      rang_gagnant: rangAtp(l.winner_rank), rang_perdant: rangAtp(l.loser_rank) });
   }
   return { parPaire, noms };
 }
@@ -103,6 +110,8 @@ export function calculerH2H(idA, idB, index) {
     annee: Number(String(m.date).slice(0, 4)) || null, date: m.date, tournoi: m.tournoi,
     surface: SURFACES[String(m.surface).toLowerCase()] ?? (m.surface || null),
     tour: TOURS[m.tour] ?? m.tour, score: m.score || null, vainqueur: m.gagnant === idA ? 'a' : 'b',
+    // classement ATP de l'époque (null si inconnu) ; la clé est toujours écrite : c'est elle qui dit « ligne à jour » (migration 0016)
+    classement_vainqueur: m.rang_gagnant ?? null, classement_vaincu: m.rang_perdant ?? null,
   })).sort((x, y) => String(y.date).localeCompare(String(x.date)));
   const bilan = { a: 0, b: 0 };
   const surf = new Map();
