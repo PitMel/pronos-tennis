@@ -88,7 +88,8 @@ export const AUTRES_RECOMPENSES = [
   { cle: 'biggest_m1000', titre: 'Biggest win – Master 1000', court: 'Biggest win M1000' },
   { cle: 'grand_fou', titre: 'Le grand fou', court: 'Grand fou' },
   { cle: 'gagne_petit', titre: 'Le gagne-petit', court: 'Gagne-petit' },
-  { cle: 'full_strike', titre: 'Le full strike', court: 'Full strike' },
   { cle: 'sniper', titre: 'Le sniper', court: 'Sniper' },
+  { cle: 'strike', titre: 'Le strike', court: 'Strike' },
+  { cle: 'full_strike', titre: 'Le full strike', court: 'Full strike' },
   { cle: 'contradicteur', titre: 'Le contradicteur', court: 'Contradicteur' },
 ];

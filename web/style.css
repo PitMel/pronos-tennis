@@ -652,7 +652,7 @@ html, body { overflow-x: hidden; }
 .h2h-g2 b { color: #1F5E99; }
 .h2h-surfaces { font-size: .8rem; color: #5E726C; margin: 0 0 10px; }
 .h2h-table { width: 100%; border-collapse: collapse; font-size: .7rem; } /* largeur automatique : 7 colonnes ne tiennent pas en largeur fixe sur un téléphone */
-.h2h-table th, .h2h-table td { padding: 6px 1.5px; text-align: left; vertical-align: top; overflow-wrap: break-word; }
+.h2h-table th, .h2h-table td { padding: 6px 1.5px; text-align: center; vertical-align: top; overflow-wrap: break-word; }
 .h2h-table td:first-child { white-space: nowrap; }
 .h2h-set { white-space: nowrap; }
 .h2h-table thead th { font-size: .5rem; text-transform: uppercase; letter-spacing: 0; overflow-wrap: normal; white-space: nowrap; color: #5E726C; border-bottom: 2px solid #D5DED6; }
@@ -660,5 +660,3 @@ html, body { overflow-x: hidden; }
 .h2h-table tr.h2h-g1 { background: #F8DDDA; } /* lignes gagnées par le joueur 1 : rouge clair (était vert clair) */
 .h2h-table tr.h2h-g2 { background: #DCE8F6; }
 .h2h-table .h2h-score { font-variant-numeric: tabular-nums; }
-.h2h-table .h2h-centre { text-align: center; } /* Classement vaincu et Score : centrés sous leur intitulé */
-.h2h-table .h2h-rang { font-weight: 400; } /* classement du vainqueur à l'époque : après son nom, sans parenthèses, pas en gras */

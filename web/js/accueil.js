@@ -44,7 +44,6 @@ function htmlBloc({ tournoi, nbAParier, pariTournoi }) {
   const actions = [];
   if (nbAParier > 0) actions.push(`<li class="afaire"><a href="#/tournoi/${id}"><span><b>${nbAParier}</b> pari${nbAParier > 1 ? 's' : ''} de match à poser</span><i aria-hidden="true">›</i></a></li>`);
   if (pariTournoi === 'afaire') actions.push(`<li class="afaire"><a href="#/tournoi/${id}/pari">Pari tournoi à poser<i aria-hidden="true">›</i></a></li>`);
-  if (pariTournoi === 'fait') actions.push(`<li><a href="#/tournoi/${id}/pari">Pari tournoi posé<i aria-hidden="true">›</i></a></li>`);
   const reste = nbAParier > 0 || pariTournoi === 'afaire';
   return `
     <section class="carte carte-accueil categorie-${echapper(tournoi.categorie)}">

@@ -87,6 +87,7 @@ export function monPalmares({ moteur, moi, profils, tournois, resultats, matchs,
     if (r.grandFou?.noms.includes(monPrenom)) gagnees.add('grand_fou');
     if (r.gagnePetit?.noms.includes(monPrenom)) gagnees.add('gagne_petit');
     if (r.sniper?.tops.some((x) => x.id === moi)) gagnees.add('sniper');
+    if (r.strike?.tops.some((x) => x.id === moi)) gagnees.add('strike');
     if (r.contradicteur?.tops.some((x) => x.id === moi)) gagnees.add('contradicteur');
     gagneesParAnnee.set(annee, gagnees);
   }

@@ -17,8 +17,9 @@ export function recompensesActuelles(records, profils) {
     for (const x of records.masters ?? []) donner('biggest_m1000', parPrenom.get(x.parieur));
     for (const n of records.grandFou?.noms ?? []) donner('grand_fou', parPrenom.get(n));
     for (const n of records.gagnePetit?.noms ?? []) donner('gagne_petit', parPrenom.get(n));
-    for (const x of records.fullStrike ?? []) donner('full_strike', x.id);
     for (const x of records.sniper?.tops ?? []) donner('sniper', x.id);
+    for (const id of new Set((records.strike?.tops ?? []).map((x) => x.id))) donner('strike', id);
+    for (const x of records.fullStrike ?? []) donner('full_strike', x.id);
     for (const x of records.contradicteur?.tops ?? []) donner('contradicteur', x.id);
   }
   return new Map(profils.map((p) => [p.id, AUTRES_RECOMPENSES.filter((r) => compte.get(p.id).has(r.cle)).map((r) => ({ cle: r.cle, titre: r.titre, nombre: compte.get(p.id).get(r.cle) }))]));

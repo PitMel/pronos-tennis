@@ -119,7 +119,7 @@ function htmlTableauScore(match, p1, p2, gagnant, h2h = undefined) {
     : [];
   const etat = (numero) => (gagnant === numero ? ' gagnant' : gagnant ? ' perdant' : '');
   const nom = (joueur, numero) => `<div class="ligne-joueur${etat(numero)}"><span class="identite"><span class="nom-joueur">${echapper(nomCourt(joueur))}</span>`
-    + `${joueur?.classement ? ` <span class="rang-joueur">(n°${NBSP}${echapper(joueur.classement)})</span>` : ''}</span></div>`;
+    + `${joueur?.classement ? ` <span class="rang-joueur">n°${NBSP}${echapper(joueur.classement)}</span>` : ''}</span></div>`;
   const score = (numero, indice) => (jeux.length
     ? `<div class="sets${etat(numero)}">${jeux.map((s) => `<b>${echapper(s[indice])}</b>`).join('')}</div>` : '');
   // forfait : plus de face-à-face ; « Forfait » grisé du côté de celui qui déclare forfait, « Qualifié » de l'autre
@@ -189,7 +189,7 @@ function brouillonValide(ctx, brouillon) {
 
 function sousTexteCommun(profils, moi, qui) {
   const phrase = phraseQui(profils, moi, qui);
-  return `${phrase ? `${echapper(phrase)} ` : ''}Les paris des autres s’ouvrent quand tout le monde a parié. Un pari posé reste modifiable jusqu’au début du match ou jusqu’à ce que tout le monde ait parié ; un premier pari reste possible pendant et après le match, tant que les paris ne sont pas révélés.`;
+  return `${phrase ? `${echapper(phrase)} ` : ''}Les paris deviennent visibles quand tout le monde a parié. Un pari posé reste modifiable jusqu’au début du match ou jusqu’à ce que tout le monde ait parié ; un premier pari reste possible pendant et après le match, tant que les paris ne sont pas révélés.`;
 }
 
 /**

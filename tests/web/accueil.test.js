@@ -59,7 +59,8 @@ test('htmlAccueil : à poser, à jour, prochain tournoi, rien', () => {
   assert.match(h, /href="#\/tournoi\/2\/pari">Pari tournoi à poser/);
   assert.doesNotMatch(h, /Tu es à jour/);
   assert.match(htmlAccueil({ profil, blocs: [bloc({ nbAParier: 1 })] }), /<b>1<\/b> pari de match à poser/);
-  assert.match(htmlAccueil({ profil, blocs: [bloc({ pariTournoi: 'fait' })] }), /Pari tournoi posé[\s\S]*Tu es à jour/);
+  assert.doesNotMatch(htmlAccueil({ profil, blocs: [bloc({ pariTournoi: 'fait' })] }), /Pari tournoi posé/);
+  assert.match(htmlAccueil({ profil, blocs: [bloc({ pariTournoi: 'fait' })] }), /Tu es à jour/);
   assert.match(htmlAccueil({ profil, blocs: [bloc()] }), /Tu es à jour/);
   assert.match(htmlAccueil({ profil, prochain: t(4, 'a_venir', '2026-12-01', { nom: 'Turin' }) }), /Prochain tournoi[\s\S]*Turin[\s\S]*Les paris ouvrent quand le tableau est connu/);
   assert.match(htmlAccueil({ profil }), /Aucun tournoi en cours/);

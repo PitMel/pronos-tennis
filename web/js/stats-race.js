@@ -250,7 +250,7 @@ export function statsRace({ moteur, annee, tournois, resultats, profils, matchs,
       if (joues.get(t.id) > 0) bonsParTournoi.push({ t, id: x.id, prenom: x.prenom, ok, sur: joues.get(t.id) });
     }
   }
-  const formeStrike = (c) => ({ prenom: c.prenom, tournoi: infoTournoi(c.t), ok: c.ok, sur: c.sur, pourcentage: pct(c.ok, c.sur) });
+  const formeStrike = (c) => ({ id: c.id, prenom: c.prenom, tournoi: infoTournoi(c.t), ok: c.ok, sur: c.sur, pourcentage: pct(c.ok, c.sur) });
   const memeScore = (a, b) => a.ok === b.ok && a.ok * b.sur === b.ok * a.sur;
   const classe = [...bonsParTournoi].sort((a, b) => b.ok - a.ok || b.ok * a.sur - a.ok * b.sur || parDate(a.t, b.t) || cmp(a.prenom, b.prenom));
   let strike = null;

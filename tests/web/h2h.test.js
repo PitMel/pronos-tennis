@@ -29,14 +29,13 @@ test('compteur et fenêtre : chiffres de chaque côté, bouton H2H sur la ligne,
   assert.equal(htmlCompteurH2H(m, null), '<div class="h2h-indispo">H2H indisponible</div>');
   const f = htmlFenetreH2H(h2hDuMatch(h2h, m), 'Alcaraz', 'Sinner');
   assert.match(f, /h2h-gros[\s\S]*Alcaraz <b>7<\/b>[\s\S]*<b>10<\/b> Sinner/);
-  // colonnes : « Classement vaincu » entre Vainqueur et Tournoi, sur deux lignes
-  assert.deepEqual([...f.matchAll(/<th scope="col"[^>]*>(.+?)<\/th>/g)].map((x) => x[1].replace('<br>', '|')), ['Année', 'Vainqueur', 'Classement|vaincu', 'Tournoi', 'Tour', 'Surface', 'Score']);
+  // colonnes : « Classements » (vainqueur vs. vaincu) entre Vainqueur et Tournoi
+  assert.deepEqual([...f.matchAll(/<th scope="col"[^>]*>(.+?)<\/th>/g)].map((x) => x[1].replace('<br>', '|')), ['Année', 'Vainqueur', 'Classements', 'Tournoi', 'Tour', 'Surface', 'Score']);
   assert.ok(f.indexOf('2026') < f.indexOf('2025')); // le plus récent d'abord
   // p1 (Alcaraz) a gagné en 2026, n° 2 à l'époque, contre Sinner n° 1 ; le classement suit le nom, sans parenthèses
-  assert.match(f, /<tr class="h2h-g1"><td>2026<\/td><th scope="row">Alcaraz\s<span class="h2h-rang">2<\/span><\/th><td class="h2h-centre">1<\/td><td>Monte Carlo<\/td>/);
-  assert.match(f, /<tr class="h2h-g2"><td>2025<\/td><th scope="row">Sinner\s<span class="h2h-rang">1<\/span><\/th><td class="h2h-centre">4<\/td>/);
-  assert.doesNotMatch(f, /\(\s*<span class="h2h-rang"|<b>\s*<span class="h2h-rang"/, 'ni parenthèses ni gras autour du classement du vainqueur');
-  assert.match(f, /h2h-score h2h-centre/, 'scores centrés sous leur intitulé');
+  assert.match(f, /<tr class="h2h-g1"><td>2026<\/td><th scope="row">Alcaraz<\/th><td>2\svs\.\s1<\/td><td>Monte Carlo<\/td>/);
+  assert.match(f, /<tr class="h2h-g2"><td>2025<\/td><th scope="row">Sinner<\/th><td>1\svs\.\s4<\/td>/);
+  assert.doesNotMatch(f, /h2h-rang/, 'le classement n\'est plus dans la colonne Vainqueur');
   assert.match(f, /TennisMyLife/);
   assert.match(htmlFenetreH2H({ v1: 0, v2: 0, parSurface: [], rencontres: [] }, 'A', 'B'), /Première rencontre/);
 });
@@ -60,8 +59,7 @@ test('fenêtre H2H : lignes calculées avant l\'ajout des classements (ou classe
   const ancienne = { ...ligne, rencontres: [{ annee: 2025, tournoi: 'US Open', surface: 'Dur', tour: 'Finale', score: '6-2 6-4', vainqueur: 'a' }, { annee: 2024, tournoi: 'Rome', surface: 'Terre battue', tour: 'Demi-finale', score: '7-5 6-4', vainqueur: 'b', classement_vainqueur: null, classement_vaincu: null }] };
   const m = { p1_id: 5, p2_id: 9 };
   const f = htmlFenetreH2H(h2hDuMatch(new Map([['5-9', ancienne]]), m), 'Sinner', 'Alcaraz');
-  assert.doesNotMatch(f, /h2h-rang/);
-  assert.equal([...f.matchAll(/<td class="h2h-centre">—<\/td>/g)].length, 2);
+  assert.equal([...f.matchAll(/<td>—\svs\.\s—<\/td>/g)].length, 2);
   assert.deepEqual(h2hDuMatch(new Map([['5-9', ancienne]]), m).rencontres.map((r) => [r.rangVainqueur, r.rangVaincu]), [[null, null], [null, null]]);
 });
 
@@ -72,7 +70,6 @@ test('feuille de style : rouge à la place du vert dans la fenêtre H2H, colonne
   assert.match(regle('.h2h-table tr.h2h-g1'), /background: #F8DDDA/);
   assert.match(regle('.h2h-g1 b'), /color: #B42318/);
   assert.doesNotMatch(css, /h2h-g1[^\n]*(#DCEFE5|#1F6B4F)/, 'plus de vert pour le joueur 1');
-  assert.match(regle('.h2h-table .h2h-centre'), /text-align: center/);
-  assert.match(regle('.h2h-table .h2h-rang'), /font-weight: 400/);
+  assert.match(regle('.h2h-table th, .h2h-table td'), /text-align: center/, 'toutes les colonnes centrées');
   assert.match(regle('.classement-tournoi thead th, .classement-tournoi td'), /text-align: center/);
 });

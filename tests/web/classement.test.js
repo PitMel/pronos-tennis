@@ -152,6 +152,14 @@ test('vues : classement du tournoi clos (3 colonnes + score), en cours (matchs s
   const h2 = htmlClassementTournoi(cours, { tournoi: { etat: 'en_cours' } });
   assert.doesNotMatch(h2, /Pari tournoi<\/th>/);
   assert.match(h2, /Aucun match compté/);
+  // dès les quarts (tournoi en cours) : colonne « Score » à droite = somme des points de matchs ; pas avant
+  const cell = (texte) => ({ texte, positif: true, negatif: false });
+  const fake = (tours) => ({ cloture: false, matchsComptes: 3, tours: tours.map((t) => ({ tour: t, libelle: t })),
+    lignes: [{ id: 'p', prenom: 'Pierre', rang: 1, couleur: null, parTour: Object.fromEntries(tours.map((t) => [t, cell('+2')])), matchs: cell('+4'), pari: null, bonus: null, final: null }] });
+  const avecQuarts = htmlClassementTournoi(fake(['R16', 'QF']), { tournoi: { etat: 'en_cours' } });
+  assert.match(avecQuarts, /<th>QF<\/th><th>Score<\/th><\/tr>/);
+  assert.match(avecQuarts, /<td class="final pos">\+4<\/td><\/tr>/);
+  assert.doesNotMatch(htmlClassementTournoi(fake(['R32', 'R16']), { tournoi: { etat: 'en_cours' } }), /Score/);
   const sansArchive = classementTournoi({ moteur, tournoi: { id: 1, etat: 'clos', categorie: 'masters_1000' }, matchs: [], paris: new Map(), archives: [], profils: duo });
   assert.match(htmlClassementTournoi(sansArchive, { tournoi: { etat: 'clos' } }), /Aucun score archivé pour ton groupe/);
   assert.equal(htmlClassementTournoi({ lignes: [] }), '');

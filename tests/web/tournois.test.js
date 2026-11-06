@@ -112,8 +112,8 @@ test('vues : le résultat reste masqué tant que resultat_visible est faux', () 
   const html = visible.slice(visible.indexOf('<div class="tableau-score">'));
   const ordre = ['nom-joueur">Alcaraz', 'class="sets perdant"><b>7</b><b>6</b>', 'filet-ligne', 'class="sets gagnant"><b>6</b><b>4</b>', 'nom-joueur">Fritz'].map((x) => html.indexOf(x));
   assert.ok(ordre.every((x, i) => x > 0 && (i === 0 || x > ordre[i - 1])), `ordre de la colonne : ${ordre}`);
-  assert.match(html, /nom-joueur">Alcaraz<\/span> <span class="rang-joueur">\(n°\s1\)<\/span>/);
-  assert.match(html, /nom-joueur">Fritz<\/span> <span class="rang-joueur">\(n°\s9\)<\/span>/);
+  assert.match(html, /nom-joueur">Alcaraz<\/span> <span class="rang-joueur">n°\s1<\/span>/);
+  assert.match(html, /nom-joueur">Fritz<\/span> <span class="rang-joueur">n°\s9<\/span>/);
   assert.match(visible, /Terminé/);
 });
 
