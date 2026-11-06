@@ -300,3 +300,35 @@ test('un tournoi sans identifiant d’API n’est pas suivi', async () => {
   const e = await etat();
   assert.ok(!e.tournois.some((t) => t.nom === 'Sans API'));
 });
+
+// ------------------------------------------------------------------ identifiant d'API d'origine (migration 0015)
+
+test('0015 : chaque match garde l’identifiant d’API du tournoi d’où il vient (1725 ou 1726 pour un même tournoi)', async () => {
+  const a = mt({ api_id: 'ORIG-1', tournoi: '1725', tour: 'R16' });
+  const c = mt({ api_id: 'ORIG-2', tournoi: '1726', tour: 'R16' });
+  const r = await appliquer([a, c]);
+  assert.equal(r.crees, 2);
+  assert.equal((await ligne('ORIG-1')).api_tournament_id, '1725');
+  assert.equal((await ligne('ORIG-2')).api_tournament_id, '1726');
+  assert.equal((await ligne('ORIG-1')).tournament_id, (await ligne('ORIG-2')).tournament_id, 'même tournoi interne, deux identifiants d’API');
+});
+
+test('0015 : un match déjà connu (créé avant la migration) reçoit son identifiant d’origine au passage suivant, sans compter comme une mise à jour', async () => {
+  const m = mt({ api_id: 'ORIG-3', tournoi: '1725', tour: 'R16' });
+  await appliquer([m]);
+  await b.admin("update public.matches set api_tournament_id = null where api_id = 'ORIG-3'"); // état d'avant la migration
+  const r = await appliquer([m]);
+  assert.equal(r.maj, 0, 'l’écriture de l’identifiant n’est pas une mise à jour de match');
+  assert.equal(r.crees, 0);
+  assert.equal((await ligne('ORIG-3')).api_tournament_id, '1725');
+});
+
+test('0015 : un match corrigé à la main reçoit aussi son identifiant d’origine, sans que ses corrections bougent', async () => {
+  const m = mt({ api_id: 'ORIG-4', tournoi: '1726', tour: 'R16', statut: 'a_venir' });
+  await appliquer([m]);
+  await b.admin("update public.matches set modifie_manuellement = true, statut = 'termine', vainqueur = 1, sets_joues = 2, api_tournament_id = null where api_id = 'ORIG-4'");
+  await appliquer([m]);
+  const l = await ligne('ORIG-4');
+  assert.equal(l.api_tournament_id, '1726');
+  assert.deepEqual([l.statut, l.vainqueur, l.modifie_manuellement], ['termine', 1, true]);
+});
