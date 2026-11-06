@@ -46,9 +46,6 @@ export async function creerMonde() {
         let m = chemin.match(/^\/matches\?tournament_id=([^&]+)&status=upcoming/);
         if (m) return reponse(200, { data: monde.upcoming[m[1]] ?? [] });
         if (chemin.startsWith('/matches?status=live')) return reponse(200, { data: monde.live });
-        // Sans filtre de statut (diagnostic) : comme l'offre gratuite, seulement les matchs à venir et en direct du tournoi.
-        m = chemin.match(/^\/matches\?tournament_id=([^&]+)&draw=singles/);
-        if (m) return reponse(200, { data: [...(monde.upcoming[m[1]] ?? []), ...monde.live.filter((x) => String(x.tournament_id) === m[1])], meta: { total: 0 } });
         m = chemin.match(/^\/matches\/([^?]+)$/);
         if (m) return monde.details[m[1]] ? reponse(200, { data: monde.details[m[1]] }) : reponse(404, { error: 'not_found' });
         return reponse(404, { error: 'route inconnue' });
