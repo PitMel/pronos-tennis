@@ -312,6 +312,7 @@ svg.filet[data-edition="1"] { cursor: pointer; }
 .classement-tournoi, .detail-race { width: 100%; border-collapse: collapse; font-size: .92rem; font-variant-numeric: tabular-nums; }
 .classement-tournoi th, .classement-tournoi td, .detail-race th, .detail-race td { padding: 7px 4px; border-top: 1px solid #E3E9E3; text-align: right; }
 .classement-tournoi thead th, .detail-race thead th { border-top: 0; font-size: .72rem; font-weight: 700; color: var(--gris); vertical-align: bottom; }
+.classement-tournoi thead th, .classement-tournoi td { text-align: center; } /* scores centrés sous l'intitulé de leur colonne (Huitièmes de finale, etc.) */
 .classement-tournoi td.rang { width: 26px; text-align: center; font-size: 1.05rem; }
 .classement-tournoi tbody th { text-align: left; font-weight: 700; }
 .classement-tournoi tbody th span, .detail-race thead th span { margin-left: 6px; }
@@ -639,7 +640,7 @@ html, body { overflow-x: hidden; }
 .btn-h2h { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); font: inherit; font-weight: 800; font-size: .72rem; letter-spacing: .04em; padding: 3px 10px; border-radius: 99px; border: 2px solid rgba(244, 247, 242, .85); background: var(--terrain, #1F4D43); color: #fff; cursor: pointer; }
 .btn-h2h:hover, .btn-h2h:focus-visible { background: var(--balle, #D8E64C); color: #10303A; border-color: var(--balle, #D8E64C); }
 .h2h-indispo { flex: 1 1 0; display: flex; align-items: center; justify-content: center; text-align: center; font-size: .78rem; font-weight: 600; color: #BFD2C9; padding: 0 2px; }
-.fenetre-h2h { width: min(94vw, 640px); max-height: 88vh; border: 0; border-radius: 18px; padding: 16px 14px 14px; background: #F4F7F2; color: #0F2A26; overflow: auto; }
+.fenetre-h2h { width: min(98vw, 640px); max-height: 88vh; border: 0; border-radius: 18px; padding: 16px 8px 14px; background: #F4F7F2; color: #0F2A26; overflow: auto; }
 .fenetre-h2h::backdrop { background: rgba(10, 25, 22, .6); }
 .h2h-entete { text-align: center; }
 .h2h-entete h3 { margin: 0; font-size: .85rem; letter-spacing: .12em; color: #5E726C; }
@@ -647,17 +648,17 @@ html, body { overflow-x: hidden; }
 .h2h-gros b { font-size: 2.6rem; font-weight: 900; line-height: 1; font-variant-numeric: tabular-nums; }
 .h2h-gros .h2h-tiret { font-size: 2rem; color: #8AA096; }
 .h2h-gros .h2h-g1, .h2h-gros .h2h-g2 { background: none; }
-.h2h-g1 b { color: #1F6B4F; }
+.h2h-g1 b { color: #B42318; } /* joueur 1 : rouge (était vert) */
 .h2h-g2 b { color: #1F5E99; }
 .h2h-surfaces { font-size: .8rem; color: #5E726C; margin: 0 0 10px; }
-.h2h-table { width: 100%; border-collapse: collapse; font-size: .72rem; table-layout: fixed; }
-.h2h-table th, .h2h-table td { padding: 6px 3px; text-align: left; vertical-align: top; overflow-wrap: break-word; }
+.h2h-table { width: 100%; border-collapse: collapse; font-size: .7rem; } /* largeur automatique : 7 colonnes ne tiennent pas en largeur fixe sur un téléphone */
+.h2h-table th, .h2h-table td { padding: 6px 1.5px; text-align: left; vertical-align: top; overflow-wrap: break-word; }
 .h2h-table td:first-child { white-space: nowrap; }
-.h2h-table th:nth-child(1) { width: 12%; } .h2h-table th:nth-child(2) { width: 17%; } .h2h-table th:nth-child(3) { width: 22%; }
-.h2h-table th:nth-child(4) { width: 12%; } .h2h-table th:nth-child(5) { width: 13%; } .h2h-table th:nth-child(6) { width: 24%; }
 .h2h-set { white-space: nowrap; }
-.h2h-table thead th { font-size: .56rem; text-transform: uppercase; letter-spacing: 0; overflow-wrap: normal; color: #5E726C; border-bottom: 2px solid #D5DED6; }
+.h2h-table thead th { font-size: .5rem; text-transform: uppercase; letter-spacing: 0; overflow-wrap: normal; white-space: nowrap; color: #5E726C; border-bottom: 2px solid #D5DED6; }
 .h2h-table tbody th { font-weight: 800; }
-.h2h-table tr.h2h-g1 { background: #DCEFE5; }
+.h2h-table tr.h2h-g1 { background: #F8DDDA; } /* lignes gagnées par le joueur 1 : rouge clair (était vert clair) */
 .h2h-table tr.h2h-g2 { background: #DCE8F6; }
 .h2h-table .h2h-score { font-variant-numeric: tabular-nums; }
+.h2h-table .h2h-centre { text-align: center; } /* Classement vaincu et Score : centrés sous leur intitulé */
+.h2h-table .h2h-rang { font-weight: 400; } /* classement du vainqueur à l'époque : après son nom, sans parenthèses, pas en gras */

@@ -5,7 +5,8 @@ import { htmlCarteMatch } from '../../web/js/cartes.js';
 
 const ligne = { joueur_a: 5, joueur_b: 9, statut: 'ok', victoires_a: 10, victoires_b: 7,
   par_surface: [{ surface: 'Dur', a: 6, b: 5 }, { surface: 'Gazon', a: 4, b: 2 }],
-  rencontres: [{ annee: 2026, tournoi: 'Monte Carlo', surface: 'Terre battue', tour: 'Finale', score: '7-6(5) 6-3', vainqueur: 'b' }, { annee: 2025, tournoi: 'US Open', surface: 'Dur', tour: 'Finale', score: '6-2 3-6 6-1 6-4', vainqueur: 'a' }] };
+  rencontres: [{ annee: 2026, tournoi: 'Monte Carlo', surface: 'Terre battue', tour: 'Finale', score: '7-6(5) 6-3', vainqueur: 'b', classement_vainqueur: 2, classement_vaincu: 1 },
+    { annee: 2025, tournoi: 'US Open', surface: 'Dur', tour: 'Finale', score: '6-2 3-6 6-1 6-4', vainqueur: 'a', classement_vainqueur: 1, classement_vaincu: 4 }] };
 const h2h = new Map([['5-9', ligne], ['5-6', { joueur_a: 5, joueur_b: 6, statut: 'indisponible', raison: 'joueur non reconnu' }]]);
 
 test('h2hDuMatch : orienté du point de vue de p1, quel que soit l’ordre des identifiants', () => {
@@ -28,10 +29,14 @@ test('compteur et fenêtre : chiffres de chaque côté, bouton H2H sur la ligne,
   assert.equal(htmlCompteurH2H(m, null), '<div class="h2h-indispo">H2H indisponible</div>');
   const f = htmlFenetreH2H(h2hDuMatch(h2h, m), 'Alcaraz', 'Sinner');
   assert.match(f, /h2h-gros[\s\S]*Alcaraz <b>7<\/b>[\s\S]*<b>10<\/b> Sinner/);
-  assert.deepEqual([...f.matchAll(/<th scope="col">([^<]+)</g)].map((x) => x[1]), ['Année', 'Vainqueur', 'Tournoi', 'Tour', 'Surface', 'Score']);
+  // colonnes : « Classement vaincu » entre Vainqueur et Tournoi, sur deux lignes
+  assert.deepEqual([...f.matchAll(/<th scope="col"[^>]*>(.+?)<\/th>/g)].map((x) => x[1].replace('<br>', '|')), ['Année', 'Vainqueur', 'Classement|vaincu', 'Tournoi', 'Tour', 'Surface', 'Score']);
   assert.ok(f.indexOf('2026') < f.indexOf('2025')); // le plus récent d'abord
-  assert.match(f, /<tr class="h2h-g1"><td>2026<\/td><th scope="row">Alcaraz</); // p1 (Alcaraz) a gagné en 2026
-  assert.match(f, /<tr class="h2h-g2"><td>2025<\/td><th scope="row">Sinner</);
+  // p1 (Alcaraz) a gagné en 2026, n° 2 à l'époque, contre Sinner n° 1 ; le classement suit le nom, sans parenthèses
+  assert.match(f, /<tr class="h2h-g1"><td>2026<\/td><th scope="row">Alcaraz\s<span class="h2h-rang">2<\/span><\/th><td class="h2h-centre">1<\/td><td>Monte Carlo<\/td>/);
+  assert.match(f, /<tr class="h2h-g2"><td>2025<\/td><th scope="row">Sinner\s<span class="h2h-rang">1<\/span><\/th><td class="h2h-centre">4<\/td>/);
+  assert.doesNotMatch(f, /\(\s*<span class="h2h-rang"|<b>\s*<span class="h2h-rang"/, 'ni parenthèses ni gras autour du classement du vainqueur');
+  assert.match(f, /h2h-score h2h-centre/, 'scores centrés sous leur intitulé');
   assert.match(f, /TennisMyLife/);
   assert.match(htmlFenetreH2H({ v1: 0, v2: 0, parSurface: [], rencontres: [] }, 'A', 'B'), /Première rencontre/);
 });
@@ -49,4 +54,25 @@ test('carte de match : le H2H remplace les scores tant qu’il n’y en a pas ; 
   const f = htmlCarteMatch(fini, { joueurs, profils: [], categorie: 'masters_1000', h2h });
   assert.doesNotMatch(f, /btn-h2h/);
   assert.match(f, /<div class="sets/);
+});
+
+test('fenêtre H2H : lignes calculées avant l\'ajout des classements (ou classement inconnu) : pas de classement affiché, tiret dans la colonne du vaincu', () => {
+  const ancienne = { ...ligne, rencontres: [{ annee: 2025, tournoi: 'US Open', surface: 'Dur', tour: 'Finale', score: '6-2 6-4', vainqueur: 'a' }, { annee: 2024, tournoi: 'Rome', surface: 'Terre battue', tour: 'Demi-finale', score: '7-5 6-4', vainqueur: 'b', classement_vainqueur: null, classement_vaincu: null }] };
+  const m = { p1_id: 5, p2_id: 9 };
+  const f = htmlFenetreH2H(h2hDuMatch(new Map([['5-9', ancienne]]), m), 'Sinner', 'Alcaraz');
+  assert.doesNotMatch(f, /h2h-rang/);
+  assert.equal([...f.matchAll(/<td class="h2h-centre">—<\/td>/g)].length, 2);
+  assert.deepEqual(h2hDuMatch(new Map([['5-9', ancienne]]), m).rencontres.map((r) => [r.rangVainqueur, r.rangVaincu]), [[null, null], [null, null]]);
+});
+
+test('feuille de style : rouge à la place du vert dans la fenêtre H2H, colonnes centrées, classement du tournoi centré', async () => {
+  const { readFile } = await import('node:fs/promises');
+  const css = await readFile(new URL('../../web/style.css', import.meta.url), 'utf8');
+  const regle = (sel) => css.split('\n').find((l) => l.startsWith(sel)) ?? '';
+  assert.match(regle('.h2h-table tr.h2h-g1'), /background: #F8DDDA/);
+  assert.match(regle('.h2h-g1 b'), /color: #B42318/);
+  assert.doesNotMatch(css, /h2h-g1[^\n]*(#DCEFE5|#1F6B4F)/, 'plus de vert pour le joueur 1');
+  assert.match(regle('.h2h-table .h2h-centre'), /text-align: center/);
+  assert.match(regle('.h2h-table .h2h-rang'), /font-weight: 400/);
+  assert.match(regle('.classement-tournoi thead th, .classement-tournoi td'), /text-align: center/);
 });

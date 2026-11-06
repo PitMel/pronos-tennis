@@ -10,7 +10,8 @@ export const cleH2H = (a, b) => (Number(a) < Number(b) ? `${a}-${b}` : `${b}-${a
 
 /**
  * H2H d'un match, orienté du point de vue de p1 / p2 : null (pas de ligne ou « indisponible »), sinon
- * { v1, v2, parSurface: [{surface, v1, v2}], rencontres: [{annee, tournoi, surface, tour, score, vainqueur: 1|2}] }.
+ * { v1, v2, parSurface: [{surface, v1, v2}], rencontres: [{annee, tournoi, surface, tour, score, vainqueur: 1|2, rangVainqueur, rangVaincu}] }
+ * (rangVainqueur / rangVaincu : classement ATP de chaque joueur à l'époque du match, null si inconnu ou ligne calculée avant leur ajout).
  * @param {Map<string, object>|undefined} h2h  Map(cleH2H → ligne de la table h2h)
  */
 export function h2hDuMatch(h2h, match) {
@@ -22,7 +23,8 @@ export function h2hDuMatch(h2h, match) {
     v1: direct ? l.victoires_a : l.victoires_b,
     v2: direct ? l.victoires_b : l.victoires_a,
     parSurface: (l.par_surface ?? []).map((s) => ({ surface: s.surface, v1: direct ? s.a : s.b, v2: direct ? s.b : s.a })),
-    rencontres: (l.rencontres ?? []).map((r) => ({ annee: r.annee, tournoi: r.tournoi, surface: r.surface, tour: r.tour, score: r.score, vainqueur: cote(r.vainqueur) })),
+    rencontres: (l.rencontres ?? []).map((r) => ({ annee: r.annee, tournoi: r.tournoi, surface: r.surface, tour: r.tour, score: r.score, vainqueur: cote(r.vainqueur),
+      rangVainqueur: r.classement_vainqueur ?? null, rangVaincu: r.classement_vaincu ?? null })),
   };
 }
 
@@ -37,8 +39,11 @@ export function htmlCompteurH2H(match, h) {
 /** Contenu de la fenêtre : H2H en gros, puis les rencontres de la plus récente à la plus ancienne, une couleur par vainqueur. */
 /** n1 / n2 : noms courts des joueurs (voir nomCourt dans cartes.js). */
 export function htmlFenetreH2H(h, n1, n2) {
-  const lignes = h.rencontres.map((r) => `<tr class="h2h-g${r.vainqueur}"><td>${echapper(r.annee ?? '—')}</td><th scope="row">${echapper(r.vainqueur === 1 ? n1 : n2)}</th>`
-    + `<td>${echapper(r.tournoi ?? '—')}</td><td>${echapper(r.tour ?? '—')}</td><td>${echapper(r.surface ?? '—')}</td><td class="h2h-score">${r.score ? r.score.split(' ').map((x) => `<span class="h2h-set">${echapper(x)}</span>`).join(' ') : '—'}</td></tr>`).join('');
+  // Vainqueur : son nom (en gras), puis son classement ATP au moment de la victoire (sans parenthèses, pas en gras). Colonne « Classement vaincu » : celui du perdant.
+  const rang = (n) => (n === null || n === undefined ? '' : `${NBSP}<span class="h2h-rang">${echapper(n)}</span>`);
+  const lignes = h.rencontres.map((r) => `<tr class="h2h-g${r.vainqueur}"><td>${echapper(r.annee ?? '—')}</td><th scope="row">${echapper(r.vainqueur === 1 ? n1 : n2)}${rang(r.rangVainqueur)}</th>`
+    + `<td class="h2h-centre">${r.rangVaincu === null || r.rangVaincu === undefined ? '—' : echapper(r.rangVaincu)}</td>`
+    + `<td>${echapper(r.tournoi ?? '—')}</td><td>${echapper(r.tour ?? '—')}</td><td>${echapper(r.surface ?? '—')}</td><td class="h2h-score h2h-centre">${r.score ? r.score.split(' ').map((x) => `<span class="h2h-set">${echapper(x)}</span>`).join(' ') : '—'}</td></tr>`).join('');
   const surfaces = h.parSurface.length
     ? `<p class="h2h-surfaces">${h.parSurface.map((s) => `${echapper(s.surface)} : <b>${echapper(s.v1)}${NBSP}–${NBSP}${echapper(s.v2)}</b>`).join(' · ')}</p>` : '';
   return `
@@ -48,7 +53,7 @@ export function htmlFenetreH2H(h, n1, n2) {
       ${surfaces}
     </header>
     ${h.rencontres.length
-    ? `<div class="tableau-defilant"><table class="h2h-table"><thead><tr><th scope="col">Année</th><th scope="col">Vainqueur</th><th scope="col">Tournoi</th><th scope="col">Tour</th><th scope="col">Surface</th><th scope="col">Score</th></tr></thead><tbody>${lignes}</tbody></table></div>`
+    ? `<div class="tableau-defilant"><table class="h2h-table"><thead><tr><th scope="col">Année</th><th scope="col">Vainqueur</th><th scope="col" class="h2h-centre">Classement<br>vaincu</th><th scope="col">Tournoi</th><th scope="col">Tour</th><th scope="col">Surface</th><th scope="col" class="h2h-centre">Score</th></tr></thead><tbody>${lignes}</tbody></table></div>`
     : '<p class="vide">Première rencontre : aucun match disputé entre ces deux joueurs.</p>'}
     <p class="small">Matchs du circuit ATP. Source : ${echapper(SOURCE_H2H)}.</p>
     <button type="button" class="btn alt" data-action="h2h-fermer">Fermer</button>`;
