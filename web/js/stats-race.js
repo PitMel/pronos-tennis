@@ -25,7 +25,7 @@ const matchJoue = (m) => !m.neutralise && (m.vainqueur === 1 || m.vainqueur === 
  * @param {Array} p.tournois         tous les tournois
  * @param {Array} p.resultats        archives de clôture (tournament_results)
  * @param {Array} p.profils          parieurs du groupe, déjà rangés comme la Race (colonnes)
- * @param {Array} p.matchs           lignes de matches_visibles des tournois terminés de l'année
+ * @param {Array} p.matchs           lignes de matches_visibles des tournois de l'année déjà commencés (terminés ou non)
  * @param {Map}   p.paris            Map(idMatch → Map(idProfil → pari))
  * @param {Array} p.parisTournoi     lignes de tournament_bets des tournois terminés de l'année
  * @param {Map}   p.joueurs          Map(idTennis → { nom })
@@ -39,6 +39,10 @@ export function statsRace({ moteur, annee, tournois, resultats, profils, matchs,
   const nomJoueur = (id) => joueurs?.get(id)?.nom ?? '—';
   const archives = resultats.filter((r) => parId.has(r.tournament_id) && idsProfils.has(r.joueur_id));
   const lesMatchs = matchs.filter((m) => parId.has(m.tournament_id));
+  // Récompenses « de parieur » (grand fou, gagne-petit, sniper, contradicteur) : tous les matchs terminés dont les paris sont révélés,
+  // y compris dans un tournoi pas encore terminé (la base ne montre ni résultat ni paris avant la révélation).
+  const idsOuverts = new Set(tournois.filter((t) => t.annee === annee && t.etat !== 'a_venir').map((t) => t.id));
+  const matchsJoues = matchs.filter((m) => idsOuverts.has(m.tournament_id) && matchJoue(m));
   const parisDe = (m) => paris?.get(m.id) ?? new Map();
 
   const pct = (n, sur) => (sur > 0 ? Math.round((100 * n) / sur) : 0);
@@ -185,7 +189,7 @@ export function statsRace({ moteur, annee, tournois, resultats, profils, matchs,
 
   const compterConfiance = (confiance) => {
     const nb = new Map(profils.map((x) => [x.id, 0]));
-    for (const m of lesMatchs) for (const [id, bet] of parisDe(m)) if (nb.has(id) && bet.confiance === confiance) nb.set(id, nb.get(id) + 1);
+    for (const m of matchsJoues) for (const [id, bet] of parisDe(m)) if (nb.has(id) && bet.confiance === confiance) nb.set(id, nb.get(id) + 1);
     const max = Math.max(0, ...nb.values());
     if (max === 0) return null;
     return {
@@ -199,8 +203,7 @@ export function statsRace({ moteur, annee, tournois, resultats, profils, matchs,
 
   // Le sniper : meilleur taux de bons vainqueurs sur les matchs joués
   const tirs = new Map(profils.map((x) => [x.id, { ok: 0, sur: 0 }]));
-  for (const m of lesMatchs) {
-    if (!matchJoue(m)) continue;
+  for (const m of matchsJoues) {
     for (const [id, bet] of parisDe(m)) {
       if (!tirs.has(id)) continue;
       const c = tirs.get(id);
@@ -219,8 +222,7 @@ export function statsRace({ moteur, annee, tournois, resultats, profils, matchs,
 
   // Le contradicteur : seul contre tous (au moins deux autres parieurs, tous d'un avis contraire) et raison
   const contre = new Map(profils.map((x) => [x.id, { bons: 0, solo: 0 }]));
-  for (const m of lesMatchs) {
-    if (!matchJoue(m)) continue;
+  for (const m of matchsJoues) {
     const bets = [...parisDe(m)].filter(([id]) => contre.has(id));
     if (bets.length < 3) continue;
     for (const [id, bet] of bets) {
@@ -337,7 +339,7 @@ export function statsRace({ moteur, annee, tournois, resultats, profils, matchs,
   });
 
   return {
-    nbTournois: clos.length, nbMatchs: lesMatchs.filter((m) => !m.neutralise).length,
+    nbTournois: clos.length, nbMatchs: lesMatchs.filter((m) => !m.neutralise).length, nbMatchsRecompenses: matchsJoues.length,
     detailPoints, vachesALait, chouchous, amoursImpossibles, confiances,
     records: {
       grandChelem: plusGrosScore('grand_slam'),

@@ -61,14 +61,28 @@ test('records : plus gros score avant bonification, ric rac, grand fou, gagne-pe
   assert.deepEqual([r.gagnePetit.noms, r.gagnePetit.nombre, r.gagnePetit.autres], [['Paul'], 3, [{ id: 'a', prenom: 'André', nombre: 0 }]]);
 });
 
+test('récompenses de parieur : comptent aussi les matchs terminés (paris révélés) d’un tournoi pas encore terminé ; strike et scores de tournoi restent aux tournois clos', () => {
+  const tn = [...tournois, { id: 99, nom: 'En cours', categorie: 'masters_1000', annee: 2026, etat: 'en_cours', date_debut: '2026-11-01' }];
+  const mt = [{ id: 901, tournament_id: 99, tour: 'R16', p1_id: 1, p2_id: 2, vainqueur: 1, neutralise: false, statut: 'termine' },
+              { id: 902, tournament_id: 99, tour: 'R16', p1_id: 3, p2_id: 4, vainqueur: null, neutralise: false, statut: 'en_cours' }];
+  const base = calculer();
+  const avec = statsRace({ moteur, annee: 2026, tournois: tn, resultats, profils, matchs: [...matchs, ...mt],
+    paris: new Map([...paris, [901, new Map([['p', { choix: 1, confiance: 10 }], ['a', { choix: 2, confiance: 10 }]])],
+                                         [902, new Map([['p', { choix: 1, confiance: 10 }]])]]), parisTournoi, joueurs });
+  assert.equal(avec.nbMatchsRecompenses, base.nbMatchsRecompenses + 1, 'seul le match terminé en plus est compté');
+  assert.equal(avec.nbTournois, base.nbTournois, 'le compteur de tournois ne compte que les terminés');
+  assert.equal(avec.records.grandFou.nombre, base.records.grandFou.nombre + 1);
+});
+
 test('« Autres récompenses » indique, comme « Faits de l’année », le nombre de tournois et de matchs comptés', () => {
   const d = detailRace({ moteur, annee: 2026, tournois, resultats, profils });
   const stats = calculer();
   const html = htmlPageRace(d, { moi: 'p', stats });
-  const compteur = `${stats.nbTournois} tournoi${stats.nbTournois > 1 ? 's' : ''} passé${stats.nbTournois > 1 ? 's' : ''} · ${stats.nbMatchs} match${stats.nbMatchs > 1 ? 's' : ''}`;
+  const compteur = `${stats.nbTournois} tournoi${stats.nbTournois > 1 ? 's' : ''} terminé${stats.nbTournois > 1 ? 's' : ''} · ${stats.nbMatchsRecompenses} match${stats.nbMatchsRecompenses > 1 ? 's' : ''}`;
+  const compteurFaits = `${stats.nbTournois} tournoi${stats.nbTournois > 1 ? 's' : ''} terminé${stats.nbTournois > 1 ? 's' : ''} · ${stats.nbMatchs} match${stats.nbMatchs > 1 ? 's' : ''}`;
   const apres = html.slice(html.indexOf('Autres récompenses'));
   assert.ok(apres.slice(0, 400).includes(compteur), 'compteur sous « Autres récompenses »');
-  assert.equal(html.split(compteur).length - 1, 2, 'un compteur sous chaque section');
+  assert.ok(html.includes(compteurFaits), 'compteur sous « Faits de l’année »');
 });
 
 test('page Race : les sections viennent dans l’ordre demandé', () => {
@@ -81,7 +95,7 @@ test('page Race : les sections viennent dans l’ordre demandé', () => {
   assert.match(html, /Biggest win – Grand Chelem/);
   assert.match(html, /Ric rac !/);
   assert.match(html, /Le grand fou/);
-  assert.match(html, /2 tournois passés · 7 matchs|1 tournoi passé · 6 matchs/);
+  assert.match(html, /2 tournois terminés · 7 matchs|1 tournoi terminé · 6 matchs/);
   assert.match(html, /6\/6 \(100&nbsp;%\)/);
   assert.match(html, /<td class="[^"]*gagnant"><span class="cellule-score"><span class="medaille"[^>]*>🥇<\/span><span class="cadre-gagnant">/); // médaille et cadre dans « Détail des points »
   assert.match(html, /Le gagne-petit/);

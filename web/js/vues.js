@@ -318,7 +318,8 @@ const lienTournoi = (t) => `<a class="nom-tournoi" href="#/tournoi/${encodeURICo
 const recordLi = (titre, contenu, explication, icone = '') => `<li class="record${icone ? ' record-icone' : ''}">${icone}<b>${echapper(titre)}</b><span>${contenu}</span><small class="explication">${echapper(explication)}</small></li>`;
 
 /** Section « Autres récompenses » : les récompenses « de parieur » (Biggest win, grand fou, gagne-petit, sniper, contradicteur). */
-function htmlAutresRecompenses(r, { nbTournois = 0, nbMatchs = 0 } = {}) {
+function htmlAutresRecompenses(r, { nbTournois = 0, nbMatchsRecompenses = 0 } = {}) {
+  const nbMatchs = nbMatchsRecompenses;
   if (!r) return '';
   const rec = recordLi;
   const gros = (titre, liste, explication, icone) => rec(titre, liste?.length
@@ -329,7 +330,7 @@ function htmlAutresRecompenses(r, { nbTournois = 0, nbMatchs = 0 } = {}) {
   return `
     <section class="carte carte-stats carte-records carte-autres-recompenses">
       <h3><span class="icone-section" aria-hidden="true">🏅</span>Autres récompenses</h3>
-      <p class="small">${echapper(nbTournois)} tournoi${nbTournois > 1 ? 's' : ''} passé${nbTournois > 1 ? 's' : ''} · ${echapper(nbMatchs)} match${nbMatchs > 1 ? 's' : ''}</p>
+      <p class="small">${echapper(nbTournois)} tournoi${nbTournois > 1 ? 's' : ''} terminé${nbTournois > 1 ? 's' : ''} · ${echapper(nbMatchs)} match${nbMatchs > 1 ? 's' : ''}</p>
       <ul class="liste-records">
         ${gros('Biggest win – Grand Chelem', r.grandChelem, 'Meilleur score d’un parieur dans un tournoi du Grand Chelem, avant bonification de 1re et 2e places.', htmlIconeRecompense('biggest_gc'))}
         ${gros('Biggest win – Master 1000', r.masters, 'Meilleur score d’un parieur dans un Masters 1000, avant bonification de 1re et 2e places.', htmlIconeRecompense('biggest_m1000'))}
@@ -351,7 +352,7 @@ function htmlRecords(r, { nbTournois = 0, nbMatchs = 0 } = {}) {
   return `
     <section class="carte carte-stats carte-records">
       <h3><span class="icone-section" aria-hidden="true">📅</span>Faits de l’année</h3>
-      <p class="small">${echapper(nbTournois)} tournoi${nbTournois > 1 ? 's' : ''} passé${nbTournois > 1 ? 's' : ''} · ${echapper(nbMatchs)} match${nbMatchs > 1 ? 's' : ''}</p>
+      <p class="small">${echapper(nbTournois)} tournoi${nbTournois > 1 ? 's' : ''} terminé${nbTournois > 1 ? 's' : ''} · ${echapper(nbMatchs)} match${nbMatchs > 1 ? 's' : ''}</p>
       <ul class="liste-records">
         ${rec('Ric rac !', rr?.length ? rr.map((x) => `${lienTournoi(x.tournoi)} · <b>${echapper(x.premier)}</b> devant <b>${echapper(x.deuxieme)}</b> · ${echapper(x.ecart)} point${x.pluriel ? 's' : ''} d’écart`).join('<br>') : '<em>pas encore de tournoi terminé</em>', 'Tournoi où l’écart entre le 1er et le 2e est le plus faible, avant bonification.', htmlIconeRecompense('ric_rac'))}
         ${rec('La bérézina', r.berezina?.length ? r.berezina.map(htmlBerezina).join('<hr class="sep-record">') : '<em>pas encore de match concerné</em>', 'Match où le total des points gagnés ou perdus par les parieurs est le plus bas (au moins deux paris).', htmlIconeRecompense('berezina'))}
@@ -410,7 +411,7 @@ export function htmlPageRace(detail, { moi = null, stats = null } = {}) {
     </section>
     <section class="carte carte-race race-saison"><h3>Classement</h3><ol class="liste-race">${classement}</ol>${htmlLigneRecompenses(stats?.records, detail.colonnes)}</section>
     ${detail.tournoisClos === 0 ? '' : htmlDetailPoints(stats?.detailPoints, moi)}
-    ${detail.tournoisClos === 0 ? '<p class="vide">La Race bouge à la clôture de chaque tournoi.</p>' : `
+    ${detail.tournoisClos === 0 ? `<p class="vide">La Race bouge à la clôture de chaque tournoi.</p>${htmlAutresRecompenses(stats?.records, stats ?? undefined)}` : `
     <section class="carte carte-detail-race">
       <h3>Détail par tournoi</h3>
       <div class="tableau-defilant"><table class="detail-race">

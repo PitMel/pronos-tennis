@@ -50,7 +50,9 @@ async function chargerStatsAnnee({ moteur, annee, tournois, resultats, profils }
   try {
     const clos = tournois.filter((t) => t.annee === annee && t.etat === 'clos');
     const idsClos = clos.map((t) => t.id);
-    const [matchs, parisTournoi] = await Promise.all([donnees.matchsDesTournois(idsClos), donnees.parisTournoiDesTournois(idsClos)]);
+    // matchs de tous les tournois commencés (récompenses de parieur) ; paris tournoi des seuls tournois terminés
+    const idsOuverts = tournois.filter((t) => t.annee === annee && t.etat !== 'a_venir').map((t) => t.id);
+    const [matchs, parisTournoi] = await Promise.all([donnees.matchsDesTournois(idsOuverts), donnees.parisTournoiDesTournois(idsClos)]);
     const idsMatchs = matchs.map((m) => m.id);
     const lots = [];
     for (let i = 0; i < idsMatchs.length; i += 80) lots.push(idsMatchs.slice(i, i + 80));
@@ -812,7 +814,7 @@ async function afficherRoute({ silencieux = false } = {}) {
         donnees.tournois(), donnees.resultats(), donnees.profilsGroupe(profilCourant.is_test), import('./moteur/index.js'),
       ]);
       const detail = detailRace({ moteur, annee: route.annee, tournois, resultats, profils });
-      const stats = detail.tournoisClos > 0 ? await chargerStatsAnnee({ moteur, annee: route.annee, tournois, resultats, profils: detail.colonnes }) : null;
+      const stats = await chargerStatsAnnee({ moteur, annee: route.annee, tournois, resultats, profils: detail.colonnes });
       contenu.innerHTML = htmlPageRace(detail, { moi: profilCourant.id, stats });
     } else if (route.nom === 'tournoi') {
       const donneesPage = await chargerPageTournoi(route.id);
@@ -834,7 +836,7 @@ async function afficherRoute({ silencieux = false } = {}) {
         if (c.cloture) classements.set(t.id, c);
       }
       const joueurs = await donnees.joueurs(tournois.filter((t) => t.etat === 'clos').map((t) => t.vainqueur_id));
-      const stats = race.tournoisClos > 0 ? await chargerStatsAnnee({ moteur, annee: affichee, tournois, resultats, profils: race.lignes }) : null;
+      const stats = await chargerStatsAnnee({ moteur, annee: affichee, tournois, resultats, profils: race.lignes });
       contenu.innerHTML = htmlListeTournois(tournois, { race, anneeCourante: affichee, anneeAffichee: affichee, classements, joueurs, moi: profilCourant.id, stats });
     } else {
       page = null;
