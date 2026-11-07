@@ -239,3 +239,8 @@ Choix de conception de l'étape 3.3 (à signaler à Pierre) : la maquette 1 n'es
 - Tours RR1/RR2/RR3 (« Round Robin 1/2/3 », « RR1… » dans le tableau des scores) à la place de RR ; une section par tour ; multiplicateur ×1 comme avant. Aucun match de poule n'existait en base.
 - L'API envoie « RR » : `sync_appliquer` crée le match en RR1 puis `sync_repartir_poules` range tous les matchs de poule du tournoi par horaire prévu (sans horaire : à la fin, ordre d'arrivée), 4 par tour. Refait à chaque synchro, donc les matchs changent de tour quand les horaires arrivent. Un match corrigé à la main n'est jamais déplacé.
 - Notifications : 4 matchs attendus par tour de poule.
+
+## 7 nov. 2026 — tableaux centrés, compteur « Autres récompenses »
+- Toutes les colonnes de tous les tableaux sont centrées (règle générale `table th, table td` + règles spécifiques).
+- « Autres récompenses » affiche « N tournois passés · M matchs » comme « Faits de l'année ».
+- Constat : grand fou, gagne-petit, sniper, contradicteur, strike, full strike, ric rac, bérézina, pomme de discorde et biggest win sont recalculés à chaque affichage de la page (rien n'est figé) mais ne comptent QUE les tournois de l'année à l'état « clos » (`stats-race.js` : `clos`, `lesMatchs`) ; la section n'apparaît même qu'à partir du premier tournoi clos. Décision en attente : compter aussi les tournois en cours (matchs terminés dont les paris sont révélés).

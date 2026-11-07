@@ -23,6 +23,7 @@ body {
 
 #app { max-width: 960px; min-height: 100vh; margin: 0 auto; padding: 0 16px calc(32px + env(safe-area-inset-bottom, 0px)); background: var(--fond); }
 
+table th, table td { text-align: center; } /* règle générale : colonnes de tableau toujours centrées */
 .chargement { text-align: center; color: var(--gris); margin-top: 30vh; }
 
 /* Bandeau */
@@ -233,7 +234,7 @@ svg.filet[data-edition="1"] { cursor: pointer; }
 .scn { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: .85rem; }
 .scn th { font-weight: 700; font-size: .78rem; color: #5E726C; padding: 3px 0; text-align: center; }
 .scn td { padding: 7px 0; text-align: center; font-weight: 800; font-size: 1rem; border-top: 1px solid #D5DED6; font-variant-numeric: tabular-nums; }
-.scn td:first-child { text-align: left; font-weight: 600; font-size: .85rem; color: #0F2A26; }
+.scn td:first-child { font-weight: 600; font-size: .85rem; color: #0F2A26; }
 .mine { display: flex; gap: 8px; margin-top: 9px; flex-wrap: wrap; }
 .pill { border-radius: 99px; padding: 4px 11px; font-weight: 800; font-size: .9rem; background: #E5ECE5; }
 .pill.pos { background: #D7F0DF; color: #14562F; }
@@ -283,7 +284,7 @@ svg.filet[data-edition="1"] { cursor: pointer; }
 .btn-role.choisi { background: var(--balle); border-color: #0F2A26; }
 .btn-role:disabled { opacity: .4; cursor: default; }
 .choix-tous { width: 100%; border-collapse: collapse; font-size: .92rem; }
-.choix-tous th, .choix-tous td { padding: 8px 6px; text-align: left; border-top: 1px solid #E3E9E3; }
+.choix-tous th, .choix-tous td { padding: 8px 6px; text-align: center; border-top: 1px solid #E3E9E3; }
 .choix-tous thead th { border-top: 0; font-size: .78rem; color: var(--vert-fonce); }
 .choix-tous tbody th { font-weight: 800; color: var(--vert-fonce); }
 .choix-tous tr.isme { background: #F6FAD7; }
@@ -310,20 +311,20 @@ svg.filet[data-edition="1"] { cursor: pointer; }
 .scores-groupe b.neg { color: var(--erreur); }
 .carte-classement h3, .carte-detail-race h3 { margin: 0 0 8px; font-size: 1.1rem; color: var(--vert-fonce); }
 .classement-tournoi, .detail-race { width: 100%; border-collapse: collapse; font-size: .92rem; font-variant-numeric: tabular-nums; }
-.classement-tournoi th, .classement-tournoi td, .detail-race th, .detail-race td { padding: 7px 4px; border-top: 1px solid #E3E9E3; text-align: right; }
+.classement-tournoi th, .classement-tournoi td, .detail-race th, .detail-race td { padding: 7px 4px; border-top: 1px solid #E3E9E3; text-align: center; }
 .classement-tournoi thead th, .detail-race thead th { border-top: 0; font-size: .72rem; font-weight: 700; color: var(--gris); vertical-align: bottom; }
 .classement-tournoi thead th, .classement-tournoi td { text-align: center; } /* scores centrés sous l'intitulé de leur colonne (Huitièmes de finale, etc.) */
 .classement-tournoi td.rang { width: 26px; text-align: center; font-size: 1.05rem; }
-.classement-tournoi tbody th { text-align: left; font-weight: 700; }
+.classement-tournoi tbody th { font-weight: 700; }
 .classement-tournoi tbody th span, .detail-race thead th span { margin-left: 6px; }
 .classement-tournoi tbody th { display: table-cell; white-space: nowrap; }
 .classement-tournoi td.final { font-weight: 800; font-size: 1rem; }
 .classement-tournoi td.pos, .detail-race td.gagnant { color: #14562F; font-weight: 800; }
 .classement-tournoi td.neg, .detail-race td.neg { color: var(--erreur); }
 .classement-tournoi tr.isme, .ligne-race.isme { background: #F6FAD7; }
-.detail-race thead th { text-align: right; }
+.detail-race thead th { text-align: center; }
 .detail-race thead th:first-child { width: 36%; }
-.detail-race tbody th, .detail-race tfoot th { text-align: left; font-weight: 700; }
+.detail-race tbody th, .detail-race tfoot th { font-weight: 700; }
 .detail-race tbody th small { display: block; color: var(--gris); font-weight: 400; font-size: .72rem; margin-left: 28px; }
 .detail-race .nom-tournoi { display: flex; align-items: center; gap: 6px; color: inherit; text-decoration: none; }
 .detail-race a.nom-tournoi:hover, .detail-race a.nom-tournoi:focus-visible { color: var(--vert-fonce); text-decoration: underline; }
@@ -355,7 +356,7 @@ svg.filet[data-edition="1"] { cursor: pointer; }
 .table-regles { width: 100%; border-collapse: collapse; font-size: .9rem; font-variant-numeric: tabular-nums; margin: 0 0 10px; }
 .table-regles th, .table-regles td { padding: 7px 6px; border-top: 1px solid #E3E9E3; text-align: center; }
 .table-regles thead th { border-top: 0; font-size: .74rem; color: var(--gris); vertical-align: bottom; }
-.table-regles tbody th { text-align: left; font-weight: 700; color: var(--vert-fonce); }
+.table-regles tbody th { font-weight: 700; color: var(--vert-fonce); }
 .table-regles.compact { font-size: .82rem; }
 .table-regles.centre-premiere tbody th { text-align: center; }
 .table-regles.compact td { white-space: nowrap; padding-left: 3px; padding-right: 3px; }
@@ -450,8 +451,7 @@ svg.filet[data-edition="1"] { cursor: pointer; }
 .carte-admin select { width: 100%; min-width: 0; box-sizing: border-box; font: inherit; padding: 10px 12px; border: 2px solid #D5DED6; border-radius: 12px; background: #fff; color: var(--texte); }
 .carte-admin h4 { margin: 18px 0 8px; }
 .carte-admin .tableau-classement { width: 100%; border-collapse: collapse; }
-.carte-admin .tableau-classement th, .carte-admin .tableau-classement td { padding: 8px 6px; text-align: right; border-bottom: 1px solid #E5ECE5; }
-.carte-admin .tableau-classement th:first-child, .carte-admin .tableau-classement td.nom { text-align: left; }
+.carte-admin .tableau-classement th, .carte-admin .tableau-classement td { padding: 8px 6px; text-align: center; border-bottom: 1px solid #E5ECE5; }
 .carte-admin .tableau-classement th { font-size: .78rem; color: #4B5F58; font-weight: 700; }
 .carte-admin .tableau-classement tr.ecart td { background: #FFF4D6; }
 .avertissement { margin: 14px 0; padding: 12px 14px; border-radius: 12px; background: #FFF4D6; border: 1px solid #F0D58A; color: #5C4300; font-size: .92rem; }
@@ -560,7 +560,7 @@ svg.filet[data-edition="1"] { cursor: pointer; }
 .detail-points th, .detail-points td { padding: 7px 2px; border-top: 1px solid #E3E9E3; text-align: center; font-size: .9rem; }
 .detail-points thead th { border-top: 0; font-size: .7rem; font-weight: 700; color: var(--gris); vertical-align: bottom; }
 .detail-points thead th:first-child, .detail-points tbody th.col-nom { width: 22%; }
-.detail-points tbody th.col-nom { text-align: left; font-weight: 700; white-space: nowrap; padding-left: 4px; }
+.detail-points tbody th.col-nom { font-weight: 700; white-space: nowrap; padding-left: 4px; }
 .detail-points tbody th.col-nom span { margin-left: 5px; }
 .detail-points td { font-weight: 600; }
 .detail-points td.total { font-weight: 800; }

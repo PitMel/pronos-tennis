@@ -61,6 +61,16 @@ test('records : plus gros score avant bonification, ric rac, grand fou, gagne-pe
   assert.deepEqual([r.gagnePetit.noms, r.gagnePetit.nombre, r.gagnePetit.autres], [['Paul'], 3, [{ id: 'a', prenom: 'André', nombre: 0 }]]);
 });
 
+test('« Autres récompenses » indique, comme « Faits de l’année », le nombre de tournois et de matchs comptés', () => {
+  const d = detailRace({ moteur, annee: 2026, tournois, resultats, profils });
+  const stats = calculer();
+  const html = htmlPageRace(d, { moi: 'p', stats });
+  const compteur = `${stats.nbTournois} tournoi${stats.nbTournois > 1 ? 's' : ''} passé${stats.nbTournois > 1 ? 's' : ''} · ${stats.nbMatchs} match${stats.nbMatchs > 1 ? 's' : ''}`;
+  const apres = html.slice(html.indexOf('Autres récompenses'));
+  assert.ok(apres.slice(0, 400).includes(compteur), 'compteur sous « Autres récompenses »');
+  assert.equal(html.split(compteur).length - 1, 2, 'un compteur sous chaque section');
+});
+
 test('page Race : les sections viennent dans l’ordre demandé', () => {
   const d = detailRace({ moteur, annee: 2026, tournois, resultats, profils });
   const html = htmlPageRace(d, { moi: 'p', stats: calculer() });

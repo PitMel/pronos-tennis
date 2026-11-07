@@ -318,7 +318,7 @@ const lienTournoi = (t) => `<a class="nom-tournoi" href="#/tournoi/${encodeURICo
 const recordLi = (titre, contenu, explication, icone = '') => `<li class="record${icone ? ' record-icone' : ''}">${icone}<b>${echapper(titre)}</b><span>${contenu}</span><small class="explication">${echapper(explication)}</small></li>`;
 
 /** Section « Autres récompenses » : les récompenses « de parieur » (Biggest win, grand fou, gagne-petit, sniper, contradicteur). */
-function htmlAutresRecompenses(r) {
+function htmlAutresRecompenses(r, { nbTournois = 0, nbMatchs = 0 } = {}) {
   if (!r) return '';
   const rec = recordLi;
   const gros = (titre, liste, explication, icone) => rec(titre, liste?.length
@@ -329,6 +329,7 @@ function htmlAutresRecompenses(r) {
   return `
     <section class="carte carte-stats carte-records carte-autres-recompenses">
       <h3><span class="icone-section" aria-hidden="true">🏅</span>Autres récompenses</h3>
+      <p class="small">${echapper(nbTournois)} tournoi${nbTournois > 1 ? 's' : ''} passé${nbTournois > 1 ? 's' : ''} · ${echapper(nbMatchs)} match${nbMatchs > 1 ? 's' : ''}</p>
       <ul class="liste-records">
         ${gros('Biggest win – Grand Chelem', r.grandChelem, 'Meilleur score d’un parieur dans un tournoi du Grand Chelem, avant bonification de 1re et 2e places.', htmlIconeRecompense('biggest_gc'))}
         ${gros('Biggest win – Master 1000', r.masters, 'Meilleur score d’un parieur dans un Masters 1000, avant bonification de 1re et 2e places.', htmlIconeRecompense('biggest_m1000'))}
@@ -420,7 +421,7 @@ export function htmlPageRace(detail, { moi = null, stats = null } = {}) {
       <p class="small">Score final de chaque tournoi (après pari tournoi et bonus de classement), précédé d’une médaille pour les trois premières places ; le score du vainqueur est encadré.</p>
     </section>
     ${htmlEvolutionRace(detail.evolution, { terminee: detail.terminee })}
-    ${htmlAutresRecompenses(stats?.records)}
+    ${htmlAutresRecompenses(stats?.records, stats ?? undefined)}
     ${htmlStatsRace(stats, moi)}`}`;
 }
 
