@@ -52,14 +52,14 @@ export function htmlPageRegles({ moteur }) {
       <h3>1. Un pari de match</h3>
       <p>Tu choisis <b>un joueur</b> et une <b>confiance de 6 à 10</b>. En Grand Chelem, tu annonces aussi le <b>nombre de sets</b> du match (3, 4 ou 5).</p>
       <p>Ce chiffre correspond au <b>pourcentage de chances de victoire estimé</b> : parier 7 sur le joueur A revient à dire que tu estimes que le joueur A a 70&nbsp;% de chances de gagner. Le bonus et le malus sont calculés pour récompenser le joueur le plus proche de l’optimum : si un parieur parie toujours 7 sur un joueur qui gagne 7 matchs sur 10, il aura à terme un meilleur score qu’un parieur qui parie 6, 8 ou 10 sur ce même joueur.</p>
-      <p>Matchs concernés : huitièmes, quarts, demi-finales et finale. Aux ATP Finals : poules (Round Robin), demi-finales et finale.</p>
+      <p>Matchs concernés : huitièmes, quarts, demi-finales et finale. Aux ATP Finals : poules (trois tours de Round Robin de quatre matchs), demi-finales et finale.</p>
       <p>Plus tu es confiant, plus tu gagnes si tu as raison, et plus tu perds si tu te trompes :</p>
       ${baremeBase}
     </section>
 
     <section class="carte carte-regles">
       <h3>2. Multiplicateurs de tour</h3>
-      <p>Les points du match (bonus de sets compris) sont multipliés : <b>×${echapper(mult('masters_1000', 'R16'))}</b> en huitièmes, <b>×${echapper(mult('masters_1000', 'QF'))}</b> en quarts, <b>×${echapper(mult('masters_1000', 'SF'))}</b> en demi-finales et en finale. Aux ATP Finals : ×${echapper(mult('atp_finals', 'RR'))} en poules, ×${echapper(mult('atp_finals', 'SF'))} ensuite. Le multiplicateur ne s’applique ni au pari tournoi, ni aux bonus de classement.</p>
+      <p>Les points du match (bonus de sets compris) sont multipliés : <b>×${echapper(mult('masters_1000', 'R16'))}</b> en huitièmes, <b>×${echapper(mult('masters_1000', 'QF'))}</b> en quarts, <b>×${echapper(mult('masters_1000', 'SF'))}</b> en demi-finales et en finale. Aux ATP Finals : ×${echapper(mult('atp_finals', 'RR1'))} en poules, ×${echapper(mult('atp_finals', 'SF'))} ensuite. Le multiplicateur ne s’applique ni au pari tournoi, ni aux bonus de classement.</p>
       <p>Barème complet (gagné / perdu) :</p>
       ${baremeTours}
       <p class="small">Exemple : confiance 8 en quart de finale, ton joueur gagne : ${echapper(fmt(exemple.gagne))} points ; il perd : ${echapper(fmt(exemple.perdu))}.</p>

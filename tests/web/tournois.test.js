@@ -36,7 +36,7 @@ test('formaterPeriode', () => {
 });
 
 test('ordreTours : ATP Finals = poules, demi-finales, finale', () => {
-  assert.deepEqual(ordreTours('atp_finals'), ['RR', 'SF', 'F']);
+  assert.deepEqual(ordreTours('atp_finals'), ['RR1', 'RR2', 'RR3', 'SF', 'F']);
   assert.deepEqual(ordreTours('masters_1000'), ['R16', 'QF', 'SF', 'F']);
   assert.deepEqual(ordreTours('grand_slam'), ['R16', 'QF', 'SF', 'F']);
 });
@@ -62,8 +62,8 @@ test('grouperParTour : tournoi fini = aucun tour courant ; matchs triés par heu
 });
 
 test('grouperParTour : ATP Finals, les poules passent avant les demi-finales', () => {
-  const s = grouperParTour([m(1, 'RR', { statut: 'termine' }), m(2, 'RR')], 'atp_finals');
-  assert.deepEqual(s.map((x) => [x.tour, x.courant]), [['RR', true], ['SF', false], ['F', false]]);
+  const s = grouperParTour([m(1, 'RR1', { statut: 'termine' }), m(2, 'RR1')], 'atp_finals');
+  assert.deepEqual(s.map((x) => [x.tour, x.courant]), [['RR1', true], ['RR2', false], ['RR3', false], ['SF', false], ['F', false]]);
 });
 
 test('formaterScore', () => {
@@ -149,9 +149,10 @@ test('« indoor » et « Round Robin » remplacent « en salle » et « Poules �
   assert.equal(lieuEtSurface({ ville: 'Turin', surface: 'dur', indoor: true }), 'Turin · dur · indoor');
   assert.equal(lieuEtSurface({ ville: 'Madrid', surface: 'terre', indoor: false }), 'Madrid · terre battue');
   assert.equal(lieuEtSurface({ ville: null, surface: null, indoor: false }), '');
-  assert.equal(LIBELLES_TOURS.RR, 'Round Robin');
+  assert.equal(LIBELLES_TOURS.RR1, 'Round Robin 1');
+  assert.equal(LIBELLES_TOURS.RR3, 'Round Robin 3');
   const finals = { id: 2, annee: 2026, nom: 'Nitto ATP Finals', ville: 'Turin', surface: 'dur', indoor: true, categorie: 'atp_finals', date_debut: null, date_fin: null, etat: 'a_venir', vainqueur_id: null, finaliste_id: null };
-  const html = htmlPageTournoi({ tournoi: finals, matchs: [m(1, 'RR')], joueurs });
+  const html = htmlPageTournoi({ tournoi: finals, matchs: [m(1, 'RR1')], joueurs });
   assert.match(html, /Round Robin/);
   assert.doesNotMatch(html, /Poules/);
   assert.match(html, /Turin · dur · indoor/);

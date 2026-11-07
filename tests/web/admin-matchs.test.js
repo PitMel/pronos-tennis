@@ -59,8 +59,8 @@ test('validerMatch : abandon, forfait, à venir, en cours', () => {
 test('validerMatch : création (tour, joueurs), statut et heure', () => {
   const base = { tour: 'QF', p1_id: '1', p2_id: '2', statut: 'a_venir', fin_match: 'normal' };
   assert.deepEqual(validerMatch(base, { categorie: 'masters_1000', creation: true }), []);
-  assert.match(validerMatch({ ...base, tour: 'RR' }, { categorie: 'masters_1000', creation: true }).join(), /tour/);
-  assert.deepEqual(validerMatch({ ...base, tour: 'RR' }, { categorie: 'atp_finals', creation: true }), []);
+  assert.match(validerMatch({ ...base, tour: 'RR1' }, { categorie: 'masters_1000', creation: true }).join(), /tour/);
+  assert.deepEqual(validerMatch({ ...base, tour: 'RR1' }, { categorie: 'atp_finals', creation: true }), []);
   assert.match(validerMatch({ ...base, p2_id: '1' }, { categorie: 'masters_1000', creation: true }).join(), /différents/);
   assert.match(validerMatch({ ...base, p1_id: '' }, { categorie: 'masters_1000', creation: true }).join(), /deux joueurs/);
   assert.match(validerMatch({ ...base, statut: 'x' }, { categorie: 'masters_1000', creation: true }).join(), /statut/);

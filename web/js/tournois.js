@@ -13,19 +13,23 @@ export const LIBELLES_TOURS = {
   QF: 'Quarts de finale',
   SF: 'Demi-finales',
   F: 'Finale',
-  RR: 'Round Robin',
+  RR1: 'Round Robin 1',
+  RR2: 'Round Robin 2',
+  RR3: 'Round Robin 3',
 };
 export const LIBELLES_COURTS = {
   R16: 'Huitièmes',
   QF: 'Quarts',
   SF: 'Demies',
   F: 'Finale',
-  RR: 'Round Robin',
+  RR1: 'RR1',
+  RR2: 'RR2',
+  RR3: 'RR3',
 };
 
 /** Tours dans l'ordre d'affichage (cahier des charges, 12.2 : ATP Finals = poules, demi-finales, finale). */
 export function ordreTours(categorie) {
-  return categorie === 'atp_finals' ? ['RR', 'SF', 'F'] : ['R16', 'QF', 'SF', 'F'];
+  return categorie === 'atp_finals' ? ['RR1', 'RR2', 'RR3', 'SF', 'F'] : ['R16', 'QF', 'SF', 'F'];
 }
 
 /** Un match est « terminé » pour l'affichage s'il est fini ou neutralisé. */

@@ -79,7 +79,7 @@ test('ce qui n’est pas suivi est ignoré sans rien écrire (tournoi inconnu, t
   const r = await appliquer([
     mt({ tournoi: '5555' }),
     mt({ tour: 'R32' }),
-    mt({ tour: 'RR' }), // poules : seulement aux ATP Finals
+    mt({ tour: 'RR' }), // poules (code de l'API ; devient RR1 aux ATP Finals) : seulement aux ATP Finals
     mt({ tournoi: '2794', tour: 'R16' }), // pas de huitièmes aux ATP Finals
   ]);
   assert.equal(r.ignores, 4);
@@ -371,4 +371,28 @@ test('0016 : les deux fonctions restent réservées au rôle service', async () 
     await refuse(b.comme(ID.pierre, f));
     await refuse(b.comme(null, f, [], 'anon'));
   }
+});
+
+// ------------------------------------------------------------------ migration 0017 : poules des ATP Finals en trois tours
+
+test('0017 : les matchs de poule sont rangés par horaire, 4 par tour ; sans horaire, dans l’ordre RR1, RR2, RR3 ; le rangement évolue avec les horaires', async () => {
+  await b.admin("insert into public.tournaments (annee, nom, categorie, etat) values (2031, 'Finals 2031', 'atp_finals', 'a_venir')");
+  const t = (await b.admin("select id from public.tournaments where nom = 'Finals 2031'")).rows[0].id;
+  await b.admin("insert into public.tournament_api_ids (api_id, tournament_id) values ('7777', $1)", [t]);
+  const tours = async () => Object.fromEntries((await b.admin("select api_id, tour from public.matches where tournament_id = $1", [t])).rows.map((r) => [r.api_id, r.tour]));
+  const poule = (i, heure) => ({ ...mt({ api_id: `P${i}`, tournoi: '7777', tour: 'RR', a: 9000 + i * 2 }), heure_prevue: heure });
+  // 6 affiches sans horaire : les 4 premières en RR1, les 2 suivantes en RR2
+  await appliquer([1, 2, 3, 4, 5, 6].map((i) => poule(i, null)));
+  assert.deepEqual(await tours(), { P1: 'RR1', P2: 'RR1', P3: 'RR1', P4: 'RR1', P5: 'RR2', P6: 'RR2' });
+  // 12 matchs, horaires connus en désordre : le rangement suit l'heure
+  const h = (n) => `2026-11-${String(10 + n).padStart(2, '0')}T14:00:00Z`;
+  const ordre = { P6: 1, P5: 2, P4: 3, P3: 4, P2: 5, P1: 6, P7: 7, P8: 8, P9: 9, P10: 10, P11: 11, P12: 12 };
+  await appliquer(Object.entries(ordre).map(([k, n]) => poule(Number(k.slice(1)), h(n))));
+  const apres = await tours();
+  assert.deepEqual(Object.entries(ordre).map(([k]) => apres[k]), ['RR1', 'RR1', 'RR1', 'RR1', 'RR2', 'RR2', 'RR2', 'RR2', 'RR3', 'RR3', 'RR3', 'RR3']);
+  // un match corrigé à la main n'est jamais déplacé
+  await b.admin("update public.matches set modifie_manuellement = true where api_id = 'P12'");
+  await appliquer([poule(12, h(0))]);
+  assert.equal((await tours()).P12, 'RR3');
+  assert.equal((await b.admin('select etat from public.tournaments where id = $1', [t])).rows[0].etat, 'pari_tournoi_ouvert');
 });

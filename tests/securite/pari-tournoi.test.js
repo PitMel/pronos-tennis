@@ -100,7 +100,7 @@ test('élimination : le joueur 2 qui perd est éliminé aussi ; un match neutral
 
 test('ATP Finals : une défaite en poule n’élimine pas, une défaite en demi-finale élimine', async () => {
   const t = await tournoi('pari_tournoi_ouvert', 'atp_finals');
-  await b.admin("insert into public.matches (tournament_id, tour, p1_id, p2_id, statut, vainqueur, sets_joues) values ($1, 'RR', $2, $3, 'termine', 1, 2)", [t, TENNIS.alcaraz, TENNIS.fritz]);
+  await b.admin("insert into public.matches (tournament_id, tour, p1_id, p2_id, statut, vainqueur, sets_joues) values ($1, 'RR1', $2, $3, 'termine', 1, 2)", [t, TENNIS.alcaraz, TENNIS.fritz]);
   await parierTournoi(ID.andre, t, TENNIS.alcaraz, TENNIS.fritz); // Fritz a perdu en poule : toujours en lice
   await b.admin("insert into public.matches (tournament_id, tour, p1_id, p2_id, statut, vainqueur, sets_joues) values ($1, 'SF', $2, $3, 'termine', 1, 2)", [t, TENNIS.sinner, TENNIS.zverev]);
   await refuse(parierTournoi(ID.paul, t, TENNIS.zverev, TENNIS.alcaraz));

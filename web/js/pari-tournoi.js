@@ -23,7 +23,7 @@ export function joueursDuTournoi(matchs, joueurs) {
   let gagnant = null;
   for (const m of matchs) {
     if (m.tour === 'F') { if (m.p1_id) finale.add(m.p1_id); if (m.p2_id) finale.add(m.p2_id); }
-    if (m.tour === 'RR' || m.neutralise || m.statut !== 'termine' || !m.resultat_visible) continue;
+    if (m.tour.startsWith('RR') || m.neutralise || m.statut !== 'termine' || !m.resultat_visible) continue;
     const perdant = m.vainqueur === 1 ? m.p2_id : m.vainqueur === 2 ? m.p1_id : null;
     const vainqueur = m.vainqueur === 1 ? m.p1_id : m.vainqueur === 2 ? m.p2_id : null;
     if (!perdant) continue;

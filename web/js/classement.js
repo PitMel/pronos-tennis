@@ -88,7 +88,7 @@ function cellule(moteur, valeur, { signe = true } = {}) {
  * @param {Array<{id:string, prenom:string, couleur?:string|null}>} p.profils
  * @returns {{cloture:boolean, matchsComptes:number, lignes:Array}}
  */
-const ORDRE_TOURS = ['RR', 'R16', 'QF', 'SF', 'F'];
+const ORDRE_TOURS = ['RR1', 'RR2', 'RR3', 'R16', 'QF', 'SF', 'F'];
 
 /** Points de chaque joueur PAR TOUR (colonnes « Huitièmes », « Quarts »…) : seuls les tours où au moins un match est compté. */
 function pointsParTour({ moteur, tournoi, matchs, paris, profils }) {

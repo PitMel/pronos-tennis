@@ -52,7 +52,7 @@ for (const categorie of [MASTERS_1000, GRAND_CHELEM]) {
 test('barème complet : ATP Finals (poules ×1, demi-finales et finale ×2)', () => {
   for (const [confiance, valeurs] of Object.entries(TABLEAU)) {
     const c = Number(confiance);
-    const poule = match({ categorie: ATP_FINALS, tour: 'RR' });
+    const poule = match({ categorie: ATP_FINALS, tour: 'RR1' });
     egal(pointsPari({ choix: 1, confiance: c }, poule), valeurs[0], `poule ${c} gagné`);
     egal(pointsPari({ choix: 2, confiance: c }, poule), valeurs[1], `poule ${c} perdu`);
     for (const tour of ['SF', 'F']) {
@@ -70,14 +70,14 @@ test('multiplicateurs : valeurs du cahier des charges', () => {
     egal(multiplicateurTour(cat, 'SF'), 2);
     egal(multiplicateurTour(cat, 'F'), 2);
   }
-  egal(multiplicateurTour(ATP_FINALS, 'RR'), 1);
+  egal(multiplicateurTour(ATP_FINALS, 'RR1'), 1);
   egal(multiplicateurTour(ATP_FINALS, 'SF'), 2);
   egal(multiplicateurTour(ATP_FINALS, 'F'), 2);
 });
 
 test('tours invalides pour une catégorie : erreur explicite', () => {
-  assert.throws(() => multiplicateurTour(GRAND_CHELEM, 'RR'), ErreurMoteur);
-  assert.throws(() => multiplicateurTour(MASTERS_1000, 'RR'), ErreurMoteur);
+  assert.throws(() => multiplicateurTour(GRAND_CHELEM, 'RR1'), ErreurMoteur);
+  assert.throws(() => multiplicateurTour(MASTERS_1000, 'RR1'), ErreurMoteur);
   assert.throws(() => multiplicateurTour(ATP_FINALS, 'QF'), ErreurMoteur);
   assert.throws(() => multiplicateurTour(ATP_FINALS, 'R16'), ErreurMoteur);
   assert.throws(() => multiplicateurTour('wta', 'QF'), ErreurMoteur);
@@ -275,5 +275,5 @@ test('validerPari : contrôle de saisie, messages en français', () => {
 });
 
 test('pointsMatch : un match d’une autre catégorie que le tour demandé est refusé', () => {
-  assert.throws(() => pointsMatch(match({ categorie: GRAND_CHELEM, tour: 'RR', vainqueur: 1 }), { A: { choix: 1, confiance: 8, sets: 3 } }), ErreurMoteur);
+  assert.throws(() => pointsMatch(match({ categorie: GRAND_CHELEM, tour: 'RR1', vainqueur: 1 }), { A: { choix: 1, confiance: 8, sets: 3 } }), ErreurMoteur);
 });

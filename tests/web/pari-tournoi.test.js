@@ -35,7 +35,7 @@ test('joueursDuTournoi : éliminés d’après les résultats visibles seulement
 });
 
 test('joueursDuTournoi : poules des ATP Finals = personne d’éliminé ; finale = gagnant', () => {
-  const rr = [fini(1, 'RR', 1, 2, 1), fini(2, 'RR', 3, 4, 2)];
+  const rr = [fini(1, 'RR1', 1, 2, 1), fini(2, 'RR2', 3, 4, 2)];
   assert.ok(joueursDuTournoi(rr, joueurs).every((j) => !j.elimine));
   const fin = joueursDuTournoi([fini(1, 'SF', 1, 2, 1), fini(2, 'F', 1, 3, 1)], joueurs);
   assert.equal(fin.find((j) => j.id === 1).gagnant, true);

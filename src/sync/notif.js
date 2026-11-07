@@ -2,7 +2,7 @@
 // La clé Brevo vient d'une variable d'environnement (secret GitHub) ; elle n'est jamais écrite ni journalisée.
 import { construireRace } from '../../web/js/classement.js';
 
-const TOURS = { R16: 'huitièmes de finale', QF: 'quarts de finale', SF: 'demi-finales', F: 'finale', RR: 'matchs de poule' };
+const TOURS = { R16: 'huitièmes de finale', QF: 'quarts de finale', SF: 'demi-finales', F: 'finale', RR1: 'matchs de poule (Round Robin 1)', RR2: 'matchs de poule (Round Robin 2)', RR3: 'matchs de poule (Round Robin 3)' };
 const echapper = (t) => String(t ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const heureParis = (iso) => {
   if (!iso) return '';

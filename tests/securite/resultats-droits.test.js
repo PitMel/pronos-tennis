@@ -135,9 +135,9 @@ test('l’administrateur écrit les données de référence et les matchs', asyn
 
 test('un tour qui n’existe pas dans la catégorie du tournoi est refusé (même par l’administrateur)', async () => {
   const gc = TOURNOI.chelem;
-  await assert.rejects(b.admin("insert into public.matches (tournament_id, tour, p1_id, p2_id) values ($1, 'RR', 1, 2)", [gc]), /n'existe pas/);
+  await assert.rejects(b.admin("insert into public.matches (tournament_id, tour, p1_id, p2_id) values ($1, 'RR1', 1, 2)", [gc]), /n'existe pas/);
   await assert.rejects(b.admin("insert into public.matches (tournament_id, tour, p1_id, p2_id) values ($1, 'R16', 1, 2)", [TOURNOI.finals]), /n'existe pas/);
-  await assert.rejects(b.comme(ID.pierre, "insert into public.matches (tournament_id, tour, p1_id, p2_id) values ($1, 'RR', 1, 2)", [TOURNOI.masters]), /n'existe pas/);
+  await assert.rejects(b.comme(ID.pierre, "insert into public.matches (tournament_id, tour, p1_id, p2_id) values ($1, 'RR1', 1, 2)", [TOURNOI.masters]), /n'existe pas/);
 });
 
 test('contraintes de match : même joueur des deux côtés, vainqueur invalide, terminé sans vainqueur', async () => {

@@ -231,7 +231,7 @@ test('exclusion d’un joueur d’un match : le groupe se complète sans lui, et
 });
 
 test('exclusion d’un tournoi entier : valable pour tous ses matchs ; et exclusion posée après coup complète le groupe', async () => {
-  const m = await b.nouveauMatch({ tournoi: TOURNOI.finals, tour: 'RR' });
+  const m = await b.nouveauMatch({ tournoi: TOURNOI.finals, tour: 'RR1' });
   await b.parier(ID.andre, m, 1, 8);
   await b.parier(ID.paul, m, 2, 7);
   assert.equal((await b.voirParis(ID.paul, m)).length, 1, 'pas encore complet : Paul ne voit que le sien');
@@ -294,7 +294,7 @@ test('contraintes : le nombre de sets est obligatoire (3, 4 ou 5) en Grand Chele
   const mm = await b.nouveauMatch({ tournoi: TOURNOI.masters });
   await refuse(b.parier(ID.andre, mm, 1, 8, 3));
   await b.parier(ID.andre, mm, 1, 8);
-  const af = await b.nouveauMatch({ tournoi: TOURNOI.finals, tour: 'RR' });
+  const af = await b.nouveauMatch({ tournoi: TOURNOI.finals, tour: 'RR1' });
   await refuse(b.parier(ID.andre, af, 1, 8, 3));
   await b.parier(ID.andre, af, 1, 8);
 });

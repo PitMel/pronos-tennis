@@ -234,3 +234,8 @@ Choix de conception de l'étape 3.3 (à signaler à Pierre) : la maquette 1 n'es
 - H2H : colonnes « Classements » (« vainqueur vs. vaincu »), tout centré ; plus de classement dans « Vainqueur ».
 - Accueil : plus de ligne « Pari tournoi posé ». Saison : « Le strike » devient une « autre récompense » (ordre : … sniper, strike, full strike, contradicteur), décernée en fin de saison comme le sniper.
 - Questions ouvertes (API) : ne regarder un match qu'après son heure prévue ; ne lire les affiches que sur événement (tour incomplet / moitié du tour terminée / tournoi à J-3 sans affiche). Analyse faite avec Pierre, pas encore codée.
+
+## 6 nov. 2026 (nuit) — ATP Finals : poules en trois tours (migration 0017, appliquée en base)
+- Tours RR1/RR2/RR3 (« Round Robin 1/2/3 », « RR1… » dans le tableau des scores) à la place de RR ; une section par tour ; multiplicateur ×1 comme avant. Aucun match de poule n'existait en base.
+- L'API envoie « RR » : `sync_appliquer` crée le match en RR1 puis `sync_repartir_poules` range tous les matchs de poule du tournoi par horaire prévu (sans horaire : à la fin, ordre d'arrivée), 4 par tour. Refait à chaque synchro, donc les matchs changent de tour quand les horaires arrivent. Un match corrigé à la main n'est jamais déplacé.
+- Notifications : 4 matchs attendus par tour de poule.

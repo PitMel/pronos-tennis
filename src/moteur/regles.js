@@ -7,12 +7,12 @@ export const MASTERS_1000 = 'masters_1000';
 export const ATP_FINALS = 'atp_finals';
 export const CATEGORIES = Object.freeze([GRAND_CHELEM, MASTERS_1000, ATP_FINALS]);
 
-// Codes internes des tours. « RR » = phase de poules des ATP Finals (round robin).
+// Codes internes des tours. « RR1 », « RR2 », « RR3 » = les trois journées de poules des ATP Finals (round robin).
 // Le passage des codes de l'API vers ces codes se fera à l'étape 2 (point ouvert n° 2 du cahier des charges).
 export const TOURS_PAR_CATEGORIE = Object.freeze({
   [GRAND_CHELEM]: Object.freeze(['R16', 'QF', 'SF', 'F']),
   [MASTERS_1000]: Object.freeze(['R16', 'QF', 'SF', 'F']),
-  [ATP_FINALS]: Object.freeze(['RR', 'SF', 'F']),
+  [ATP_FINALS]: Object.freeze(['RR1', 'RR2', 'RR3', 'SF', 'F']),
 });
 
 /** 4.2 — confiance -> [points si le joueur choisi gagne, points s'il perd] (avant multiplicateur). */
@@ -34,7 +34,7 @@ export const SETS_POSSIBLES_GRAND_CHELEM = Object.freeze([3, 4, 5]);
 export const MULTIPLICATEURS = Object.freeze({
   [GRAND_CHELEM]: Object.freeze({ R16: f(1), QF: f('1.5'), SF: f(2), F: f(2) }),
   [MASTERS_1000]: Object.freeze({ R16: f(1), QF: f('1.5'), SF: f(2), F: f(2) }),
-  [ATP_FINALS]: Object.freeze({ RR: f(1), SF: f(2), F: f(2) }),
+  [ATP_FINALS]: Object.freeze({ RR1: f(1), RR2: f(1), RR3: f(1), SF: f(2), F: f(2) }),
 });
 
 /** 4.5 — types de fin de match. */
