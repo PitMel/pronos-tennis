@@ -77,6 +77,7 @@ export const NOTIFICATIONS = [
   ['tour_ouvert', 'Les affiches d’un tour sont toutes connues (pour parier)'],
   ['paris_visibles', 'Les paris d’un tour sont tous visibles (tout le monde a parié)'],
   ['tournoi_termine', 'Un tournoi est terminé (résultat et état de la Race)'],
+  ['match_termine', 'Un match sur lequel tout le monde a parié est terminé (notification push seulement)'],
 ];
 
 /** Adresse e-mail valide (même règle que la base) ? Chaîne vide acceptée (= pas de notification). */
@@ -87,7 +88,7 @@ export function emailValide(texte) {
 
 /** Bloc « Notifications par e-mail » : adresse + une case par notification (toutes cochées par défaut). */
 export function htmlBlocNotifications({ prefs = null, message = '', erreur = '' } = {}) {
-  const p = prefs ?? { email: '', tour_ouvert: true, paris_visibles: true, tournoi_termine: true };
+  const p = prefs ?? { email: '', tour_ouvert: true, paris_visibles: true, tournoi_termine: true, match_termine: true };
   const cases = NOTIFICATIONS.map(([cle, texte]) => `
         <label class="radio"><input type="checkbox" name="${cle}"${p[cle] !== false ? ' checked' : ''}> ${echapper(texte)}</label>`).join('');
   return `

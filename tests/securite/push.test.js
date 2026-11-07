@@ -76,3 +76,29 @@ test('suppression d’un abonnement refusé : Léa n’est plus destinataire qua
   await b.comme(ID.lea, "delete from public.push_abonnements where endpoint = 'https://push.example/lea-2'");
   assert.deepEqual(await afaire(), []);
 });
+
+test('match terminé : seulement si tout le monde a parié et que le résultat est connu ; porte les paris ; case décochable ; jamais de courriel', async () => {
+  await abonner(ID.lea, 'lea-3');
+  const m = await b.nouveauMatch({ tournoi: TOURNOI.masters, tour: 'QF' });
+  const types = async () => (await afaire()).filter((e) => e.type === 'match_termine');
+  await b.admin("update public.matches set statut = 'termine', vainqueur = 1, sets_joues = 2 where id = $1", [m]);
+  assert.deepEqual(await types(), [], 'personne n’a parié');
+  for (const uid of [ID.lea, ID.marc]) await b.parier(uid, m, 1, 8);
+  assert.deepEqual(await types(), [], 'Pierre n’a pas encore parié');
+  await b.parier(ID.pierre, m, 2, 6);
+  let ev = await types();
+  assert.equal(ev.length, 1);
+  assert.equal(ev[0].cle, `match_termine:${m}`);
+  assert.deepEqual(ev[0].destinataires, [], 'push seulement : aucun courriel');
+  assert.deepEqual(ev[0].push_destinataires.map((d) => d.prenom), ['Léa', 'Marc', 'Pierre'], 'tous les abonnés dont la case est cochée');
+  assert.equal(ev[0].match.vainqueur, 1);
+  assert.deepEqual(ev[0].paris.map((x) => [x.prenom, x.choix, x.confiance]).sort(), [['Léa', 1, 8], ['Marc', 1, 8], ['Pierre', 2, 6]]);
+  // forfait : pas de notification ; case décochée : pas de destinataire
+  await b.admin("update public.matches set fin_match = 'forfait' where id = $1", [m]);
+  assert.deepEqual(await types(), []);
+  await b.admin("update public.matches set fin_match = 'normal' where id = $1", [m]);
+  await b.comme(ID.lea, 'insert into public.notif_preferences (joueur_id, match_termine) values ($1, false) on conflict (joueur_id) do update set match_termine = false', [ID.lea]);
+  assert.deepEqual((await types())[0].push_destinataires.map((d) => d.prenom), ['Marc', 'Pierre'], 'Léa a décoché la case');
+  for (const uid of [ID.marc, ID.pierre]) await service('select public.notif_marquer($1, $2)', [`push:match_termine:${m}`, uid]);
+  assert.deepEqual(await types(), [], 'déjà envoyé à Marc et Pierre, Léa ne veut pas la notification');
+});

@@ -38,3 +38,8 @@ test('activation par défaut : démarrage automatique, respect du choix « désa
   assert.match(app, /notificationsParDefaut\(\);/, 'lancée au démarrage de l’appli');
   assert.match(app, /lireLocal\('push-coupe'\) === '1'\) return/, 'un appareil désactivé volontairement n’est pas réactivé');
 });
+
+test('quatrième case « match terminé » dans les préférences', async () => {
+  const { NOTIFICATIONS } = await import('../../web/js/profil.js');
+  assert.deepEqual(NOTIFICATIONS.map((n) => n[0]), ['tour_ouvert', 'paris_visibles', 'tournoi_termine', 'match_termine']);
+});

@@ -255,3 +255,9 @@ Choix de conception de l'étape 3.3 (à signaler à Pierre) : la maquette 1 n'es
 ## 7 nov. 2026 (soir) — notifications push par défaut
 - Les clés VAPID ont été créées à 16:59 (premier passage après le déploiement). 0 abonnement au 7 nov. 20 h.
 - Impossible d'abonner un appareil sans geste : les navigateurs exigent un clic pour l'autorisation (et iPhone : appli installée). Fait à la place : autorisation déjà accordée → abonnement silencieux à chaque démarrage ; sinon bandeau « Activer / Plus tard » sous l'en-tête ; « Désactiver » dans le Profil est respecté (drapeau local `push-coupe`).
+
+## Notifications push : nouveaux textes et 4e notification « match terminé » (7 nov.)
+- Textes : « Nom tournoi - Paris à poser », « Nom tournoi - Paris visibles » ; fin de tournoi : titre « Nom - Terminé », texte « Tu remportes le tournoi ! » pour le vainqueur, sinon « X l’emporte, tu finis Ne. ».
+- 4e notification `match_termine` (push seulement, case « match terminé » dans Profil, cochée par défaut, migration 0019 appliquée) : à chaque match terminé (ni forfait ni neutralisé) sur lequel tous ont parié. Titre « Nom tournoi - Vainqueur bat Perdant », texte « Prénom +pts · … » (points calculés par le moteur dans la tâche GitHub, tri par points décroissants).
+- Le premier abonnement fige les événements déjà existants (pas de rafale d’anciens matchs).
+- À faire (non codé, en attente d’accord) : lecture des affiches pilotée par événements au lieu d’une lecture horaire.

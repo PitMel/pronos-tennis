@@ -630,7 +630,7 @@ async function gererNotifications(e) {
   e.preventDefault();
   const f = new FormData(form);
   const email = String(f.get('email') ?? '').trim();
-  const valeurs = { email: email || null, tour_ouvert: f.has('tour_ouvert'), paris_visibles: f.has('paris_visibles'), tournoi_termine: f.has('tournoi_termine') };
+  const valeurs = { email: email || null, tour_ouvert: f.has('tour_ouvert'), paris_visibles: f.has('paris_visibles'), tournoi_termine: f.has('tournoi_termine'), match_termine: f.has('match_termine') };
   if (!emailValide(email)) { redessinerProfil({ notifications: { prefs: { ...valeurs, email }, erreur: 'Cette adresse e-mail n’a pas l’air valide.' } }); return; }
   try {
     await donnees.enregistrerNotifPreferences(profilCourant.id, valeurs);

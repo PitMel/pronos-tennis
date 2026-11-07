@@ -1,5 +1,7 @@
 // Notifications push (web push) : mêmes événements et mêmes trois cases que les courriels (voir notif.js, migration 0018).
 // Fonctions pures + passe d'envoi ; l'envoi réel (bibliothèque web-push) est injecté pour pouvoir tester sans réseau.
+import { pointsPari, formaterPoints } from '../moteur/index.js';
+
 const TOURS = { R16: 'huitièmes de finale', QF: 'quarts de finale', SF: 'demi-finales', F: 'finale', RR1: 'matchs de poule (Round Robin 1)', RR2: 'matchs de poule (Round Robin 2)', RR3: 'matchs de poule (Round Robin 3)' };
 
 /** Contenu d'une notification push : { titre, texte, url, tag }. Court : un écran de verrouillage n'affiche que deux ou trois lignes. */
@@ -9,15 +11,27 @@ export function construirePush(ev, dest, { urlSite } = {}) {
   const url = `${racine}/#/tournoi/${ev.tournoi.id}`;
   const tour = TOURS[ev.tour] ?? ev.tour;
   if (ev.type === 'tour_ouvert') {
-    return { titre: nom, texte: `Les ${tour} sont à parier : toutes les affiches sont connues.`, url, tag: ev.cle };
+    return { titre: `${nom} - Paris à poser`, texte: `Les ${tour} sont à parier : toutes les affiches sont connues.`, url, tag: ev.cle };
   }
   if (ev.type === 'paris_visibles') {
-    return { titre: nom, texte: `Tout le monde a parié : les paris des ${tour} sont visibles.`, url, tag: ev.cle };
+    return { titre: `${nom} - Paris visibles`, texte: `Tout le monde a parié : les paris des ${tour} sont visibles.`, url, tag: ev.cle };
+  }
+  if (ev.type === 'match_termine') {
+    const { p1, p2, vainqueur, sets_joues: setsJoues, fin_match: finMatch } = ev.match;
+    const [gagnant, perdant] = vainqueur === 1 ? [p1, p2] : [p2, p1];
+    const match = { categorie: ev.tournoi.categorie, tour: ev.tour, vainqueur, setsJoues, finMatch: finMatch ?? 'normal', neutralise: false };
+    const lignes = (ev.paris ?? []).map((x) => {
+      try {
+        const pts = pointsPari({ choix: x.choix, confiance: x.confiance, sets: x.sets ?? null }, match);
+        return { prenom: x.prenom, pts, texte: `${x.prenom} ${formaterPoints(pts, { signe: true })}` };
+      } catch { return { prenom: x.prenom, pts: null, texte: `${x.prenom} —` }; }
+    }).sort((a, b) => (a.pts && b.pts ? b.pts.comparer(a.pts) : Number(Boolean(b.pts)) - Number(Boolean(a.pts))) || a.prenom.localeCompare(b.prenom, 'fr'));
+    return { titre: `${nom} - ${gagnant} bat ${perdant}`, texte: lignes.map((l) => l.texte).join(' · '), url, tag: ev.cle };
   }
   const premier = ev.classement?.[0];
   const moi = (ev.classement ?? []).find((c) => c.prenom === dest.prenom);
-  const fin = premier ? ` ${premier.prenom} l’emporte${moi && moi.rang !== 1 ? `, tu finis ${moi.rang}e` : ''}.` : '';
-  return { titre: `${nom} terminé`, texte: `Le tournoi est terminé.${fin}`.trim(), url, tag: ev.cle };
+  const texte = !premier ? '' : moi?.rang === 1 ? 'Tu remportes le tournoi !' : `${premier.prenom} l’emporte${moi ? `, tu finis ${moi.rang}e` : ''}.`;
+  return { titre: `${nom} - Terminé`, texte, url, tag: ev.cle };
 }
 
 /**

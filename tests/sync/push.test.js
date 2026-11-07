@@ -6,14 +6,30 @@ import { creerEnvoyeur } from '../../src/sync/push-cli.js';
 const tournoi = { id: 11, nom: 'Rolex Paris Masters', categorie: 'masters_1000', annee: 2026 };
 const lea = { joueur_id: 'a', prenom: 'Léa', abonnements: [{ endpoint: 'https://p.example/1', p256dh: 'k1', auth: 'a1' }, { endpoint: 'https://p.example/2', p256dh: 'k2', auth: 'a2' }] };
 
-test('contenu push : tour ouvert, paris visibles, tournoi terminé (avec la place du destinataire)', () => {
+test('contenu push : titres « Nom - … », tournoi terminé sans phrase d’annonce, message pour le gagnant', () => {
   const o = { urlSite: 'https://x.example/app/' };
   assert.deepEqual(construirePush({ cle: 'k', type: 'tour_ouvert', tour: 'QF', tournoi }, lea, o),
-    { titre: 'Rolex Paris Masters', texte: 'Les quarts de finale sont à parier : toutes les affiches sont connues.', url: 'https://x.example/app/#/tournoi/11', tag: 'k' });
-  assert.match(construirePush({ cle: 'k', type: 'paris_visibles', tour: 'RR2', tournoi }, lea, o).texte, /paris des matchs de poule \(Round Robin 2\) sont visibles/);
-  const fini = construirePush({ cle: 'k', type: 'tournoi_termine', tournoi, classement: [{ prenom: 'Marc', rang: 1 }, { prenom: 'Léa', rang: 2 }] }, lea, o);
-  assert.equal(fini.titre, 'Rolex Paris Masters terminé');
-  assert.equal(fini.texte, 'Le tournoi est terminé. Marc l’emporte, tu finis 2e.');
+    { titre: 'Rolex Paris Masters - Paris à poser', texte: 'Les quarts de finale sont à parier : toutes les affiches sont connues.', url: 'https://x.example/app/#/tournoi/11', tag: 'k' });
+  const visibles = construirePush({ cle: 'k', type: 'paris_visibles', tour: 'RR2', tournoi }, lea, o);
+  assert.equal(visibles.titre, 'Rolex Paris Masters - Paris visibles');
+  assert.match(visibles.texte, /paris des matchs de poule \(Round Robin 2\) sont visibles/);
+  const classement = [{ prenom: 'Marc', rang: 1 }, { prenom: 'Léa', rang: 2 }];
+  const fini = construirePush({ cle: 'k', type: 'tournoi_termine', tournoi, classement }, lea, o);
+  assert.equal(fini.titre, 'Rolex Paris Masters - Terminé');
+  assert.equal(fini.texte, 'Marc l’emporte, tu finis 2e.');
+  assert.equal(construirePush({ cle: 'k', type: 'tournoi_termine', tournoi, classement }, { prenom: 'Marc' }, o).texte, 'Tu remportes le tournoi !');
+  assert.equal(construirePush({ cle: 'k', type: 'tournoi_termine', tournoi, classement }, { prenom: 'Inconnu' }, o).texte, 'Marc l’emporte.');
+});
+
+test('match terminé : « Vainqueur bat Perdant », puis chaque parieur avec ses points (confiance 8 : +8 gagné, −4 perdu ; ×2 en demi-finale)', () => {
+  const ev = { cle: 'match_termine:5', type: 'match_termine', tour: 'SF', tournoi, match: { p1: 'Sinner', p2: 'Alcaraz', vainqueur: 2, sets_joues: 3, fin_match: 'normal' },
+    paris: [{ prenom: 'Léa', choix: 2, confiance: 8, sets: null }, { prenom: 'Marc', choix: 1, confiance: 8, sets: null }, { prenom: 'Anne', choix: 2, confiance: 6, sets: null }] };
+  const m = construirePush(ev, lea, { urlSite: 'https://x.example/' });
+  assert.equal(m.titre, 'Rolex Paris Masters - Alcaraz bat Sinner');
+  const pts = (choix, conf) => ({ prenom: 'x', ...ev.paris[0], choix, confiance: conf });
+  assert.match(m.texte, /^(Léa \+[\d,]+ · Anne \+[\d,]+ · Marc [−-][\d,]+)$/, `tri par points décroissants : ${m.texte}`);
+  assert.equal(m.tag, 'match_termine:5');
+  assert.equal(pts(2, 8).choix, 2);
 });
 
 function monde({ echecs = {} } = {}) {

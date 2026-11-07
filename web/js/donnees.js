@@ -70,7 +70,7 @@ export function creerDonnees(supabase) {
 
     /** Mes préférences de notification (null si jamais enregistrées). */
     async notifPreferences(id) {
-      const { data, error } = await supabase.from('notif_preferences').select('email, tour_ouvert, paris_visibles, tournoi_termine').eq('joueur_id', id).maybeSingle();
+      const { data, error } = await supabase.from('notif_preferences').select('email, tour_ouvert, paris_visibles, tournoi_termine, match_termine').eq('joueur_id', id).maybeSingle();
       if (error) throw error;
       return data;
     },
