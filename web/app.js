@@ -27,7 +27,7 @@ import { h2hDuMatch, htmlFenetreH2H } from './js/h2h.js';
 import { htmlAdminAccueil, htmlAccesRefuse } from './js/admin.js';
 import { validerTournoi, tournoiPourBase, messageErreurAdmin, htmlCalendrierAdmin, htmlFormulaireTournoi } from './js/admin-calendrier.js';
 import { construirePalmares, htmlPalmares } from './js/palmares.js';
-import { emailValide, htmlPageProfil, htmlBlocPush, htmlBlocPhoto, htmlBlocCouleur, erreurFichierPhoto, messageErreurPhoto, reduirePhoto } from './js/profil.js';
+import { emailValide, htmlPageProfil, htmlBlocPush, htmlInvitationPush, htmlBlocPhoto, htmlBlocCouleur, erreurFichierPhoto, messageErreurPhoto, reduirePhoto } from './js/profil.js';
 import { validerMotDePasse, messageErreurMotDePasse } from './js/mot-de-passe.js';
 import { htmlComptesAdmin, htmlFormulaireCompte, validerCompte, comptePourBase, messageErreurCompte } from './js/admin-comptes.js';
 import { htmlParisAdmin, validerCorrectionPari, pariPourBase, validerCorrectionPariTournoi, messageErreurParisAdmin } from './js/admin-paris.js';
@@ -117,6 +117,7 @@ function afficherCadre(profil) {
       ${profil.is_admin ? '<a href="#/admin" data-menu="admin">Admin</a>' : ''}
       <a href="#/profil" data-menu="mdp">Compte</a>
     </nav>
+    <div id="zone-invitation"></div>
     <main id="contenu"></main>`;
   document.getElementById('contenu').addEventListener('click', gererClicH2H);
   document.getElementById('contenu').addEventListener('click', gererClicPariTournoi);
@@ -503,29 +504,64 @@ async function etatPushAppareil() {
   } catch { return { etat: 'indisponible' }; }
 }
 
+/** S'abonne (ou renouvelle l'abonnement) sur cet appareil. Renvoie le nouvel état. Demande l'autorisation seulement si `demander`. */
+async function abonnerAppareil({ demander }) {
+  const reg = await navigator.serviceWorker.ready;
+  const cle = await donnees.pushClePublique();
+  if (!cle) return { etat: 'pas-pret' };
+  if (Notification.permission === 'default' && demander) await Notification.requestPermission();
+  if (Notification.permission === 'denied') return { etat: 'refuse' };
+  if (Notification.permission !== 'granted') return { etat: 'inactif' };
+  const abo = (await reg.pushManager.getSubscription())
+    ?? await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: cleVersOctets(cle) });
+  const j = abo.toJSON();
+  await donnees.pushAbonner({ endpoint: abo.endpoint, p256dh: j.keys.p256dh, auth: j.keys.auth }, navigator.userAgent);
+  return { etat: 'actif' };
+}
+
+const lireLocal = (k) => { try { return localStorage.getItem(k); } catch { return null; } };
+const ecrireLocal = (k, v) => { try { localStorage.setItem(k, v); } catch { /* sans stockage, l'invitation reviendra */ } };
+
+/**
+ * Notifications par défaut : au démarrage, sans rien demander à la personne.
+ * - déjà autorisées : l'abonnement est créé ou renouvelé en silence (aussi après une réinstallation ou un nettoyage du navigateur) ;
+ * - pas encore décidées : un bandeau propose « Activer » (un clic, imposé par les navigateurs) ;
+ * - bloquées, ou appareil non compatible (dont iPhone sans l'appli installée) : rien.
+ */
+async function notificationsParDefaut() {
+  try {
+    if (lireLocal('push-coupe') === '1') return;
+    const e = await etatPushAppareil();
+    const zone = document.getElementById('zone-invitation');
+    if (e.etat === 'actif' || (e.etat === 'inactif' && Notification.permission === 'granted')) {
+      await abonnerAppareil({ demander: false });
+    } else if (e.etat === 'inactif' && Notification.permission === 'default' && lireLocal('push-plus-tard') !== '1' && zone) {
+      zone.innerHTML = htmlInvitationPush();
+    }
+  } catch { /* les notifications ne doivent jamais gêner l'ouverture de l'appli */ }
+}
+
 async function gererClicPush(e) {
+  if (e.target.closest?.('[data-push-plus-tard]')) { ecrireLocal('push-plus-tard', '1'); document.getElementById('zone-invitation').innerHTML = ''; return; }
   const activer = e.target.closest?.('[data-push-activer]');
   const couper = e.target.closest?.('[data-push-desactiver]');
   if (!activer && !couper) return;
   try {
-    const reg = await navigator.serviceWorker.ready;
     if (couper) {
+      const reg = await navigator.serviceWorker.ready;
       const abo = await reg.pushManager.getSubscription();
       if (abo) { await donnees.pushDesabonner(abo.endpoint).catch(() => {}); await abo.unsubscribe(); }
+      ecrireLocal('push-coupe', '1'); // choix volontaire : l'activation automatique au démarrage ne le défait pas
       pushEtat = { etat: 'inactif', message: 'Notifications désactivées sur cet appareil.' };
     } else {
-      const cle = await donnees.pushClePublique();
-      if (!cle) { pushEtat = { etat: 'pas-pret' }; redessinerProfil(); return; }
-      const permission = await Notification.requestPermission();
-      if (permission !== 'granted') { pushEtat = { etat: permission === 'denied' ? 'refuse' : 'inactif' }; redessinerProfil(); return; }
-      const abo = (await reg.pushManager.getSubscription())
-        ?? await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: cleVersOctets(cle) });
-      const j = abo.toJSON();
-      await donnees.pushAbonner({ endpoint: abo.endpoint, p256dh: j.keys.p256dh, auth: j.keys.auth }, navigator.userAgent);
-      pushEtat = { etat: 'actif', message: 'Notifications activées sur cet appareil.' };
+      const r = await abonnerAppareil({ demander: true });
+      if (r.etat === 'actif') ecrireLocal('push-coupe', '0');
+      pushEtat = r.etat === 'actif' ? { etat: 'actif', message: 'Notifications activées sur cet appareil.' } : r;
+      const zone = document.getElementById('zone-invitation');
+      if (zone && r.etat !== 'inactif') zone.innerHTML = '';
     }
   } catch { pushEtat = { ...(await etatPushAppareil()), erreur: 'Impossible pour le moment : réessaie dans un instant.' }; }
-  redessinerProfil();
+  if (document.querySelector('[data-profil-push]')) redessinerProfil();
 }
 
 /** Remplace le bloc photo affiché (page Profil ou fiche de compte de l'administrateur). */
@@ -977,6 +1013,7 @@ async function demarrer() {
   profilCourant = profil;
   afficherCadre(profil);
   majHeureSynchro();
+  notificationsParDefaut();
   await afficherRoute();
 }
 

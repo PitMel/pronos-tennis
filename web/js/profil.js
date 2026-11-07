@@ -128,6 +128,15 @@ export function htmlBlocPush({ etat = 'inconnu', message = '', erreur = '' } = {
     </section>`;
 }
 
+/** Invitation à activer les notifications (bandeau de l'accueil) : un seul geste, car le navigateur exige un clic pour demander l'autorisation. */
+export function htmlInvitationPush() {
+  return `
+    <div class="invitation-push" data-invitation-push role="region" aria-label="Notifications">
+      <span>Reçois une notification quand un tour est ouvert, que les paris sont visibles ou qu’un tournoi est terminé.</span>
+      <span class="invitation-boutons"><button type="button" class="btn-petit principal" data-push-activer>Activer</button> <button type="button" class="btn-petit" data-push-plus-tard>Plus tard</button></span>
+    </div>`;
+}
+
 /** Bloc « Installer l'appli » : explications statiques (Android / iPhone). */
 export function htmlBlocInstallation() {
   return `

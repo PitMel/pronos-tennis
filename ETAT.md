@@ -251,3 +251,7 @@ Choix de conception de l'étape 3.3 (à signaler à Pierre) : la maquette 1 n'es
 - Interface : bloc « Notifications push » dans le Profil (activer/désactiver sur cet appareil) ; service worker : affichage + clic vers le tournoi.
 - iPhone : fonctionne seulement si l'appli est installée sur l'écran d'accueil (iOS 16.4 ou plus). Android et ordinateur : directement.
 - Mise en route : après le déploiement, un passage de la tâche GitHub crée les clés ; tant que ce n'est pas fait le bloc affiche « pas encore prêtes ».
+
+## 7 nov. 2026 (soir) — notifications push par défaut
+- Les clés VAPID ont été créées à 16:59 (premier passage après le déploiement). 0 abonnement au 7 nov. 20 h.
+- Impossible d'abonner un appareil sans geste : les navigateurs exigent un clic pour l'autorisation (et iPhone : appli installée). Fait à la place : autorisation déjà accordée → abonnement silencieux à chaque démarrage ; sinon bandeau « Activer / Plus tard » sous l'en-tête ; « Désactiver » dans le Profil est respecté (drapeau local `push-coupe`).

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { htmlBlocPush, htmlPageProfil } from '../../web/js/profil.js';
+import { htmlBlocPush, htmlPageProfil, htmlInvitationPush } from '../../web/js/profil.js';
 
 test('bloc push : un message et le bon bouton selon l’état de l’appareil', () => {
   assert.match(htmlBlocPush({ etat: 'inactif' }), /data-push-activer/);
@@ -25,4 +25,16 @@ test('service worker : affiche le message reçu et ouvre le tournoi au clic', ()
   assert.match(sw, /showNotification\(/);
   assert.match(sw, /addEventListener\('notificationclick'/);
   assert.match(sw, /openWindow\(/);
+});
+
+test('invitation de l’accueil : un bouton « Activer » et un « Plus tard »', () => {
+  const h = htmlInvitationPush();
+  assert.match(h, /data-push-activer/);
+  assert.match(h, /data-push-plus-tard/);
+});
+
+test('activation par défaut : démarrage automatique, respect du choix « désactiver »', () => {
+  const app = readFileSync(new URL('../../web/app.js', import.meta.url), 'utf8');
+  assert.match(app, /notificationsParDefaut\(\);/, 'lancée au démarrage de l’appli');
+  assert.match(app, /lireLocal\('push-coupe'\) === '1'\) return/, 'un appareil désactivé volontairement n’est pas réactivé');
 });

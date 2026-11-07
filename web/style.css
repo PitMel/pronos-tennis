@@ -660,3 +660,7 @@ html, body { overflow-x: hidden; }
 .h2h-table tr.h2h-g1 { background: #F8DDDA; } /* lignes gagnées par le joueur 1 : rouge clair (était vert clair) */
 .h2h-table tr.h2h-g2 { background: #DCE8F6; }
 .h2h-table .h2h-score { font-variant-numeric: tabular-nums; }
+
+/* Invitation à activer les notifications (bandeau sous l'en-tête) */
+.invitation-push { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 12px; margin: 10px 16px 0; padding: 10px 12px; background: #E7F0E7; border: 1px solid #C9DCC9; border-radius: 10px; font-size: .85rem; }
+.invitation-push .invitation-boutons { display: flex; gap: 8px; }
