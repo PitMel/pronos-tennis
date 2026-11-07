@@ -198,7 +198,8 @@ export function htmlEvolutionRace(evolution, { terminee = false } = {}) {
     const ronds = s.ecarts.map((v, i) => `<circle cx="${nb(X(i))}" cy="${nb(Y(v))}" r="4" fill="${couleur}"><title>${echapper(s.prenom)} · ${echapper(evolution.tournois[i].nom)} : ${v === 0 ? (terminee ? 'en tête du classement final' : 'en tête de la Race') : `${texte(v)} point${v < -1 ? 's' : ''} sur le premier`}</title></circle>`).join('');
     return `<g class="evo-courbe">${n > 1 ? `<polyline points="${points}" fill="none" stroke="${couleur}" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>` : ''}${ronds}</g>`;
   }).join('');
-  const legende = evolution.series.map((s) => `<li>${htmlPastille(s, 'pastille pastille-petite')}<span>${echapper(s.prenom)}</span></li>`).join('');
+  const couleurDe = (s) => (/^#[0-9A-Fa-f]{6}$/.test(s.couleur ?? '') ? s.couleur : '#2F6CC2');
+  const legende = evolution.series.map((s) => `<li>${htmlPastille(s, 'pastille pastille-petite')}<span style="color:${couleurDe(s)}">${echapper(s.prenom)}</span></li>`).join('');
   return `
     <section class="carte carte-evolution">
       <h3>Évolution</h3>

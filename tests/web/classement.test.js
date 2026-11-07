@@ -206,6 +206,8 @@ test('vues : page Race — joueur du compte en 1re colonne, médailles, évoluti
   assert.match(html, /<h3>Évolution<\/h3>/);
   assert.match(html, /<svg class="evo-svg"/);
   assert.equal((html.match(/<polyline /g) ?? []).length, 3);
+  assert.match(html, /<span style="color:#aa0000">André<\/span>/, 'nom dans la légende de la couleur de sa courbe');
+  assert.match(html, /<span style="color:#2F6CC2">Paul<\/span>/, 'couleur par défaut sans couleur choisie');
   assert.match(html, /pastille-detail/);
   const sansTournoi = htmlPageRace(detailRace({ moteur, annee: 2030, tournois: ts, resultats: rs, profils }));
   assert.doesNotMatch(sansTournoi, /Évolution/);
