@@ -75,6 +75,23 @@ export function creerDonnees(supabase) {
       return data;
     },
 
+    /** Clé publique pour s'abonner aux notifications push (null tant que la tâche GitHub ne l'a pas créée). */
+    async pushClePublique() {
+      const { data, error } = await supabase.rpc('push_cle_publique');
+      if (error) throw error;
+      return data ?? null;
+    },
+
+    async pushAbonner({ endpoint, p256dh, auth }, appareil) {
+      const { error } = await supabase.rpc('push_abonner', { p_endpoint: endpoint, p_p256dh: p256dh, p_auth: auth, p_appareil: appareil ?? null });
+      if (error) throw error;
+    },
+
+    async pushDesabonner(endpoint) {
+      const { error } = await supabase.from('push_abonnements').delete().eq('endpoint', endpoint);
+      if (error) throw error;
+    },
+
     async enregistrerNotifPreferences(id, valeurs) {
       const { error } = await supabase.from('notif_preferences').upsert({ joueur_id: id, ...valeurs, updated_at: new Date().toISOString() });
       if (error) throw error;

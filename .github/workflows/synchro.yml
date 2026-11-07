@@ -64,6 +64,15 @@ jobs:
           BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
           NOTIF_EXPEDITEUR: ${{ secrets.NOTIF_EXPEDITEUR }}
         run: node src/sync/notif-cli.js
+      # Notifications push (web push) : mêmes événements que les courriels. Les clés VAPID sont créées au premier passage et rangées dans la base.
+      - name: Notifications push
+        if: ${{ !cancelled() && inputs.mode != 'diagnostic' && inputs.mode != 'sonde' && !startsWith(inputs.mode, 'h2h') }}
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          npm ci --omit=dev --no-audit --no-fund || echo "installation de web-push impossible : notifications push ignorées"
+          node src/sync/push-cli.js
       # Face-à-face (H2H) : seulement s'il y a des paires de joueurs à calculer ; les fichiers de résultats ATP sont gardés dans le cache
       # de GitHub Actions (jamais dans le dépôt : leur licence interdit de les redistribuer).
       - name: H2H — des paires à calculer ?

@@ -15,5 +15,8 @@
   "license": "UNLICENSED",
   "devDependencies": {
     "@electric-sql/pglite": "^0.5.11"
+  },
+  "dependencies": {
+    "web-push": "^4.0.0"
   }
 }

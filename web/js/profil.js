@@ -105,6 +105,29 @@ export function htmlBlocNotifications({ prefs = null, message = '', erreur = '' 
     </section>`;
 }
 
+/**
+ * Bloc « Notifications push » : active ou coupe les notifications sur CET appareil (les trois cases du bloc e-mail s'appliquent aussi au push).
+ * @param {{etat:'inconnu'|'inactif'|'actif'|'refuse'|'indisponible'|'ios-installer'|'pas-pret', message?:string, erreur?:string}} p
+ */
+export function htmlBlocPush({ etat = 'inconnu', message = '', erreur = '' } = {}) {
+  const textes = {
+    inconnu: '<p class="small">Vérification…</p>',
+    indisponible: '<p class="small">Cet appareil ou ce navigateur ne gère pas les notifications push. Les notifications par e-mail restent possibles ci-dessus.</p>',
+    'ios-installer': '<p class="small">Sur iPhone, les notifications ne fonctionnent que si l’appli est installée : dans Safari, bouton Partager, puis « Sur l’écran d’accueil ». Ouvre ensuite Pronos Tennis depuis son icône, et reviens sur cette page.</p>',
+    refuse: '<p class="small">Les notifications sont bloquées pour ce site sur cet appareil. Autorise-les dans les réglages du navigateur (ou de l’appli installée), puis reviens ici.</p>',
+    'pas-pret': '<p class="small">Les notifications push ne sont pas encore prêtes (mise en route en cours). Réessaie dans une heure environ.</p>',
+    inactif: '<p class="small">Reçois une notification sur cet appareil, avec les mêmes cases que ci-dessus (affiches connues, paris visibles, tournoi terminé).</p><button type="button" class="btn-petit principal" data-push-activer>Activer sur cet appareil</button>',
+    actif: '<p class="small">Les notifications sont <strong>activées</strong> sur cet appareil. Elles suivent les cases du bloc ci-dessus.</p><button type="button" class="btn-petit" data-push-desactiver>Désactiver sur cet appareil</button>',
+  };
+  return `
+    <section class="carte carte-admin" data-profil-push>
+      <h3>Notifications push</h3>
+      ${textes[etat] ?? textes.inconnu}
+      ${message ? `<p class="succes" role="status">${echapper(message)}</p>` : ''}
+      ${erreur ? `<p class="erreur" role="alert">${echapper(erreur)}</p>` : ''}
+    </section>`;
+}
+
 /** Bloc « Installer l'appli » : explications statiques (Android / iPhone). */
 export function htmlBlocInstallation() {
   return `
@@ -120,12 +143,13 @@ export function htmlBlocInstallation() {
 }
 
 /** Page Profil complète. */
-export function htmlPageProfil({ profil, photo = {}, couleur = {}, motDePasse = {}, notifications = {} }) {
+export function htmlPageProfil({ profil, photo = {}, couleur = {}, motDePasse = {}, notifications = {}, push = {} }) {
   return `
     <section class="hero hero-admin"><h2 class="hero-titre">${echapper(profil.prenom)}</h2><p class="hero-details">Ton profil</p></section>
     ${htmlBlocPhoto({ profil, ...photo })}
     ${htmlBlocCouleur({ profil, ...couleur })}
     ${htmlBlocNotifications(notifications)}
+    ${htmlBlocPush(push)}
     ${htmlPageMotDePasse(motDePasse)}
     ${htmlBlocInstallation()}`;
 }

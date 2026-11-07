@@ -72,3 +72,28 @@ self.addEventListener('fetch', (evt) => {
   }
   // Tout le reste (Supabase : données, authentification, photos) passe directement par le réseau.
 });
+
+/* Notifications push : le message arrive chiffré du service de push de l'appareil ; on l'affiche, et un clic ouvre le tournoi concerné. */
+self.addEventListener('push', (evt) => {
+  let m = {};
+  try { m = evt.data ? evt.data.json() : {}; } catch (e) { m = { texte: evt.data ? evt.data.text() : '' }; }
+  evt.waitUntil(self.registration.showNotification(m.titre || 'Pronos Tennis', {
+    body: m.texte || '',
+    icon: 'icons/icone-192.png',
+    badge: 'icons/icone-192.png',
+    tag: m.tag || undefined,
+    data: { url: m.url || './' },
+  }));
+});
+
+self.addEventListener('notificationclick', (evt) => {
+  evt.notification.close();
+  const url = (evt.notification.data && evt.notification.data.url) || './';
+  evt.waitUntil((async () => {
+    const fenetres = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    for (const f of fenetres) {
+      if ('focus' in f) { try { if ('navigate' in f) await f.navigate(url); } catch (e) { /* ignoré */ } return f.focus(); }
+    }
+    return self.clients.openWindow(url);
+  })());
+});

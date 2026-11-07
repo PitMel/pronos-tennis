@@ -27,7 +27,7 @@ import { h2hDuMatch, htmlFenetreH2H } from './js/h2h.js';
 import { htmlAdminAccueil, htmlAccesRefuse } from './js/admin.js';
 import { validerTournoi, tournoiPourBase, messageErreurAdmin, htmlCalendrierAdmin, htmlFormulaireTournoi } from './js/admin-calendrier.js';
 import { construirePalmares, htmlPalmares } from './js/palmares.js';
-import { emailValide, htmlPageProfil, htmlBlocPhoto, htmlBlocCouleur, erreurFichierPhoto, messageErreurPhoto, reduirePhoto } from './js/profil.js';
+import { emailValide, htmlPageProfil, htmlBlocPush, htmlBlocPhoto, htmlBlocCouleur, erreurFichierPhoto, messageErreurPhoto, reduirePhoto } from './js/profil.js';
 import { validerMotDePasse, messageErreurMotDePasse } from './js/mot-de-passe.js';
 import { htmlComptesAdmin, htmlFormulaireCompte, validerCompte, comptePourBase, messageErreurCompte } from './js/admin-comptes.js';
 import { htmlParisAdmin, validerCorrectionPari, pariPourBase, validerCorrectionPariTournoi, messageErreurParisAdmin } from './js/admin-paris.js';
@@ -127,6 +127,7 @@ function afficherCadre(profil) {
   document.getElementById('contenu').addEventListener('submit', gererCouleur);
   document.getElementById('contenu').addEventListener('change', gererPhoto);
   document.getElementById('contenu').addEventListener('click', gererClicProfil);
+  document.getElementById('contenu').addEventListener('click', gererClicPush);
   document.getElementById('contenu').addEventListener('change', gererChangementAdmin);
   brancherParis(document.getElementById('contenu'), {
     etat: etatParis,
@@ -476,7 +477,55 @@ function majBandeau() {
 }
 
 function redessinerProfil(options = {}) {
-  document.getElementById('contenu').innerHTML = htmlPageProfil({ profil: profilCourant, notifications: { prefs: notifPrefs }, ...options });
+  document.getElementById('contenu').innerHTML = htmlPageProfil({ profil: profilCourant, notifications: { prefs: notifPrefs }, push: pushEtat, ...options });
+}
+
+/* ---------- Notifications push de CET appareil ---------- */
+let pushEtat = { etat: 'inconnu' };
+
+function cleVersOctets(base64url) {
+  const b = (base64url + '='.repeat((4 - (base64url.length % 4)) % 4)).replace(/-/g, '+').replace(/_/g, '/');
+  const brut = atob(b);
+  return Uint8Array.from(brut, (c) => c.charCodeAt(0));
+}
+
+/** Où en est cet appareil ? (calculé à l'ouverture de la page Profil). */
+async function etatPushAppareil() {
+  const ios = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const installee = window.matchMedia?.('(display-mode: standalone)').matches || navigator.standalone === true;
+  const gere = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+  if (!gere) return { etat: ios && !installee ? 'ios-installer' : 'indisponible' };
+  if (Notification.permission === 'denied') return { etat: 'refuse' };
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    const abo = await reg.pushManager.getSubscription();
+    return { etat: abo && Notification.permission === 'granted' ? 'actif' : 'inactif' };
+  } catch { return { etat: 'indisponible' }; }
+}
+
+async function gererClicPush(e) {
+  const activer = e.target.closest?.('[data-push-activer]');
+  const couper = e.target.closest?.('[data-push-desactiver]');
+  if (!activer && !couper) return;
+  try {
+    const reg = await navigator.serviceWorker.ready;
+    if (couper) {
+      const abo = await reg.pushManager.getSubscription();
+      if (abo) { await donnees.pushDesabonner(abo.endpoint).catch(() => {}); await abo.unsubscribe(); }
+      pushEtat = { etat: 'inactif', message: 'Notifications désactivées sur cet appareil.' };
+    } else {
+      const cle = await donnees.pushClePublique();
+      if (!cle) { pushEtat = { etat: 'pas-pret' }; redessinerProfil(); return; }
+      const permission = await Notification.requestPermission();
+      if (permission !== 'granted') { pushEtat = { etat: permission === 'denied' ? 'refuse' : 'inactif' }; redessinerProfil(); return; }
+      const abo = (await reg.pushManager.getSubscription())
+        ?? await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: cleVersOctets(cle) });
+      const j = abo.toJSON();
+      await donnees.pushAbonner({ endpoint: abo.endpoint, p256dh: j.keys.p256dh, auth: j.keys.auth }, navigator.userAgent);
+      pushEtat = { etat: 'actif', message: 'Notifications activées sur cet appareil.' };
+    }
+  } catch { pushEtat = { ...(await etatPushAppareil()), erreur: 'Impossible pour le moment : réessaie dans un instant.' }; }
+  redessinerProfil();
 }
 
 /** Remplace le bloc photo affiché (page Profil ou fiche de compte de l'administrateur). */
@@ -561,13 +610,13 @@ async function gererChangementMotDePasse(e) {
   const contenu = document.getElementById('contenu');
   const brut = Object.fromEntries(new FormData(form));
   const erreurs = validerMotDePasse(brut);
-  if (erreurs.length) { contenu.innerHTML = htmlPageProfil({ profil: profilCourant, notifications: { prefs: notifPrefs }, motDePasse: { erreurs } }); return; }
+  if (erreurs.length) { contenu.innerHTML = htmlPageProfil({ profil: profilCourant, notifications: { prefs: notifPrefs }, push: pushEtat, motDePasse: { erreurs } }); return; }
   const bouton = form.querySelector('button');
   bouton.disabled = true;
   const verification = await supabase.auth.signInWithPassword({ email: emailTechnique(profilCourant.prenom), password: brut.actuel });
-  if (verification.error) { contenu.innerHTML = htmlPageProfil({ profil: profilCourant, notifications: { prefs: notifPrefs }, motDePasse: { erreurs: [messageErreurMotDePasse(verification.error, { etape: 'verification' })] } }); return; }
+  if (verification.error) { contenu.innerHTML = htmlPageProfil({ profil: profilCourant, notifications: { prefs: notifPrefs }, push: pushEtat, motDePasse: { erreurs: [messageErreurMotDePasse(verification.error, { etape: 'verification' })] } }); return; }
   const { error } = await supabase.auth.updateUser({ password: brut.nouveau });
-  contenu.innerHTML = htmlPageProfil({ profil: profilCourant, notifications: { prefs: notifPrefs }, motDePasse: error ? { erreurs: [messageErreurMotDePasse(error)] } : { message: 'Mot de passe modifié.' } });
+  contenu.innerHTML = htmlPageProfil({ profil: profilCourant, notifications: { prefs: notifPrefs }, push: pushEtat, motDePasse: error ? { erreurs: [messageErreurMotDePasse(error)] } : { message: 'Mot de passe modifié.' } });
 }
 
 async function gererSoumissionAdmin(e) {
@@ -804,7 +853,10 @@ async function afficherRoute({ silencieux = false } = {}) {
     } else if (route.nom === 'profil') {
       page = null;
       try { notifPrefs = await donnees.notifPreferences(profilCourant.id); } catch { notifPrefs = null; }
-      contenu.innerHTML = htmlPageProfil({ profil: profilCourant, notifications: { prefs: notifPrefs } });
+      pushEtat = { etat: 'inconnu' };
+      contenu.innerHTML = htmlPageProfil({ profil: profilCourant, notifications: { prefs: notifPrefs }, push: pushEtat });
+      pushEtat = await etatPushAppareil();
+      if (contenu.querySelector('[data-profil-push]')) redessinerProfil();
     } else if (route.nom === 'regles') {
       page = null;
       contenu.innerHTML = htmlPageRegles({ moteur: await import('./moteur/index.js') });
