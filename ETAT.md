@@ -266,3 +266,7 @@ Choix de conception de l'étape 3.3 (à signaler à Pierre) : la maquette 1 n'es
 - Migration 0020 : `sync_etat` expose par tournoi `tours` = [{tour, total, termines}] (neutralisés et forfaits comptés comme terminés).
 - Planificateur : pour un tournoi en cours, `afficheAttendue` ; lecture des affiches (au plus 1/h) seulement si (1) aucune affiche connue, (2) un tour affiché est incomplet (8/4/2/1 ; poules ATPF 4), (3) la moitié du tour en cours est terminée et le suivant n'est pas affiché. Finale connue = plus aucune lecture. Sans `tours` : ancien comportement horaire.
 - Les tournois pas commencés gardent leur règle (J-3 puis 1 lecture/jour).
+
+## Notifications push : titre = lieu (8 nov.)
+- Migration 0021 : `notif_a_faire` ajoute `ville` à l'objet `tournoi`. Titre push = ville (Paris, Shanghai, Montréal, Monaco…) pour les Masters 1000 ; nom complet pour Grands Chelems et ATP Finals ; repli sur le nom si pas de ville. Courriels inchangés.
+- « Paris à poser » : « Les affiches des huitièmes/quarts/demies sont connues : tes paris sont attendus. » ; finale : « L’affiche de la finale est connue : ton pari est attendu. »

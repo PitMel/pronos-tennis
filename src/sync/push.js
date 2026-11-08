@@ -4,14 +4,22 @@ import { pointsPari, formaterPoints } from '../moteur/index.js';
 
 const TOURS = { R16: 'huitièmes de finale', QF: 'quarts de finale', SF: 'demi-finales', F: 'finale', RR1: 'matchs de poule (Round Robin 1)', RR2: 'matchs de poule (Round Robin 2)', RR3: 'matchs de poule (Round Robin 3)' };
 
+const AFFICHES = { R16: 'huitièmes', QF: 'quarts', SF: 'demies', RR1: 'matchs de poule (Round Robin 1)', RR2: 'matchs de poule (Round Robin 2)', RR3: 'matchs de poule (Round Robin 3)' };
+
+/** Titre des notifications : le lieu (ville) du tournoi, sauf Grands Chelems et ATP Finals (leur nom). */
+export function libelleTournoi(t) {
+  return t.categorie === 'grand_slam' || t.categorie === 'atp_finals' ? t.nom : (t.ville || t.nom);
+}
+
 /** Contenu d'une notification push : { titre, texte, url, tag }. Court : un écran de verrouillage n'affiche que deux ou trois lignes. */
 export function construirePush(ev, dest, { urlSite } = {}) {
-  const nom = ev.tournoi.nom;
+  const nom = libelleTournoi(ev.tournoi);
   const racine = urlSite ? urlSite.replace(/\/+$/, '') : '';
   const url = `${racine}/#/tournoi/${ev.tournoi.id}`;
   const tour = TOURS[ev.tour] ?? ev.tour;
   if (ev.type === 'tour_ouvert') {
-    return { titre: `${nom} - Paris à poser`, texte: `Les ${tour} sont à parier : toutes les affiches sont connues.`, url, tag: ev.cle };
+    const texte = ev.tour === 'F' ? 'L’affiche de la finale est connue : ton pari est attendu.' : `Les affiches des ${AFFICHES[ev.tour] ?? tour} sont connues : tes paris sont attendus.`;
+    return { titre: `${nom} - Paris à poser`, texte, url, tag: ev.cle };
   }
   if (ev.type === 'paris_visibles') {
     return { titre: `${nom} - Paris visibles`, texte: `Tout le monde a parié : les paris des ${tour} sont visibles.`, url, tag: ev.cle };
