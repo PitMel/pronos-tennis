@@ -283,3 +283,9 @@ Choix de conception de l'étape 3.3 (à signaler à Pierre) : la maquette 1 n'es
 
 ## Bandeau de notifications supprimé (8 nov.)
 - Plus de bandeau « Activer / Plus tard » sur l'accueil (mal affiché). Activation automatique silencieuse si la permission est déjà accordée ; sinon bouton « Activer » dans la page Profil.
+
+## Notifications immédiates (8 nov., migration 0025)
+- Nouveau workflow `.github/workflows/notifications.yml` (workflow_dispatch seul) : courriels + push, aucun appel à l'API de tennis (0 crédit).
+- Supabase le déclenche (`declencher_notifications()`, au plus 1 fois / 10 s, table `declenchements`) quand : (1) un pari révèle les paris d'un match (insertion dans `revelations`, kind match, groupe réel) ; (2) un administrateur passe un match à « terminé » à la main (auth.uid() non nul). La tâche de synchronisation ne déclenche rien (elle envoie elle-même ses notifications).
+- Nécessite le jeton `github_token` du coffre (même jeton que le déclencheur à 20 min). Déclencheurs jamais bloquants (exception avalée). Délai attendu : 30 à 60 s. Filet : les passages réguliers rattrapent (journal anti-doublon + « tag » push).
+- `declencher_workflow(fichier, inputs)` est la fonction générique (remplace le corps de 0023).

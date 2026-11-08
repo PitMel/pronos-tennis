@@ -1,0 +1,41 @@
+# Notifications seules (courriels + push), SANS aucun appel à l'API de tennis : zéro crédit.
+# Lancé uniquement par Supabase (workflow_dispatch, migration 0025) quelques secondes après un événement qui peut en créer une :
+# un pari qui rend les paris d'un match visibles, ou un résultat saisi à la main. Les passages normaux de synchronisation envoient
+# aussi les notifications ; le journal anti-doublon (et le « tag » des notifications push) évite tout doublon.
+# Secrets : SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, BREVO_API_KEY, NOTIF_EXPEDITEUR (les deux derniers facultatifs).
+name: Notifications
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: notifications
+  cancel-in-progress: false
+
+jobs:
+  notifications:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: '24'
+      - name: Notifications par e-mail
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          BREVO_API_KEY: ${{ secrets.BREVO_API_KEY }}
+          NOTIF_EXPEDITEUR: ${{ secrets.NOTIF_EXPEDITEUR }}
+        run: node src/sync/notif-cli.js
+      - name: Notifications push
+        if: ${{ !cancelled() }}
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          npm ci --omit=dev --no-audit --no-fund || echo "installation de web-push impossible : notifications push ignorées"
+          node src/sync/push-cli.js

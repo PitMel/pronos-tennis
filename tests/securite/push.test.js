@@ -113,3 +113,19 @@ test('alerte administrateur : push_admins ne renvoie que les administrateurs abo
   const e = (await service('select public.sync_etat() as r')).rows[0].r;
   assert.ok('derniere_usage' in e && 'derniere_lecture_direct' in e);
 });
+
+test('notifications immédiates (0025) : la révélation d’un match déclenche (au plus 1 fois / 10 s) sans jamais bloquer ; sans jeton, rien ne part', async () => {
+  const vide = async () => (await service("select count(*)::int as n from public.declenchements where cle = 'notifications'")).rows[0].n;
+  assert.ok((await vide()) <= 1, 'les révélations des tests précédents ont déjà déclenché');
+  await service('delete from public.declenchements');
+  const m = (await service("select id from public.matches where id not in (select ref_id from public.revelations where kind = 'match' and not groupe_test) limit 1")).rows[0].id;
+  await service("insert into public.revelations (kind, ref_id, groupe_test) values ('match', $1, false)", [m]);
+  assert.equal(await vide(), 1, 'le déclencheur a demandé l’envoi');
+  const r1 = (await service('select public.declencher_notifications() as r')).rows[0].r;
+  assert.match(r1, /moins de 10 s/, 'limité à un déclenchement toutes les 10 secondes');
+  await service("update public.declenchements set derniere = now() - interval '1 minute'");
+  assert.match((await service('select public.declencher_notifications() as r')).rows[0].r, /rien déclenché/, 'ni jeton, ni pg_net ici : aucune requête');
+  await refuse(b.comme(ID.pierre, 'select public.declencher_notifications()'));
+  await refuse(b.comme(ID.pierre, 'select public.declencher_workflow($1)', ['synchro.yml']));
+  await refuse(b.comme(ID.lea, 'select * from public.declenchements'));
+});
