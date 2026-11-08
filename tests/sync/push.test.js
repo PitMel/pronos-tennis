@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { construirePush, executerPush } from '../../src/sync/push.js';
+import { construirePush, executerPush, alerterQuota } from '../../src/sync/push.js';
 import { creerEnvoyeur } from '../../src/sync/push-cli.js';
 
 const tournoi = { id: 11, nom: 'Rolex Paris Masters', ville: 'Paris', categorie: 'masters_1000', annee: 2026 };
@@ -105,4 +105,18 @@ test('bibliothèque web-push réelle : les clés générées sont valides (le mo
   await creerEnvoyeur({ base, urlSite: 'https://x.example/' });
   assert.match(stockees.publique, /^[A-Za-z0-9_-]{87}$/, 'clé publique P-256 en base64url');
   assert.match(stockees.privee, /^[A-Za-z0-9_-]{43}$/);
+});
+
+test('alerte quota : rien sous 90 appels ; à 90, un message par appareil d\'administrateur et un marquage « push:quota:jour »', async () => {
+  const envoyes = []; const marques = [];
+  const base = (n) => ({ etat: async () => ({ appels_aujourdhui: n }), pushAdmins: async () => [lea], notifMarquer: async (c, j) => marques.push([c, j]), pushSupprimer: async () => {} });
+  const envoyer = async (abo, c) => envoyes.push([abo.endpoint, c.titre, c.texte]);
+  const maintenant = new Date('2026-11-08T15:00:00Z');
+  assert.deepEqual(await alerterQuota({ base: base(89), envoyer, maintenant }), { alerte: false, utilises: 89 });
+  assert.equal(envoyes.length, 0);
+  const r = await alerterQuota({ base: base(90), envoyer, urlSite: 'https://x.example/app/', maintenant });
+  assert.deepEqual([r.alerte, r.envoyes], [true, 2]);
+  assert.equal(envoyes[0][1], 'API tennis - 90 appels aujourd’hui');
+  assert.match(envoyes[0][2], /90 sur 100/);
+  assert.deepEqual(marques, [['push:quota:2026-11-08', 'a']]);
 });

@@ -3,7 +3,7 @@
 // aucun secret à saisir. Seule la clé publique est exposée aux joueurs (fonction push_cle_publique).
 import { fileURLToPath } from 'node:url';
 import { creerBaseSupabase } from './base.js';
-import { executerPush } from './push.js';
+import { executerPush, alerterQuota } from './push.js';
 
 const masquer = (t, secrets) => secrets.filter(Boolean).reduce((s, x) => s.split(x).join('***'), String(t));
 const URL_SITE = 'https://pitmel.github.io/pronos-tennis/';
@@ -34,6 +34,7 @@ export async function lancer({ env = {}, fetchImpl = globalThis.fetch, sortie = 
     // les clés sont créées dès le premier passage : les joueurs en ont besoin pour s'abonner, avant tout événement
     const envoyer = await creerEnvoyeur({ base, urlSite, webpush });
     await executerPush({ base, envoyer, urlSite, journal: ecrire });
+    try { await alerterQuota({ base, envoyer, urlSite, journal: ecrire }); } catch (e) { ecrire(`alerte quota : ${e.message}`); }
     return 0;
   } catch (e) {
     ecrire(`push : ${e.message}`);

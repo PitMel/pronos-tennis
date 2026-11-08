@@ -276,3 +276,7 @@ Choix de conception de l'étape 3.3 (à signaler à Pierre) : la maquette 1 n'es
 - Direct : au plus une lecture toutes les 20 min (tolérance 5 ; `sync_etat.derniere_lecture_direct`, migration 0022). Affiches : 30 min (au lieu de 60), toujours soumises à la règle d'événements.
 - Notifications : « Monte Carlo » (ville modifiée), « ATP Finals » sans « Nitto ».
 - Migration 0023 : pg_cron + pg_net ; job `synchro-github` toutes les 20 min appelle `declencher_synchro()` qui lance le workflow (workflow_dispatch, mode normal, origine « supabase ») avec le jeton GitHub rangé dans le coffre Vault sous le nom `github_token` (à créer par Pierre ; sans jeton la fonction ne fait rien). Le workflow n'obéit à ces déclenchements que si la variable SYNCHRO_ACTIVE vaut true. Le cron GitHub */30 reste en secours.
+
+## /usage occasionnel et alerte quota (8 nov.)
+- /usage (1 crédit) n'est consulté que s'il y a des appels à faire ET si la dernière consultation date de plus de 3 h (1 h dès que le compteur local atteint 60). Entre-temps le budget se calcule sur le journal local. Migration 0024 : `appels_aujourdhui` compte désormais /usage ; nouveau `derniere_usage`.
+- Alerte push à l'administrateur (Pierre) quand le compteur du jour (UTC) atteint 90 : `alerterQuota` (push.js, étape push du workflow), fonction `push_admins`, clé anti-doublon `push:quota:AAAA-MM-JJ` (une alerte par jour). À 90 le planificateur s'arrête de toute façon (réserve de 10).

@@ -102,3 +102,14 @@ test('match terminé : seulement si tout le monde a parié et que le résultat e
   for (const uid of [ID.marc, ID.pierre]) await service('select public.notif_marquer($1, $2)', [`push:match_termine:${m}`, uid]);
   assert.deepEqual(await types(), [], 'déjà envoyé à Marc et Pierre, Léa ne veut pas la notification');
 });
+
+test('alerte administrateur : push_admins ne renvoie que les administrateurs abonnés qui n’ont pas déjà reçu l’alerte du jour', async () => {
+  await abonner(ID.pierre, 'pierre-1');
+  const noms = async () => (await service("select public.push_admins('quota:2026-11-08') as r")).rows[0].r.map((d) => d.prenom);
+  assert.deepEqual(await noms(), ['Pierre']);
+  await service("select public.notif_marquer('push:quota:2026-11-08', $1)", [ID.pierre]);
+  assert.deepEqual(await noms(), []);
+  await refuse(b.comme(ID.pierre, "select public.push_admins('x')"));
+  const e = (await service('select public.sync_etat() as r')).rows[0].r;
+  assert.ok('derniere_usage' in e && 'derniere_lecture_direct' in e);
+});

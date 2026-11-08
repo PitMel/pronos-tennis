@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { PARAMETRES, heureLocale, dansLaFenetre, matchsASurveiller, directDu, afficheDue, afficheAttendue, decider, selectionnerDetails, idsAInterroger, tropTotPourLesAffiches } from '../../src/sync/planificateur.js';
+import { PARAMETRES, heureLocale, dansLaFenetre, matchsASurveiller, directDu, usageDu, afficheDue, afficheAttendue, decider, selectionnerDetails, idsAInterroger, tropTotPourLesAffiches } from '../../src/sync/planificateur.js';
 
 const d = (s) => new Date(s);
 // Heures d'été à Paris = UTC+2 (jusqu'au 25 oct. 2026 à 3 h), heures d'hiver = UTC+1 (ensuite).
@@ -223,4 +223,13 @@ test('afficheAttendue : règle de Pierre (tour incomplet, moitié du tour termin
   assert.equal(afficheDue(tournoi({ tours: [tr('SF', 2, 0), tr('F', 1, 0)], derniere_decouverte: vieille }), etat(), now).due, false);
   assert.equal(afficheDue(tournoi({ tours: [tr('SF', 2, 1)], derniere_decouverte: vieille }), etat(), now).due, true);
   assert.equal(afficheDue(tournoi({ tours: [tr('SF', 2, 1)], derniere_decouverte: '2026-11-07T11:45:00Z' }), etat(), now).due, false, 'au plus une fois toutes les 30 min');
+});
+
+test('usageDu : /usage (1 crédit) consulté au plus toutes les 3 h, toutes les heures dès 60 appels', () => {
+  const now = d('2026-10-28T12:00:00Z');
+  assert.equal(usageDu(etat(), now), true, 'jamais consulté');
+  assert.equal(usageDu(etat({ derniere_usage: '2026-10-28T10:00:00Z', appels_aujourdhui: 10 }), now), false, '2 h, peu d\'appels');
+  assert.equal(usageDu(etat({ derniere_usage: '2026-10-28T09:00:00Z', appels_aujourdhui: 10 }), now), true, '3 h');
+  assert.equal(usageDu(etat({ derniere_usage: '2026-10-28T11:30:00Z', appels_aujourdhui: 65 }), now), false, '30 min, près de la limite');
+  assert.equal(usageDu(etat({ derniere_usage: '2026-10-28T10:55:00Z', appels_aujourdhui: 65 }), now), true, '1 h 05, près de la limite');
 });

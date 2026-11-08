@@ -275,10 +275,10 @@ test('un identifiant d’API partagé entre éditions va à la plus ancienne éd
 test('journal des appels et état : appels du jour, quota épuisé, matchs à suivre', async () => {
   const avant = (await etat()).appels_aujourdhui;
   await service("select public.sync_enregistrer_appel('/matches?tournament_id=1725&status=upcoming&limit=200', 200, true, null, null, null)");
-  await service("select public.sync_enregistrer_appel('/usage', 200, true, null, null, null)"); // gratuit : non compté
+  await service("select public.sync_enregistrer_appel('/usage', 200, true, null, null, null)"); // 1 crédit : compté
   await service("select public.sync_enregistrer_appel('/matches/m1', 500, false, null, 'erreur', null)");
   let e = await etat();
-  assert.equal(e.appels_aujourdhui, avant + 2);
+  assert.equal(e.appels_aujourdhui, avant + 3);
   assert.equal(e.quota_epuise_jusqua, null);
   const t = e.tournois.find((x) => x.id === TOURNOI.masters);
   assert.deepEqual(t.api_ids, ['1725', '1726']);

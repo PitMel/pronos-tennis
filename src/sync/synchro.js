@@ -4,7 +4,7 @@
 
 import { ErreurApi, ErreurQuotaJour, interpreterUsage } from './client-api.js';
 import { normaliserListe } from './normaliser.js';
-import { decider, selectionnerDetails } from './planificateur.js';
+import { PARAMETRES, decider, selectionnerDetails, usageDu } from './planificateur.js';
 
 const PARAMS_DIRECT = { status: 'live', tour: 'atp', gender: 'men', draw: 'singles', limit: 200 };
 // `tournament_id` d'abord et suivi d'un autre paramètre : le journal d'appels s'en sert pour retrouver la dernière relecture.
@@ -19,8 +19,9 @@ export async function executerSynchro({ api, base, maintenant = new Date(), para
 
   const etat = await base.etat();
   let plan = decider({ maintenant, etat, parametres });
-  if (plan.actions.length > 0) {
-    // Le compteur d'usage ne coûte rien : on le consulte seulement quand il y a quelque chose à faire.
+  if (plan.actions.length > 0 && usageDu(etat, maintenant, { ...PARAMETRES, ...parametres })) {
+    // /usage coûte 1 crédit : on ne le consulte que s'il y a quelque chose à faire ET toutes les 3 h (1 h près de la limite) ;
+    // entre deux consultations le budget se calcule sur le journal local, qui compte tous nos appels, /usage compris.
     try {
       const r = await api.get('/usage');
       const usage = interpreterUsage(r.json);

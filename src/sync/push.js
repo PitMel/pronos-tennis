@@ -81,3 +81,34 @@ export async function executerPush({ base, envoyer, urlSite, journal = () => {},
   journal(`push : ${bilan.evenements} événement(s), ${bilan.envoyes} message(s) envoyé(s), ${bilan.echecs} échec(s), ${bilan.supprimes} abonnement(s) supprimé(s)`);
   return bilan;
 }
+
+/**
+ * Alerte administrateur : le compteur de la journée (UTC, comme le quota de l'API) atteint le seuil (90 par défaut ; la réserve de 10 fait
+ * que le planificateur s'arrête là). Une seule alerte par jour et par administrateur (clé « push:quota:AAAA-MM-JJ »).
+ */
+export async function alerterQuota({ base, envoyer, urlSite, journal = () => {}, seuil = 90, quota = 100, maintenant = new Date() }) {
+  const etat = await base.etat();
+  const utilises = etat?.appels_aujourdhui ?? 0;
+  if (utilises < seuil) return { alerte: false, utilises };
+  const cle = `quota:${maintenant.toISOString().slice(0, 10)}`;
+  const admins = (await base.pushAdmins(cle)) ?? [];
+  const contenu = {
+    titre: `API tennis - ${utilises} appels aujourd’hui`,
+    texte: `Budget du jour presque épuisé (${utilises} sur ${quota}) : le suivi des matchs s’arrête jusqu’à demain.`,
+    url: urlSite ? urlSite.replace(/\/+$/, '') + '/' : '',
+    tag: cle,
+  };
+  let envoyes = 0;
+  for (const a of admins) {
+    let recu = false;
+    for (const abo of a.abonnements ?? []) {
+      try { await envoyer(abo, contenu); recu = true; envoyes += 1; } catch (e) {
+        if (e?.statusCode === 404 || e?.statusCode === 410) { try { await base.pushSupprimer(abo.endpoint); } catch { /* retenté */ } }
+        else journal(`échec alerte quota (${a.prenom}) : ${String(e?.message ?? e).slice(0, 120)}`);
+      }
+    }
+    if (recu) await base.notifMarquer(`push:${cle}`, a.joueur_id);
+  }
+  if (admins.length) journal(`alerte quota : ${utilises} appels, ${envoyes} message(s)`);
+  return { alerte: true, utilises, envoyes };
+}

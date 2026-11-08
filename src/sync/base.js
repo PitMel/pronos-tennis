@@ -37,6 +37,7 @@ export function creerBaseSupabase({ url, cle, fetchImpl = globalThis.fetch, dorm
     notifMarquer: (cle, joueur) => rpc('notif_marquer', { p_cle: cle, p_joueur: joueur }),
     pushCles: () => rpc('push_cles_lire'),
     pushEnregistrerCles: (publique, privee) => rpc('push_cles_enregistrer', { p_publique: publique, p_privee: privee }),
+    pushAdmins: (cle) => rpc('push_admins', { p_cle: cle }),
     pushSupprimer: (endpoint) => rpc('push_supprimer', { p_endpoint: endpoint }),
     clotureCandidats: () => rpc('sync_cloture_candidats'),
     donneesCloture: (tournoi) => rpc('sync_donnees_cloture', { p_tournoi: tournoi }),

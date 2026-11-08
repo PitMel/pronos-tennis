@@ -28,6 +28,9 @@ export const PARAMETRES = {
   joursAvantDebutAffiches: 3, // tournoi pas commencé : ses affiches ne sont regardées qu'à partir de 3 jours avant son début (calendrier)
   toleranceAffichesMin: 5, // le cron de GitHub se déclenche à quelques minutes près : un passage à 58 min compte comme « une heure »
   maxDetailsParCycle: 6,
+  usageIntervalleMin: 180, // /usage (1 crédit) : consulté au plus toutes les 3 h…
+  usageIntervalleProcheMin: 60, // … toutes les heures dès que le compteur local atteint le seuil ci-dessous
+  usageSeuilProche: 60,
 };
 
 /** Heure, minute et date (AAAA-MM-JJ) à Paris. */
@@ -63,6 +66,18 @@ export function matchsASurveiller(etat, now, p = PARAMETRES) {
     if (depuis < delaiResultat(m, etat, p)) return false;
     return m.statut === 'en_cours' || depuis <= p.retardMaxHeures * 60;
   });
+}
+
+/**
+ * Faut-il consulter /usage (compteur officiel de l'API, 1 crédit) ? Entre deux consultations, le budget se calcule sur le journal local
+ * (tous nos appels, /usage compris, sont journalisés). Consultation : jamais faite aujourd'hui, ou la dernière date de plus de 3 h
+ * (1 h quand le compteur local atteint 60).
+ */
+export function usageDu(etat, now, p = PARAMETRES) {
+  const derniere = date(etat.derniere_usage);
+  if (!derniere) return true;
+  const proche = (etat.appels_aujourdhui ?? 0) >= p.usageSeuilProche;
+  return minutes(now, derniere) >= (proche ? p.usageIntervalleProcheMin : p.usageIntervalleMin) - (p.toleranceDirectMin ?? 0);
 }
 
 /** La lecture du direct est-elle due (au plus une toutes les 20 min) ? */
