@@ -51,8 +51,7 @@ test('2b. une heure plus tard : 1725 a fourni les matchs, 1726 n\'est plus appel
   w.reinitialiserAppels();
   const r = await passer();
   assert.equal(r.code, 0, r.texte);
-  assert.deepEqual(w.chemins().map((c) => c.split('&')[0]), ['/matches?tournament_id=1725'], 'une seule relecture des affiches, sur l\'identifiant confirmé');
-  assert.ok(!w.chemins().some((c) => c.includes('1726') || c.includes('2794')));
+  assert.deepEqual(w.chemins(), [], 'les 4 quarts sont affichés et aucun n\'est terminé : on ne relit pas les affiches');
 });
 
 test('3. un match va commencer : lecture du direct, passage « en cours » ; la base ne recule jamais', async () => {

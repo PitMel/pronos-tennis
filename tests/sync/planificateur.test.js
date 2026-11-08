@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { PARAMETRES, heureLocale, dansLaFenetre, matchsASurveiller, afficheDue, decider, selectionnerDetails, idsAInterroger, tropTotPourLesAffiches } from '../../src/sync/planificateur.js';
+import { PARAMETRES, heureLocale, dansLaFenetre, matchsASurveiller, afficheDue, afficheAttendue, decider, selectionnerDetails, idsAInterroger, tropTotPourLesAffiches } from '../../src/sync/planificateur.js';
 
 const d = (s) => new Date(s);
 // Heures d'été à Paris = UTC+2 (jusqu'au 25 oct. 2026 à 3 h), heures d'hiver = UTC+1 (ensuite).
@@ -179,4 +179,27 @@ test('identifiants d\'API : dès qu\'un identifiant a fourni des matchs, les aut
   assert.deepEqual(idsAInterroger(tournoi({ api_ids_confirmes: null })), ['1725', '1726']);
   const p = decider({ maintenant: d('2026-10-28T12:50:00Z'), etat: etat({ tournois: [tournoi({ api_ids_confirmes: ['1725'] })] }) });
   assert.deepEqual(p.actions.map((a) => a.api_id), ['1725'], 'une seule relecture d\'affiches au lieu de deux');
+});
+
+test('afficheAttendue : règle de Pierre (tour incomplet, moitié du tour terminée, aucune affiche) — sinon pas de lecture', () => {
+  const tr = (tour, total, termines) => ({ tour, total, termines });
+  const mm = (tours) => tournoi({ tours });
+  assert.equal(afficheAttendue(tournoi()).attendue, true, 'sans information : on relit (ancien comportement)');
+  assert.equal(afficheAttendue(mm([])).attendue, true, 'aucune affiche connue');
+  assert.equal(afficheAttendue(mm([tr('QF', 3, 0)])).attendue, true, 'quarts incomplets (3 sur 4)');
+  assert.equal(afficheAttendue(mm([tr('R16', 8, 8), tr('QF', 4, 1)])).attendue, false, 'quarts complets, 1 sur 4 terminé');
+  assert.equal(afficheAttendue(mm([tr('QF', 4, 2)])).attendue, true, 'moitié des quarts terminée, demi-finales pas affichées');
+  assert.equal(afficheAttendue(mm([tr('QF', 4, 2), tr('SF', 2, 0)])).attendue, false, 'demi-finales déjà affichées et complètes');
+  assert.equal(afficheAttendue(mm([tr('QF', 4, 2), tr('SF', 1, 0)])).attendue, true, 'une seule demi-finale affichée');
+  assert.equal(afficheAttendue(mm([tr('SF', 2, 2), tr('F', 1, 0)])).attendue, false, 'finale connue : plus rien à chercher');
+  assert.equal(afficheAttendue(mm([tr('SF', 2, 1)])).attendue, true, 'une demi-finale terminée, finale pas affichée');
+  const atpf = tournoi({ categorie: 'atp_finals', tours: [tr('RR1', 4, 2)] });
+  assert.equal(afficheAttendue(atpf).attendue, true, 'poule : moitié de RR1 terminée, RR2 pas affiché');
+  assert.equal(afficheAttendue(tournoi({ categorie: 'atp_finals', tours: [tr('RR1', 4, 0), tr('RR2', 4, 0), tr('RR3', 4, 0)] })).attendue, false);
+  // dans afficheDue : même 2 h après la dernière lecture, rien de neuf = pas de lecture ; lecture due si la règle l'autorise
+  const now = d('2026-11-07T12:00:00Z');
+  const vieille = '2026-11-07T09:00:00Z';
+  assert.equal(afficheDue(tournoi({ tours: [tr('SF', 2, 0), tr('F', 1, 0)], derniere_decouverte: vieille }), etat(), now).due, false);
+  assert.equal(afficheDue(tournoi({ tours: [tr('SF', 2, 1)], derniere_decouverte: vieille }), etat(), now).due, true);
+  assert.equal(afficheDue(tournoi({ tours: [tr('SF', 2, 1)], derniere_decouverte: '2026-11-07T11:30:00Z' }), etat(), now).due, false, 'au plus une fois par heure');
 });

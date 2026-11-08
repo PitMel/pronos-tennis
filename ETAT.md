@@ -261,3 +261,8 @@ Choix de conception de l'étape 3.3 (à signaler à Pierre) : la maquette 1 n'es
 - 4e notification `match_termine` (push seulement, case « match terminé » dans Profil, cochée par défaut, migration 0019 appliquée) : à chaque match terminé (ni forfait ni neutralisé) sur lequel tous ont parié. Titre « Nom tournoi - Vainqueur bat Perdant », texte « Prénom +pts · … » (points calculés par le moteur dans la tâche GitHub, tri par points décroissants).
 - Le premier abonnement fige les événements déjà existants (pas de rafale d’anciens matchs).
 - À faire (non codé, en attente d’accord) : lecture des affiches pilotée par événements au lieu d’une lecture horaire.
+
+## Lecture des affiches pilotée par événements (8 nov.)
+- Migration 0020 : `sync_etat` expose par tournoi `tours` = [{tour, total, termines}] (neutralisés et forfaits comptés comme terminés).
+- Planificateur : pour un tournoi en cours, `afficheAttendue` ; lecture des affiches (au plus 1/h) seulement si (1) aucune affiche connue, (2) un tour affiché est incomplet (8/4/2/1 ; poules ATPF 4), (3) la moitié du tour en cours est terminée et le suivant n'est pas affiché. Finale connue = plus aucune lecture. Sans `tours` : ancien comportement horaire.
+- Les tournois pas commencés gardent leur règle (J-3 puis 1 lecture/jour).
