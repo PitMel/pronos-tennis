@@ -280,3 +280,6 @@ Choix de conception de l'étape 3.3 (à signaler à Pierre) : la maquette 1 n'es
 ## /usage occasionnel et alerte quota (8 nov.)
 - /usage (1 crédit) n'est consulté que s'il y a des appels à faire ET si la dernière consultation date de plus de 3 h (1 h dès que le compteur local atteint 60). Entre-temps le budget se calcule sur le journal local. Migration 0024 : `appels_aujourdhui` compte désormais /usage ; nouveau `derniere_usage`.
 - Alerte push à l'administrateur (Pierre) quand le compteur du jour (UTC) atteint 90 : `alerterQuota` (push.js, étape push du workflow), fonction `push_admins`, clé anti-doublon `push:quota:AAAA-MM-JJ` (une alerte par jour). À 90 le planificateur s'arrête de toute façon (réserve de 10).
+
+## Bandeau de notifications supprimé (8 nov.)
+- Plus de bandeau « Activer / Plus tard » sur l'accueil (mal affiché). Activation automatique silencieuse si la permission est déjà accordée ; sinon bouton « Activer » dans la page Profil.

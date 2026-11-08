@@ -27,7 +27,7 @@ import { h2hDuMatch, htmlFenetreH2H } from './js/h2h.js';
 import { htmlAdminAccueil, htmlAccesRefuse } from './js/admin.js';
 import { validerTournoi, tournoiPourBase, messageErreurAdmin, htmlCalendrierAdmin, htmlFormulaireTournoi } from './js/admin-calendrier.js';
 import { construirePalmares, htmlPalmares } from './js/palmares.js';
-import { emailValide, htmlPageProfil, htmlBlocPush, htmlInvitationPush, htmlBlocPhoto, htmlBlocCouleur, erreurFichierPhoto, messageErreurPhoto, reduirePhoto } from './js/profil.js';
+import { emailValide, htmlPageProfil, htmlBlocPush, htmlBlocPhoto, htmlBlocCouleur, erreurFichierPhoto, messageErreurPhoto, reduirePhoto } from './js/profil.js';
 import { validerMotDePasse, messageErreurMotDePasse } from './js/mot-de-passe.js';
 import { htmlComptesAdmin, htmlFormulaireCompte, validerCompte, comptePourBase, messageErreurCompte } from './js/admin-comptes.js';
 import { htmlParisAdmin, validerCorrectionPari, pariPourBase, validerCorrectionPariTournoi, messageErreurParisAdmin } from './js/admin-paris.js';
@@ -117,7 +117,6 @@ function afficherCadre(profil) {
       ${profil.is_admin ? '<a href="#/admin" data-menu="admin">Admin</a>' : ''}
       <a href="#/profil" data-menu="mdp">Compte</a>
     </nav>
-    <div id="zone-invitation"></div>
     <main id="contenu"></main>`;
   document.getElementById('contenu').addEventListener('click', gererClicH2H);
   document.getElementById('contenu').addEventListener('click', gererClicPariTournoi);
@@ -525,24 +524,20 @@ const ecrireLocal = (k, v) => { try { localStorage.setItem(k, v); } catch { /* s
 /**
  * Notifications par défaut : au démarrage, sans rien demander à la personne.
  * - déjà autorisées : l'abonnement est créé ou renouvelé en silence (aussi après une réinstallation ou un nettoyage du navigateur) ;
- * - pas encore décidées : un bandeau propose « Activer » (un clic, imposé par les navigateurs) ;
- * - bloquées, ou appareil non compatible (dont iPhone sans l'appli installée) : rien.
+ * - pas encore décidées, bloquées, ou appareil non compatible (dont iPhone sans l'appli installée) : rien (plus de bandeau) ;
+ *   l'activation se fait alors une fois pour toutes depuis la page Profil (un clic, imposé par les navigateurs).
  */
 async function notificationsParDefaut() {
   try {
     if (lireLocal('push-coupe') === '1') return;
     const e = await etatPushAppareil();
-    const zone = document.getElementById('zone-invitation');
     if (e.etat === 'actif' || (e.etat === 'inactif' && Notification.permission === 'granted')) {
       await abonnerAppareil({ demander: false });
-    } else if (e.etat === 'inactif' && Notification.permission === 'default' && lireLocal('push-plus-tard') !== '1' && zone) {
-      zone.innerHTML = htmlInvitationPush();
     }
   } catch { /* les notifications ne doivent jamais gêner l'ouverture de l'appli */ }
 }
 
 async function gererClicPush(e) {
-  if (e.target.closest?.('[data-push-plus-tard]')) { ecrireLocal('push-plus-tard', '1'); document.getElementById('zone-invitation').innerHTML = ''; return; }
   const activer = e.target.closest?.('[data-push-activer]');
   const couper = e.target.closest?.('[data-push-desactiver]');
   if (!activer && !couper) return;
@@ -557,8 +552,6 @@ async function gererClicPush(e) {
       const r = await abonnerAppareil({ demander: true });
       if (r.etat === 'actif') ecrireLocal('push-coupe', '0');
       pushEtat = r.etat === 'actif' ? { etat: 'actif', message: 'Notifications activées sur cet appareil.' } : r;
-      const zone = document.getElementById('zone-invitation');
-      if (zone && r.etat !== 'inactif') zone.innerHTML = '';
     }
   } catch { pushEtat = { ...(await etatPushAppareil()), erreur: 'Impossible pour le moment : réessaie dans un instant.' }; }
   if (document.querySelector('[data-profil-push]')) redessinerProfil();
