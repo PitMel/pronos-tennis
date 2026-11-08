@@ -289,3 +289,7 @@ Choix de conception de l'étape 3.3 (à signaler à Pierre) : la maquette 1 n'es
 - Supabase le déclenche (`declencher_notifications()`, au plus 1 fois / 10 s, table `declenchements`) quand : (1) un pari révèle les paris d'un match (insertion dans `revelations`, kind match, groupe réel) ; (2) un administrateur passe un match à « terminé » à la main (auth.uid() non nul). La tâche de synchronisation ne déclenche rien (elle envoie elle-même ses notifications).
 - Nécessite le jeton `github_token` du coffre (même jeton que le déclencheur à 20 min). Déclencheurs jamais bloquants (exception avalée). Délai attendu : 30 à 60 s. Filet : les passages réguliers rattrapent (journal anti-doublon + « tag » push).
 - `declencher_workflow(fichier, inputs)` est la fonction générique (remplace le corps de 0023).
+
+## Statistiques finalistes et section « Statistiques » (8 nov.)
+- Palmarès > Mes statistiques : nouvel item « Pari sur les finalistes » après « Pari sur le vainqueur du tournoi » (par année, % en gros, ok/sur en petit). Deux finalistes à trouver par tournoi terminé, les deux noms du pari comptent quel que soit l'ordre (sur = 2 par tournoi).
+- Détail de l'année : section « Statistiques » après le thermomètre, une ligne par joueur : Vainqueur du match (même calcul que le sniper), Nombre de sets (paris de Grand Chelem), Vainqueurs et Finalistes (paris tournoi des tournois terminés). `statsRace().statistiques`.

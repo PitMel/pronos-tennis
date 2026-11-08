@@ -191,3 +191,22 @@ test('records : en cas d’égalité parfaite, tous les ex æquo sont donnés (s
   assert.deepEqual(r.berezina.map((x) => x.tournoi.nom), ['Open d’Australie', 'Roland-Garros']); // même total
   assert.equal(r.contradicteur, null); // personne n'a eu raison seul contre tous
 });
+
+test('statistiques par joueur : vainqueur du match (comme le sniper), sets, vainqueurs et finalistes du pari tournoi', () => {
+  const [a, p] = calculer().statistiques;
+  const r = (x) => (x ? [x.ok, x.sur, x.pourcentage] : null);
+  assert.deepEqual([r(a.vainqueurMatch), r(a.sets), r(a.vainqueurs), r(a.finalistes)], [[4, 6, 67], [3, 6, 50], [1, 1, 100], [2, 2, 100]]);
+  assert.deepEqual([r(p.vainqueurMatch), r(p.sets), r(p.vainqueurs), r(p.finalistes)], [[1, 3, 33], [0, 3, 0], null, null]);
+  const sniper = calculer().records.sniper;
+  assert.equal(sniper.tops[0].pourcentage, a.vainqueurMatch.pourcentage, 'même statistique que le sniper');
+});
+
+test('page détail de l’année : section « Statistiques » après le thermomètre, une ligne par joueur', () => {
+  const stats = calculer();
+  const h = htmlPageRace(detailRace({ moteur, annee: 2026, tournois, resultats, profils }), { moi: 'a', stats });
+  const i = h.indexOf('Le thermomètre de la confiance');
+  const j = h.indexOf('Vainqueur du match');
+  assert.ok(i > 0 && j > i, 'section placée après le thermomètre');
+  assert.match(h, /<th scope="col">Nombre de sets<\/th><th scope="col">Vainqueurs<\/th><th scope="col">Finalistes<\/th>/);
+  assert.match(h, /<b>67&nbsp;%<\/b><small>4\/6<\/small>/);
+});

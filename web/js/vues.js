@@ -314,6 +314,22 @@ function htmlConfiances(confiances, moi) {
     </section>`;
 }
 
+/** Section « Statistiques » : une ligne par joueur ; pourcentage en grand, valeur en dessous en petit. */
+function htmlStatistiquesJoueurs(statistiques, moi) {
+  if (!statistiques?.length || statistiques.every((x) => !x.vainqueurMatch && !x.sets && !x.vainqueurs && !x.finalistes)) return '';
+  const lignes = [...statistiques.filter((x) => x.id === moi), ...statistiques.filter((x) => x.id !== moi)];
+  const cas = (c) => `<td>${c ? `<b>${echapper(c.pourcentage)}&nbsp;%</b><small>${echapper(c.ok)}/${echapper(c.sur)}</small>` : '<span class="small">—</span>'}</td>`;
+  return `
+    <section class="carte carte-stats carte-confiances carte-statistiques-joueurs">
+      <h3><span class="icone-section" aria-hidden="true">📈</span>Statistiques</h3>
+      <p class="small">Part de réussite de chaque joueur (en dessous : réussis / total). Vainqueur du match : sur tous les matchs joués. Nombre de sets : paris du Grand Chelem. Vainqueurs et finalistes : paris tournoi des tournois terminés (deux finalistes par tournoi, dans n’importe quel ordre).</p>
+      <div class="tableau-defilant"><table class="detail-points table-confiances">
+        <thead><tr><th></th><th scope="col">Vainqueur du match</th><th scope="col">Nombre de sets</th><th scope="col">Vainqueurs</th><th scope="col">Finalistes</th></tr></thead>
+        <tbody>${lignes.map((x) => `<tr class="${x.id === moi ? 'isme' : ''}"><th scope="row" class="col-nom">${htmlPastille(x, 'pastille pastille-petite')}<span>${echapper(x.prenom)}</span></th>${cas(x.vainqueurMatch)}${cas(x.sets)}${cas(x.vainqueurs)}${cas(x.finalistes)}</tr>`).join('')}</tbody>
+      </table></div>
+    </section>`;
+}
+
 const lienTournoi = (t) => `<a class="nom-tournoi" href="#/tournoi/${encodeURIComponent(t.id)}">${echapper(t.nom)} ${echapper(t.annee)}</a>`;
 
 const recordLi = (titre, contenu, explication, icone = '') => `<li class="record${icone ? ' record-icone' : ''}">${icone}<b>${echapper(titre)}</b><span>${contenu}</span><small class="explication">${echapper(explication)}</small></li>`;
@@ -381,6 +397,7 @@ function htmlStatsRace(stats, moi) {
     texteJoueur: (j) => `<b>${echapper(j.nom)}</b> <span class="valeur">${echapper(j.rapport)} (${echapper(j.pourcentage)}&nbsp;%)</span>`,
   })}
     ${htmlConfiances(stats.confiances, moi)}
+    ${htmlStatistiquesJoueurs(stats.statistiques, moi)}
     ${htmlRecords(stats.records, stats)}`;
 }
 

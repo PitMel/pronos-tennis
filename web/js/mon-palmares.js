@@ -161,15 +161,19 @@ export function monPalmares({ moteur, moi, profils, tournois, resultats, matchs,
         if (Number(m.sets_joues) === Number(b.sets)) okS += 1;
       }
     }
-    let okT = 0; let surT = 0;
+    let okT = 0; let surT = 0; let okF = 0; let surF = 0;
     for (const l of parisTournoi) {
       const t = parId.get(l.tournament_id);
-      if (!t || t.annee !== annee || l.joueur_id !== moi || !l.vainqueur_id || !t.vainqueur_id) continue;
-      surT += 1;
-      if (l.vainqueur_id === t.vainqueur_id) okT += 1;
+      if (!t || t.annee !== annee || l.joueur_id !== moi || !t.vainqueur_id) continue;
+      if (l.vainqueur_id) { surT += 1; if (l.vainqueur_id === t.vainqueur_id) okT += 1; }
+      if (t.finaliste_id) { // deux finalistes à trouver, quel que soit l'ordre des deux noms du pari
+        const noms = new Set([l.vainqueur_id, l.finaliste_id].filter(Boolean));
+        surF += 2;
+        okF += [t.vainqueur_id, t.finaliste_id].filter((j) => noms.has(j)).length;
+      }
     }
     const f = (ok, sur) => (sur > 0 ? { ok, sur, pourcentage: pct(ok, sur) } : null);
-    return { annee, vainqueurMatch: f(okV, surV), sets: f(okS, surS), vainqueurTournoi: f(okT, surT) };
+    return { annee, vainqueurMatch: f(okV, surV), sets: f(okS, surS), vainqueurTournoi: f(okT, surT), finalistes: f(okF, surF) };
   });
 
   // meilleur strike toutes saisons : celui de chaque saison, puis le meilleur (ex æquo : tous)

@@ -338,7 +338,37 @@ export function statsRace({ moteur, annee, tournois, resultats, profils, matchs,
     return { id: x.id, prenom: x.prenom, couleur: x.couleur ?? null, photo_url: x.photo_url ?? null, total, repartition: [...nb].map(([confiance, n]) => ({ confiance, n, pourcentage: pct(n, total) })) };
   });
 
+  // ---------- Statistiques par joueur : vainqueur du match (comme le sniper), sets, vainqueurs et finalistes du pari tournoi ----------
+  const categorieDe = new Map(tournois.map((t) => [t.id, t.categorie]));
+  const rapport = (ok, sur) => (sur > 0 ? { ok, sur, pourcentage: pct(ok, sur) } : null);
+  const statistiques = profils.map((x) => {
+    let okSets = 0; let surSets = 0;
+    for (const m of matchsJoues) {
+      const bet = parisDe(m).get(x.id);
+      if (!bet || categorieDe.get(m.tournament_id) !== 'grand_slam' || !bet.sets || m.fin_match === 'forfait') continue;
+      surSets += 1;
+      if (Number(m.sets_joues) === Number(bet.sets)) okSets += 1;
+    }
+    let okV = 0; let surV = 0; let okF = 0; let surF = 0;
+    for (const l of parisTournoi) {
+      const t = parId.get(l.tournament_id);
+      if (!t || l.joueur_id !== x.id || !t.vainqueur_id) continue;
+      if (l.vainqueur_id) { surV += 1; if (l.vainqueur_id === t.vainqueur_id) okV += 1; }
+      if (t.finaliste_id) {
+        const noms = new Set([l.vainqueur_id, l.finaliste_id].filter(Boolean));
+        surF += 2;
+        okF += [t.vainqueur_id, t.finaliste_id].filter((j) => noms.has(j)).length;
+      }
+    }
+    const tir = tirs.get(x.id);
+    return {
+      id: x.id, prenom: x.prenom, couleur: x.couleur ?? null, photo_url: x.photo_url ?? null,
+      vainqueurMatch: rapport(tir.ok, tir.sur), sets: rapport(okSets, surSets), vainqueurs: rapport(okV, surV), finalistes: rapport(okF, surF),
+    };
+  });
+
   return {
+    statistiques,
     nbTournois: clos.length, nbMatchs: lesMatchs.filter((m) => !m.neutralise).length, nbMatchsRecompenses: matchsJoues.length,
     detailPoints, vachesALait, chouchous, amoursImpossibles, confiances,
     records: {

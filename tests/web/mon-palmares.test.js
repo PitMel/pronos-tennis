@@ -61,6 +61,9 @@ test('palmarès : statistiques par saison et records personnels', () => {
   assert.deepEqual([an(2026).sets.ok, an(2026).sets.sur], [1, 1]);
   assert.deepEqual([an(2025).vainqueurTournoi.ok, an(2025).vainqueurTournoi.sur], [1, 1]);
   assert.deepEqual([an(2026).vainqueurTournoi.ok, an(2026).vainqueurTournoi.sur], [0, 1]);
+  // finalistes : deux par tournoi, les deux noms du pari comptent quel que soit l'ordre (2026 : pari 11 + 10, finale 10 – 12 → 1 sur 2)
+  assert.deepEqual([an(2025).finalistes.ok, an(2025).finalistes.sur, an(2025).finalistes.pourcentage], [2, 2, 100]);
+  assert.deepEqual([an(2026).finalistes.ok, an(2026).finalistes.sur, an(2026).finalistes.pourcentage], [1, 2, 50]);
   assert.deepEqual(s.meilleurGrandChelem.map((x) => [x.annee, x.score]), [[2025, '28']]);
   assert.deepEqual(s.meilleurMasters.map((x) => [x.annee, x.score]), [[2026, '18']]);
   assert.deepEqual(s.recordSaison.map((x) => [x.annee, x.score]), [[2025, '33']]); // 28 + 5, avant bonification
@@ -106,4 +109,12 @@ test('palmarès : autres récompenses de saison — décernées une fois l’ann
   assert.ok(html.indexOf('Autres récompenses') > html.indexOf('ATP Finals'));
   assert.ok(html.indexOf('Parcours dans les tournois') < html.indexOf('>Récompenses de saison<') || html.indexOf('Parcours dans les tournois') < html.indexOf('Récompenses de saison</h3>'));
   assert.match(html, /aria-label="Biggest win – Grand Chelem 2025"/);
+});
+
+test('palmarès : « Pari sur les finalistes » affiché après « Pari sur le vainqueur du tournoi », pourcentage en gros, valeur en petit', () => {
+  const h = htmlMonPalmares(d);
+  const i = h.indexOf('Pari sur le vainqueur du tournoi');
+  const j = h.indexOf('Pari sur les finalistes');
+  assert.ok(i > 0 && j > i);
+  assert.match(h.slice(j, j + 600), /<b>100&nbsp;%<\/b><small>2\/2<\/small>/);
 });
