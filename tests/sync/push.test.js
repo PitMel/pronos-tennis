@@ -28,7 +28,7 @@ test('titres : ville pour un Masters 1000, nom pour un Grand Chelem et les ATP F
   assert.equal(ev(tournoi, 'SF').texte, 'Les affiches des demies sont connues : tes paris sont attendus.');
   assert.equal(ev(tournoi, 'F').texte, 'L’affiche de la finale est connue : ton pari est attendu.');
   assert.equal(ev({ id: 2, nom: 'Roland-Garros', ville: 'Paris', categorie: 'grand_slam' }, 'QF').titre, 'Roland-Garros - Paris à poser');
-  assert.equal(ev({ id: 3, nom: 'Nitto ATP Finals', ville: 'Turin', categorie: 'atp_finals' }, 'RR1').titre, 'Nitto ATP Finals - Paris à poser');
+  assert.equal(ev({ id: 3, nom: 'Nitto ATP Finals', ville: 'Turin', categorie: 'atp_finals' }, 'RR1').titre, 'ATP Finals - Paris à poser');
   assert.equal(ev({ id: 4, nom: 'Masters du Canada', ville: 'Montréal', categorie: 'masters_1000' }, 'QF').titre, 'Montréal - Paris à poser');
   assert.equal(ev({ id: 5, nom: 'Madrid Open', categorie: 'masters_1000' }, 'QF').titre, 'Madrid Open - Paris à poser', 'sans ville : le nom');
 });

@@ -1,9 +1,11 @@
 // Planificateur : décide QUELS appels faire à l'API (et combien), sans rien appeler. Fonctions pures, testées.
 // Règles (cahier des charges, section 10.4, adaptées aux filtres réels de l'API) :
 //   * aucun appel entre 1 h et 7 h (heure de Paris) ;
-//   * régime « actif » : toutes les 30 min (cadence du cron) dès qu'un match suivi est prévu et non terminé :
-//       - 1 lecture des matchs en direct si un match est à surveiller (en cours, ou qui commence dans moins de 30 min, ou en retard) ;
-//       - relecture des affiches (matchs à venir d'un tournoi), au plus une fois par heure (7 h – 1 h seulement), et seulement si
+//   * régime « actif » dès qu'un match suivi est prévu et non terminé (le déclencheur passe toutes les 20 min : pg_cron de Supabase,
+//     et le cron de GitHub toutes les 30 min en secours ; chaque lecture a son propre intervalle, voir ci-dessous) :
+//       - 1 lecture des matchs en direct, au plus toutes les 20 min, si un match est à surveiller : un match n'est regardé que 1 h 30
+//         après son heure prévue (2 h en Grand Chelem), puis tant qu'il n'est pas terminé (8 h au plus s'il n'a jamais été vu en cours) ;
+//       - relecture des affiches (matchs à venir d'un tournoi), au plus une fois toutes les 30 min (7 h – 1 h seulement), et seulement si
 //         elles peuvent avoir changé (voir afficheAttendue) : un tour affiché est incomplet, ou la moitié du tour en cours est terminée
 //         et le suivant n'est pas encore affiché, ou aucune affiche n'est connue ;
 //       - le détail d'un match (GET /matches/{id}) pour confirmer la fin des matchs qui ont disparu du direct (planifié après la lecture du direct) ;
@@ -16,9 +18,12 @@ export const PARAMETRES = {
   fuseau: 'Europe/Paris',
   heureDebut: 7, // premier créneau actif
   heureFin: 1, // dernier créneau actif : jusqu'à 1 h (exclue)
-  avanceMinutes: 30, // surveiller un match qui commence dans moins de 30 minutes
+  debutResultatMin: 90, // un match n'est regardé que 1 h 30 après son heure prévue…
+  debutResultatGCMin: 120, // … 2 h en Grand Chelem
+  intervalleDirectMin: 20, // une lecture du direct toutes les 20 minutes au plus
+  toleranceDirectMin: 5,
   retardMaxHeures: 8, // un match prévu depuis plus de 8 h n'est plus surveillé automatiquement
-  intervalleAffichesActifMin: 60, // une relecture des affiches par heure pendant un tournoi (était 180 jusqu'au 5 nov. 2026)
+  intervalleAffichesActifMin: 30, // une relecture des affiches toutes les 30 min pendant un tournoi (60 jusqu'au 8 nov. 2026, 180 jusqu'au 5 nov.)
   intervalleAffichesQuotidienMin: 20 * 60,
   joursAvantDebutAffiches: 3, // tournoi pas commencé : ses affiches ne sont regardées qu'à partir de 3 jours avant son début (calendrier)
   toleranceAffichesMin: 5, // le cron de GitHub se déclenche à quelques minutes près : un passage à 58 min compte comme « une heure »
@@ -42,16 +47,28 @@ export function dansLaFenetre(date, p = PARAMETRES) {
 const minutes = (a, b) => (a.getTime() - b.getTime()) / 60000;
 const date = (x) => (x ? new Date(x) : null);
 
-/** Matchs suivis (non terminés) qui méritent une lecture du direct maintenant. */
+/** Délai (minutes après l'heure prévue) avant de regarder le résultat d'un match : 1 h 30, 2 h en Grand Chelem. */
+export function delaiResultat(m, etat, p = PARAMETRES) {
+  const t = (etat.tournois ?? []).find((x) => x.id === m.tournament_id);
+  return t?.categorie === 'grand_slam' ? p.debutResultatGCMin : p.debutResultatMin;
+}
+
+/** Matchs suivis (non terminés) dont le résultat mérite d'être regardé maintenant (début prévu il y a plus de 1 h 30, 2 h en GC). */
 export function matchsASurveiller(etat, now, p = PARAMETRES) {
   return (etat.matchs ?? []).filter((m) => {
     if (m.modifie_manuellement) return false;
-    if (m.statut === 'en_cours') return true;
     const h = date(m.heure_prevue);
     if (!h) return true; // horaire inconnu : on regarde
-    const dans = minutes(h, now); // minutes avant le début (négatif = déjà passé)
-    return dans <= p.avanceMinutes && dans >= -p.retardMaxHeures * 60;
+    const depuis = minutes(now, h); // minutes écoulées depuis l'heure prévue (négatif = pas encore commencé)
+    if (depuis < delaiResultat(m, etat, p)) return false;
+    return m.statut === 'en_cours' || depuis <= p.retardMaxHeures * 60;
   });
+}
+
+/** La lecture du direct est-elle due (au plus une toutes les 20 min) ? */
+export function directDu(etat, now, p = PARAMETRES) {
+  const derniere = date(etat.derniere_lecture_direct);
+  return !derniere || minutes(now, derniere) >= p.intervalleDirectMin - (p.toleranceDirectMin ?? 0);
 }
 
 const ajouterJours = (j, n) => new Date(Date.parse(`${j}T00:00:00Z`) + n * 86400000).toISOString().slice(0, 10);
@@ -146,7 +163,7 @@ export function decider({ maintenant, etat, usage = null, parametres = {} }) {
 
   const actif = (etat.matchs ?? []).length > 0 || tournois.some((t) => t.etat === 'en_cours');
   const actions = [];
-  if (matchsASurveiller(etat, maintenant, p).length > 0) actions.push({ type: 'direct' });
+  if (matchsASurveiller(etat, maintenant, p).length > 0 && directDu(etat, maintenant, p)) actions.push({ type: 'direct' });
 
   const dus = tournois
     .map((t) => ({ t, ...afficheDue(t, etat, maintenant, p) }))
@@ -172,14 +189,14 @@ export function decider({ maintenant, etat, usage = null, parametres = {} }) {
 export function selectionnerDetails({ etat, maintenant, vusEnDirect, restant, parametres = {} }) {
   const p = { ...PARAMETRES, ...parametres };
   if (!(vusEnDirect instanceof Set)) return [];
-  const heureRonde = Math.floor(maintenant.getTime() / 1800000) % 2 === 0; // un match « à venir » en retard n'est vérifié qu'une fois par heure
+  const heureRonde = Math.floor(maintenant.getTime() / 1200000) % 3 === 0; // un match « à venir » en retard n'est vérifié qu'une fois par heure
   const candidats = (etat.matchs ?? []).filter((m) => {
     if (m.modifie_manuellement || vusEnDirect.has(String(m.api_id))) return false;
     if (m.statut === 'en_cours') return true;
     const h = date(m.heure_prevue);
     if (!h) return false;
     const retard = minutes(maintenant, h);
-    return retard >= p.avanceMinutes && retard <= p.retardMaxHeures * 60 && heureRonde;
+    return retard >= delaiResultat(m, etat, p) && retard <= p.retardMaxHeures * 60 && heureRonde;
   });
   const tries = candidats.sort((a, b) => String(a.heure_prevue ?? '').localeCompare(String(b.heure_prevue ?? '')));
   return tries.slice(0, Math.max(0, Math.min(p.maxDetailsParCycle, restant)));

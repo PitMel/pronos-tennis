@@ -54,9 +54,9 @@ test('2b. une heure plus tard : 1725 a fourni les matchs, 1726 n\'est plus appel
   assert.deepEqual(w.chemins(), [], 'les 4 quarts sont affichés et aucun n\'est terminé : on ne relit pas les affiches');
 });
 
-test('3. un match va commencer : lecture du direct, passage « en cours » ; la base ne recule jamais', async () => {
-  await w.b.admin(`update public.matches set heure_prevue = now() + interval '10 minutes' where api_id = 'Q1'`);
-  w.live = [Q('Q1', { status: 'live', scheduled_time: dans(10), score: { sets: [1, 0], games: [[6, 3], [2, 0]] } })];
+test('3. un match a commencé il y a plus de 1 h 30 : lecture du direct, passage « en cours » ; la base ne recule jamais', async () => {
+  await w.b.admin(`update public.matches set heure_prevue = now() - interval '100 minutes' where api_id = 'Q1'`);
+  w.live = [Q('Q1', { status: 'live', scheduled_time: dans(-100), score: { sets: [1, 0], games: [[6, 3], [2, 0]] } })];
   w.reinitialiserAppels();
   const r = await passer();
   assert.equal(r.code, 0, r.texte);
@@ -65,6 +65,7 @@ test('3. un match va commencer : lecture du direct, passage « en cours » ; la 
 });
 
 test('4. le match disparaît du direct : son détail est demandé et confirme la fin (vainqueur, sets joués)', async () => {
+  await vieillir(1); // une lecture du direct au plus toutes les 20 min
   w.live = [];
   w.details.Q1 = termine({ id: 'Q1', round_code: 'QF', tournament_id: '1725', winner: 2, score: { sets: [1, 2], games: [[6, 2], [3, 6], [4, 6]] } });
   w.reinitialiserAppels();
@@ -76,7 +77,8 @@ test('4. le match disparaît du direct : son détail est demandé et confirme la
 });
 
 test('5. une incohérence de l\'API est signalée dans le journal sans rien casser', async () => {
-  await w.b.admin(`update public.matches set heure_prevue = now() + interval '5 minutes' where api_id = 'Q2'`);
+  await vieillir(1); // une lecture du direct au plus toutes les 20 min
+  await w.b.admin(`update public.matches set heure_prevue = now() - interval '100 minutes' where api_id = 'Q2'`);
   w.live = [];
   w.details.Q2 = termine({ id: 'Q2', round_code: 'QF', tournament_id: '1725', outcome: 'abandoned' });
   await w.b.admin(`update public.matches set statut = 'en_cours' where api_id = 'Q2'`);
@@ -89,6 +91,7 @@ test('5. une incohérence de l\'API est signalée dans le journal sans rien cass
 });
 
 test('6. panne de l\'API : la tâche ne plante pas, signale l\'erreur, ne modifie rien', async () => {
+  await vieillir(1); // une lecture du direct au plus toutes les 20 min
   const avant = JSON.stringify(await matchsBase());
   w.pannes['/matches'] = { status: 503, json: {} };
   w.reinitialiserAppels();
@@ -128,6 +131,7 @@ test('8. budget du jour : au-delà de 90 appels (100 moins la réserve), plus au
 });
 
 test('9. le compteur /usage de l\'API peut réduire le budget (appels faits ailleurs)', async () => {
+  await vieillir(1); // une lecture du direct au plus toutes les 20 min
   await w.b.admin('delete from public.sync_log');
   w.usage = { day: { used: 96, limit: 100, remaining: 4 } };
   w.reinitialiserAppels();
@@ -139,6 +143,7 @@ test('9. le compteur /usage de l\'API peut réduire le budget (appels faits aill
 });
 
 test('10. mode simulation : l\'API est interrogée mais RIEN n\'est écrit dans la base', async () => {
+  await vieillir(1); // une lecture du direct au plus toutes les 20 min
   await w.b.admin('delete from public.sync_log');
   w.upcoming['1725'] = [Q('Q1'), Q('Q2'), Q('Q3'), Q('Q4'), Q('Q5')];
   const avant = JSON.stringify(await matchsBase());
@@ -224,10 +229,11 @@ const affichesRecentes = async () => {
 };
 
 test('16. un match en cours encore visible dans le direct : pas de demande de détail (économie d\'appels)', async () => {
+  await vieillir(1); // une lecture du direct au plus toutes les 20 min
   await affichesRecentes();
   await w.b.admin(`update public.matches set statut = 'a_venir', heure_prevue = now() + interval '5 hours' where api_id = 'Q2'`);
-  await w.b.admin(`update public.matches set statut = 'en_cours', heure_prevue = now() - interval '30 minutes' where api_id = 'Q3'`);
-  w.live = [Q('Q3', { status: 'live', scheduled_time: dans(-30) })];
+  await w.b.admin(`update public.matches set statut = 'en_cours', heure_prevue = now() - interval '100 minutes' where api_id = 'Q3'`);
+  w.live = [Q('Q3', { status: 'live', scheduled_time: dans(-100) })];
   w.reinitialiserAppels();
   const r = await passer();
   assert.equal(r.code, 0, r.texte);
@@ -245,6 +251,7 @@ test('17. /usage annonce le quota du jour épuisé : on s\'arrête sans appeler 
 });
 
 test('18. /usage ne donne que le nombre utilisé : il est pris en compte pour le budget', async () => {
+  await vieillir(1); // une lecture du direct au plus toutes les 20 min
   await affichesRecentes();
   await w.b.admin(`update public.matches set statut = 'en_cours' where api_id = 'Q3'`);
   w.usage = { day: { used: 95 } };

@@ -8,7 +8,8 @@ const AFFICHES = { R16: 'huitièmes', QF: 'quarts', SF: 'demies', RR1: 'matchs d
 
 /** Titre des notifications : le lieu (ville) du tournoi, sauf Grands Chelems et ATP Finals (leur nom). */
 export function libelleTournoi(t) {
-  return t.categorie === 'grand_slam' || t.categorie === 'atp_finals' ? t.nom : (t.ville || t.nom);
+  if (t.categorie === 'atp_finals') return 'ATP Finals';
+  return t.categorie === 'grand_slam' ? t.nom : (t.ville || t.nom);
 }
 
 /** Contenu d'une notification push : { titre, texte, url, tag }. Court : un écran de verrouillage n'affiche que deux ou trois lignes. */

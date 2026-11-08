@@ -1,11 +1,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { PARAMETRES, heureLocale, dansLaFenetre, matchsASurveiller, afficheDue, afficheAttendue, decider, selectionnerDetails, idsAInterroger, tropTotPourLesAffiches } from '../../src/sync/planificateur.js';
+import { PARAMETRES, heureLocale, dansLaFenetre, matchsASurveiller, directDu, afficheDue, afficheAttendue, decider, selectionnerDetails, idsAInterroger, tropTotPourLesAffiches } from '../../src/sync/planificateur.js';
 
 const d = (s) => new Date(s);
 // Heures d'été à Paris = UTC+2 (jusqu'au 25 oct. 2026 à 3 h), heures d'hiver = UTC+1 (ensuite).
 const tournoi = (o = {}) => ({ id: 1, nom: 'Paris', categorie: 'masters_1000', etat: 'en_cours', date_debut: '2026-10-26', date_fin: '2026-11-01', api_ids: ['1725', '1726'], derniere_decouverte: null, finale_terminee: false, ...o });
-const match = (o = {}) => ({ id: 1, api_id: 'A', tournament_id: 1, tour: 'QF', statut: 'a_venir', heure_prevue: '2026-10-28T13:00:00Z', debut_detecte: null, modifie_manuellement: false, ...o });
+const match = (o = {}) => ({ id: 1, api_id: 'A', tournament_id: 1, tour: 'QF', statut: 'a_venir', heure_prevue: '2026-10-28T09:00:00Z', debut_detecte: null, modifie_manuellement: false, ...o });
 const etat = (o = {}) => ({ maintenant: null, appels_aujourdhui: 0, quota_epuise_jusqua: null, tournois: [tournoi()], matchs: [], ...o });
 
 test('heureLocale et fenêtre 7 h – 1 h (heure de Paris), y compris au changement d\'heure', () => {
@@ -24,28 +24,40 @@ test('heureLocale et fenêtre 7 h – 1 h (heure de Paris), y compris au changem
   assert.equal(dansLaFenetre(d('2026-10-27T00:00:00Z')), false);
 });
 
-test('matchsASurveiller : en cours, bientôt, en retard raisonnable ; pas les matchs lointains ni verrouillés', () => {
+test('matchsASurveiller : résultat regardé 1 h 30 après l\'heure prévue (2 h en Grand Chelem) ; pas avant, ni les matchs verrouillés', () => {
   const now = d('2026-10-28T12:50:00Z');
-  const e = etat({ matchs: [
+  const gc = tournoi({ id: 2, categorie: 'grand_slam' });
+  const e = etat({ tournois: [tournoi(), gc], matchs: [
     match({ api_id: 'encours', statut: 'en_cours', heure_prevue: '2026-10-28T10:00:00Z' }),
     match({ api_id: 'bientot', heure_prevue: '2026-10-28T13:10:00Z' }),
-    match({ api_id: 'lointain', heure_prevue: '2026-10-28T14:00:00Z' }),
+    match({ api_id: 'commence', heure_prevue: '2026-10-28T12:00:00Z' }), // 50 min : trop tôt
+    match({ api_id: 'pile', heure_prevue: '2026-10-28T11:20:00Z' }), // 1 h 30
     match({ api_id: 'retard', heure_prevue: '2026-10-28T09:00:00Z' }),
     match({ api_id: 'tropretard', heure_prevue: '2026-10-28T03:00:00Z' }),
+    match({ api_id: 'gc_1h45', tournament_id: 2, heure_prevue: '2026-10-28T11:05:00Z' }), // GC : pas avant 2 h
+    match({ api_id: 'gc_2h', tournament_id: 2, heure_prevue: '2026-10-28T10:50:00Z' }),
     match({ api_id: 'sansheure', heure_prevue: null }),
     match({ api_id: 'manuel', statut: 'en_cours', modifie_manuellement: true }),
   ] });
-  assert.deepEqual(matchsASurveiller(e, now).map((m) => m.api_id), ['encours', 'bientot', 'retard', 'sansheure']);
+  assert.deepEqual(matchsASurveiller(e, now).map((m) => m.api_id), ['encours', 'pile', 'retard', 'gc_2h', 'sansheure']);
 });
 
-test('afficheDue : jamais lue = due ; intervalle d\'1 h en tournoi (tolérance 5 min), 20 h hors tournoi ; finale terminée = jamais', () => {
+test('directDu : une lecture du direct toutes les 20 minutes au plus (tolérance 5 min)', () => {
+  const now = d('2026-10-28T12:00:00Z');
+  assert.equal(directDu(etat(), now), true, 'jamais lu');
+  assert.equal(directDu(etat({ derniere_lecture_direct: '2026-10-28T11:50:00Z' }), now), false, '10 min');
+  assert.equal(directDu(etat({ derniere_lecture_direct: '2026-10-28T11:45:00Z' }), now), true, '15 min : tolérance du déclencheur');
+  assert.equal(directDu(etat({ derniere_lecture_direct: '2026-10-28T11:30:00Z' }), now), true);
+});
+
+test('afficheDue : jamais lue = due ; intervalle de 30 min en tournoi (tolérance 5 min), 20 h hors tournoi ; finale terminée = jamais', () => {
   const now = d('2026-10-28T12:00:00Z');
   assert.equal(afficheDue(tournoi(), etat(), now).due, true);
-  assert.equal(afficheDue(tournoi({ derniere_decouverte: '2026-10-28T11:30:00Z' }), etat(), now).due, false); // 30 min
-  assert.equal(afficheDue(tournoi({ derniere_decouverte: '2026-10-28T11:06:00Z' }), etat(), now).due, false); // 54 min : encore trop tôt
-  assert.equal(afficheDue(tournoi({ derniere_decouverte: '2026-10-28T11:05:00Z' }), etat(), now).due, true); // 55 min : dans la tolérance du cron
-  assert.equal(afficheDue(tournoi({ derniere_decouverte: '2026-10-28T10:59:00Z' }), etat(), now).due, true); // 1 h 01
-  assert.equal(afficheDue(tournoi({ derniere_decouverte: '2026-10-28T09:30:00Z' }), etat(), now).due, true); // 2 h 30 : l'ancien rythme (3 h) ne s'applique plus
+  assert.equal(afficheDue(tournoi({ derniere_decouverte: '2026-10-28T11:40:00Z' }), etat(), now).due, false); // 20 min
+  assert.equal(afficheDue(tournoi({ derniere_decouverte: '2026-10-28T11:36:00Z' }), etat(), now).due, false); // 24 min : encore trop tôt
+  assert.equal(afficheDue(tournoi({ derniere_decouverte: '2026-10-28T11:35:00Z' }), etat(), now).due, true); // 25 min : dans la tolérance du déclencheur
+  assert.equal(afficheDue(tournoi({ derniere_decouverte: '2026-10-28T11:29:00Z' }), etat(), now).due, true); // 31 min
+  assert.equal(afficheDue(tournoi({ derniere_decouverte: '2026-10-28T09:30:00Z' }), etat(), now).due, true); // 2 h 30
   const hors = tournoi({ etat: 'a_venir', date_debut: '2026-10-31', date_fin: '2026-11-07' }); // commence dans 3 jours : une relecture par jour
   assert.equal(afficheDue({ ...hors, derniere_decouverte: '2026-10-28T00:00:00Z' }, etat(), now).due, false);
   assert.equal(afficheDue({ ...hors, derniere_decouverte: '2026-10-27T10:00:00Z' }, etat(), now).due, true); // 26 h
@@ -79,10 +91,13 @@ test('decider : régime actif = direct si match à surveiller + affiches dues (u
   assert.deepEqual(p.actions.map((a) => a.type === 'direct' ? 'direct' : `affiches:${a.api_id}`), ['direct', 'affiches:1725', 'affiches:1726']);
   assert.equal(p.restant, 90);
   // affiches déjà lues récemment : le direct seul
-  const e2 = etat({ matchs: [match({ statut: 'en_cours' })], tournois: [tournoi({ derniere_decouverte: '2026-10-28T12:30:00Z' })] });
+  const e2 = etat({ matchs: [match({ statut: 'en_cours' })], tournois: [tournoi({ derniere_decouverte: '2026-10-28T12:40:00Z' })] });
   assert.deepEqual(decider({ maintenant: jour, etat: e2 }).actions.map((a) => a.type), ['direct']);
+  // direct lu il y a 10 minutes : pas de nouvelle lecture
+  const e2b = etat({ matchs: [match({ statut: 'en_cours' })], derniere_lecture_direct: '2026-10-28T12:40:00Z', tournois: [tournoi({ derniere_decouverte: '2026-10-28T12:40:00Z' })] });
+  assert.deepEqual(decider({ maintenant: jour, etat: e2b }).actions, []);
   // rien à surveiller et affiches récentes : rien
-  const e3 = etat({ matchs: [match({ heure_prevue: '2026-10-28T20:00:00Z' })], tournois: [tournoi({ derniere_decouverte: '2026-10-28T12:30:00Z' })] });
+  const e3 = etat({ matchs: [match({ heure_prevue: '2026-10-28T12:00:00Z' })], tournois: [tournoi({ derniere_decouverte: '2026-10-28T12:40:00Z' })] });
   const p3 = decider({ maintenant: jour, etat: e3 });
   assert.deepEqual([p3.actions.length, p3.raison], [0, 'rien à faire pour le moment']);
 });
@@ -105,12 +120,15 @@ test('decider : le budget limite le nombre d\'actions', () => {
 });
 
 test('selectionnerDetails : seulement les matchs censés être en cours mais absents du direct, dans la limite du budget', () => {
-  const now = new Date(Date.parse('2026-10-28T13:00:00Z') - (Math.floor(Date.parse('2026-10-28T13:00:00Z') / 1800000) % 2) * 1800000); // créneau pair
-  assert.equal(Math.floor(now.getTime() / 1800000) % 2, 0);
+  const cren = 1200000; // créneaux de 20 min : un match « à venir » en retard n'est vérifié qu'une fois par heure (1 créneau sur 3)
+  const now = new Date(Math.floor(Date.parse('2026-10-28T13:00:00Z') / (3 * cren)) * 3 * cren + 3 * cren);
+  assert.equal(Math.floor(now.getTime() / cren) % 3, 0);
+  const il_y_a = (min) => new Date(now.getTime() - min * 60000).toISOString();
   const e = etat({ matchs: [
     match({ api_id: 'vu', statut: 'en_cours' }),
     match({ api_id: 'disparu', statut: 'en_cours' }),
-    match({ api_id: 'enretard', heure_prevue: new Date(now.getTime() - 60 * 60000).toISOString() }),
+    match({ api_id: 'enretard', heure_prevue: il_y_a(100) }),
+    match({ api_id: 'tropot', heure_prevue: il_y_a(60) }), // pas encore 1 h 30
     match({ api_id: 'futur', heure_prevue: new Date(now.getTime() + 60 * 60000).toISOString() }),
     match({ api_id: 'manuel', statut: 'en_cours', modifie_manuellement: true }),
     match({ api_id: 'sansheure', heure_prevue: null }),
@@ -120,9 +138,8 @@ test('selectionnerDetails : seulement les matchs censés être en cours mais abs
   assert.deepEqual(r({ restant: 1 }).length, 1);
   assert.deepEqual(r({ restant: 0 }), []);
   assert.deepEqual(r({ vusEnDirect: null }), [], 'sans lecture du direct, aucune conclusion');
-  // créneau impair : un match « à venir » en retard n'est vérifié qu'une fois par heure ; un match en cours l'est toujours
-  const impair = new Date(now.getTime() + 1800000);
-  assert.deepEqual(r({ maintenant: impair }), ['disparu']);
+  const suivant = new Date(now.getTime() + cren);
+  assert.deepEqual(r({ maintenant: suivant }), ['disparu']);
 });
 
 test('paramètres par défaut conformes au cahier des charges', () => {
@@ -130,10 +147,12 @@ test('paramètres par défaut conformes au cahier des charges', () => {
   assert.equal(PARAMETRES.reserve, 10);
   assert.equal(PARAMETRES.heureDebut, 7);
   assert.equal(PARAMETRES.heureFin, 1);
-  assert.equal(PARAMETRES.intervalleAffichesActifMin, 60, 'affiches : une relecture par heure pendant un tournoi (demande de Pierre, 5 nov. 2026)');
+  assert.equal(PARAMETRES.intervalleAffichesActifMin, 30, 'affiches : une relecture toutes les 30 min pendant un tournoi (demande de Pierre, 8 nov. 2026)');
+  assert.equal(PARAMETRES.intervalleDirectMin, 20, 'direct : toutes les 20 min');
+  assert.deepEqual([PARAMETRES.debutResultatMin, PARAMETRES.debutResultatGCMin], [90, 120]);
 });
 
-test('decider : sur une journée entière (cron toutes les 30 min, heure d\'hiver), les affiches sont relues une fois par heure de 7 h à 1 h, jamais la nuit', () => {
+test('decider : sur une journée entière (cron toutes les 30 min, heure d\'hiver), les affiches sont relues toutes les 30 min de 7 h à 1 h, jamais la nuit (tournoi sans information de tours : relecture systématique)', () => {
   // Journée du 6 nov. 2026 à Paris (UTC+1) : du 5 nov. 22 h UTC (= 23 h Paris) au 6 nov. 23 h UTC. Un seul tournoi, 2 identifiants d'API, aucun match à surveiller.
   let derniere = null;
   const lectures = []; // heures de Paris (HH:MM) des relectures d'affiches
@@ -149,8 +168,10 @@ test('decider : sur une journée entière (cron toutes les 30 min, heure d\'hive
     }
   }
   assert.ok(lectures.every((l) => { const h = Number(l.slice(0, 2)); return h >= 7 || h < 1; }), `aucune relecture entre 1 h et 7 h : ${lectures.join(' ')}`);
-  assert.deepEqual(lectures, ['00:00', '07:00', '08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00', '18:00', '19:00', '20:00', '21:00', '22:00', '23:00']);
-  assert.equal(lectures.length * 2, 36, '36 appels d\'affiches par jour de tournoi, pour 90 disponibles');
+  const attendues = ['00:00', '00:30'];
+  for (let m = 7 * 60; m < 24 * 60; m += 30) attendues.push(`${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`);
+  assert.deepEqual(lectures, attendues);
+  assert.equal(lectures.length * 2, 72, '36 relectures par jour (30 min), 2 appels chacune ici (2 identifiants non confirmés)');
 });
 
 test('affiches : un tournoi pas commencé n\'est regardé qu\'à partir de 3 jours avant son début (calendrier), pas avant', () => {
@@ -201,5 +222,5 @@ test('afficheAttendue : règle de Pierre (tour incomplet, moitié du tour termin
   const vieille = '2026-11-07T09:00:00Z';
   assert.equal(afficheDue(tournoi({ tours: [tr('SF', 2, 0), tr('F', 1, 0)], derniere_decouverte: vieille }), etat(), now).due, false);
   assert.equal(afficheDue(tournoi({ tours: [tr('SF', 2, 1)], derniere_decouverte: vieille }), etat(), now).due, true);
-  assert.equal(afficheDue(tournoi({ tours: [tr('SF', 2, 1)], derniere_decouverte: '2026-11-07T11:30:00Z' }), etat(), now).due, false, 'au plus une fois par heure');
+  assert.equal(afficheDue(tournoi({ tours: [tr('SF', 2, 1)], derniere_decouverte: '2026-11-07T11:45:00Z' }), etat(), now).due, false, 'au plus une fois toutes les 30 min');
 });

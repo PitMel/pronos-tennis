@@ -270,3 +270,9 @@ Choix de conception de l'étape 3.3 (à signaler à Pierre) : la maquette 1 n'es
 ## Notifications push : titre = lieu (8 nov.)
 - Migration 0021 : `notif_a_faire` ajoute `ville` à l'objet `tournoi`. Titre push = ville (Paris, Shanghai, Montréal, Monaco…) pour les Masters 1000 ; nom complet pour Grands Chelems et ATP Finals ; repli sur le nom si pas de ville. Courriels inchangés.
 - « Paris à poser » : « Les affiches des huitièmes/quarts/demies sont connues : tes paris sont attendus. » ; finale : « L’affiche de la finale est connue : ton pari est attendu. »
+
+## Lectures API : délais, fréquences, déclencheur Supabase (8 nov.)
+- Résultat d'un match regardé seulement 1 h 30 après son heure prévue (2 h en Grand Chelem) ; plus de lecture « avant le début » (ancien : 30 min avant). Match sans heure : regardé.
+- Direct : au plus une lecture toutes les 20 min (tolérance 5 ; `sync_etat.derniere_lecture_direct`, migration 0022). Affiches : 30 min (au lieu de 60), toujours soumises à la règle d'événements.
+- Notifications : « Monte Carlo » (ville modifiée), « ATP Finals » sans « Nitto ».
+- Migration 0023 : pg_cron + pg_net ; job `synchro-github` toutes les 20 min appelle `declencher_synchro()` qui lance le workflow (workflow_dispatch, mode normal, origine « supabase ») avec le jeton GitHub rangé dans le coffre Vault sous le nom `github_token` (à créer par Pierre ; sans jeton la fonction ne fait rien). Le workflow n'obéit à ces déclenchements que si la variable SYNCHRO_ACTIVE vaut true. Le cron GitHub */30 reste en secours.
