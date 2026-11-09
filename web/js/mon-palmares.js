@@ -161,6 +161,14 @@ export function monPalmares({ moteur, moi, profils, tournois, resultats, matchs,
         if (Number(m.sets_joues) === Number(b.sets)) okS += 1;
       }
     }
+    let sommeConf = 0; let nbConf = 0;
+    for (const m of lesMatchs) {
+      const t = parId.get(m.tournament_id);
+      if (t.annee !== annee || !joue(m)) continue;
+      const b = mesParis(m);
+      if (b && Number(b.confiance) > 0) { sommeConf += Number(b.confiance); nbConf += 1; }
+    }
+    const parisMoyen = nbConf > 0 ? { moyenne: sommeConf / nbConf, texte: (Math.round((10 * sommeConf) / nbConf) / 10).toFixed(1).replace('.', ','), n: nbConf } : null;
     let okT = 0; let surT = 0; let okF = 0; let surF = 0;
     for (const l of parisTournoi) {
       const t = parId.get(l.tournament_id);
@@ -173,7 +181,7 @@ export function monPalmares({ moteur, moi, profils, tournois, resultats, matchs,
       }
     }
     const f = (ok, sur) => (sur > 0 ? { ok, sur, pourcentage: pct(ok, sur) } : null);
-    return { annee, vainqueurMatch: f(okV, surV), sets: f(okS, surS), vainqueurTournoi: f(okT, surT), finalistes: f(okF, surF) };
+    return { annee, vainqueurMatch: f(okV, surV), sets: f(okS, surS), vainqueurTournoi: f(okT, surT), finalistes: f(okF, surF), parisMoyen };
   });
 
   // meilleur strike toutes saisons : celui de chaque saison, puis le meilleur (ex æquo : tous)

@@ -227,3 +227,12 @@ test('chouchous et amours impossibles sont recalculés à chaque affichage : un 
   const r = statsRace({ moteur, annee: 2026, tournois: tournois3, resultats, profils, matchs: matchs3, paris: paris3, parisTournoi, joueurs });
   assert.deepEqual(r.chouchous[0].joueurs.map((j) => [j.nom, j.rapport]), [['Alcaraz', '7/8']]);
 });
+
+test('statistiques : « Pari moyen » = confiance moyenne des paris de match joués, colonne dans le tableau', () => {
+  const [a, p] = calculer().statistiques;
+  assert.deepEqual([a.parisMoyen.texte, a.parisMoyen.n], ['10,0', 6]);
+  assert.deepEqual([p.parisMoyen.texte, p.parisMoyen.n], ['6,0', 3]);
+  const h = htmlPageRace(detailRace({ moteur, annee: 2026, tournois, resultats, profils }), { moi: 'a', stats: calculer() });
+  assert.match(h, /<th scope="col">Pari moyen<\/th>/);
+  assert.match(h, /<b>10,0<\/b><small>6 paris<\/small>/);
+});

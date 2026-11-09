@@ -361,7 +361,10 @@ export function statsRace({ moteur, annee, tournois, resultats, profils, matchs,
       }
     }
     const tir = tirs.get(x.id);
+    let somme = 0; let nbParis = 0; // montant moyen des paris : confiance moyenne (6 à 10) sur les matchs joués
+    for (const m of matchsJoues) { const bet = parisDe(m).get(x.id); if (bet && Number(bet.confiance) > 0) { somme += Number(bet.confiance); nbParis += 1; } }
     return {
+      parisMoyen: nbParis > 0 ? { moyenne: somme / nbParis, texte: (Math.round((10 * somme) / nbParis) / 10).toFixed(1).replace('.', ','), n: nbParis } : null,
       id: x.id, prenom: x.prenom, couleur: x.couleur ?? null, photo_url: x.photo_url ?? null,
       vainqueurMatch: rapport(tir.ok, tir.sur), sets: rapport(okSets, surSets), vainqueurs: rapport(okV, surV), finalistes: rapport(okF, surF),
     };

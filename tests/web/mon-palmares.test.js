@@ -118,3 +118,12 @@ test('palmarès : « Pari sur les finalistes » affiché après « Pari sur le v
   assert.ok(i > 0 && j > i);
   assert.match(h.slice(j, j + 600), /<b>100&nbsp;%<\/b><small>2\/2<\/small>/);
 });
+
+test('palmarès : « Pari moyen » par année, après « Pari sur les finalistes »', () => {
+  const an = (annee) => d.statistiques.parSaison.find((x) => x.annee === annee);
+  assert.deepEqual([an(2025).parisMoyen.texte, an(2025).parisMoyen.n], ['10,0', 2]);
+  assert.deepEqual([an(2026).parisMoyen.texte, an(2026).parisMoyen.n], ['7,5', 2]);
+  const h = htmlMonPalmares(d);
+  assert.ok(h.indexOf('Pari moyen') > h.indexOf('Pari sur les finalistes'));
+  assert.match(h, /<b>7,5<\/b><small>2 paris<\/small>/);
+});

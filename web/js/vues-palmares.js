@@ -107,6 +107,10 @@ function htmlStatistiques(st) {
       ${bloc('Pari sur les sets', 'sets', '—')}
       ${bloc('Pari sur le vainqueur du tournoi', 'vainqueurTournoi', '—')}
       ${bloc('Pari sur les finalistes', 'finalistes', '—')}
+      <div class="bloc-stat">
+        <h4>Pari moyen</h4>
+        <ul class="stat-saisons">${st.parSaison.map((s) => `<li><small>${echapper(s.annee)}</small>${s.parisMoyen ? `<b>${echapper(s.parisMoyen.texte)}</b><small>${echapper(s.parisMoyen.n)} pari${s.parisMoyen.n > 1 ? 's' : ''}</small>` : '<span class="small">—</span>'}</li>`).join('')}</ul>
+      </div>
       <ul class="liste-records">
         ${rec('Mon meilleur strike', st.meilleurStrike.length ? st.meilleurStrike.map((x) => `${lien({ id: x.tournoi.id, nom: x.tournoi.nom, annee: x.tournoi.annee })} · ${taux(x)} bons vainqueurs`).join('<br>') : '<em>pas encore de tournoi terminé</em>', 'Tournoi où tu as trouvé le plus de bons vainqueurs, toutes saisons confondues (ex æquo : tous affichés).')}
         ${rec('Mon meilleur tournoi du Grand Chelem', meilleurs(st.meilleurGrandChelem), 'Tournoi du Grand Chelem où tu as marqué le plus de points (avant bonification de 1re et 2e places).')}
