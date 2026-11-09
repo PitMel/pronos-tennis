@@ -396,3 +396,54 @@ test('0017 : les matchs de poule sont rangés par horaire, 4 par tour ; sans hor
   assert.equal((await tours()).P12, 'RR3');
   assert.equal((await b.admin('select etat from public.tournaments where id = $1', [t])).rows[0].etat, 'pari_tournoi_ouvert');
 });
+
+test('joueurs en double : sync_joueur rattache l’identifiant API à la fiche existante (même nom, accents ignorés) au lieu de créer un doublon', async () => {
+  await service("insert into public.players (nom) values ('Rafael Jódar')");
+  const ancien = (await service("select id from public.players where nom = 'Rafael Jódar'")).rows[0].id;
+  const r = (await service(`select public.sync_joueur('{"api_id":"jodar1","nom":"Rafael Jodar","pays":"ESP","classement":"30"}'::jsonb) as id`)).rows[0].id;
+  assert.equal(String(r), String(ancien), 'même fiche');
+  const fiche = (await service('select api_id, pays, classement from public.players where id = $1', [ancien])).rows[0];
+  assert.deepEqual([fiche.api_id, fiche.pays, fiche.classement], ['jodar1', 'ESP', 30]);
+  const n = (await service("select count(*)::int n from public.players where public.nom_joueur_normalise(nom) = 'rafael jodar'")).rows[0].n;
+  assert.equal(n, 1);
+  // un identifiant déjà connu reste prioritaire ; un vrai nouveau joueur est créé
+  assert.equal(String((await service(`select public.sync_joueur('{"api_id":"jodar1","nom":"Rafael Jódar"}'::jsonb) as id`)).rows[0].id), String(ancien));
+  const nouveau = (await service(`select public.sync_joueur('{"api_id":"neuf1","nom":"Joueur Tout Neuf"}'::jsonb) as id`)).rows[0].id;
+  assert.notEqual(String(nouveau), String(ancien));
+});
+
+test('fusion des doublons : matchs, finalistes et face-à-face passent sur l’ancienne fiche, qui reçoit les identifiants de la nouvelle', async () => {
+  await service("insert into public.players (nom) values ('Ancien Double')");
+  await service("insert into public.players (nom) values ('Adversaire Du Milieu')"); // créé entre les deux fiches : l'ordre des identifiants s'inverse à la fusion
+  await service("insert into public.players (api_id, atp_id, nom, pays, classement) values ('dbl1', 'AT01', 'Ancien Double', 'FRA', 9)");
+  const ids = (await service("select id, api_id from public.players where nom = 'Ancien Double' order by id")).rows;
+  const [ancien, recent] = [ids.find((x) => x.api_id === null).id, ids.find((x) => x.api_id === 'dbl1').id];
+  const adversaire = (await service("select id from public.players where nom = 'Adversaire Du Milieu'")).rows[0].id;
+  assert.ok(Number(ancien) < Number(adversaire) && Number(adversaire) < Number(recent));
+  const t = TOURNOI.masters;
+  await service("insert into public.matches (tournament_id, tour, p1_id, p2_id, statut, vainqueur, sets_joues) values ($1, 'QF', $2, $3, 'termine', 1, 2)", [t, recent, adversaire]);
+  await service('update public.tournaments set finaliste_id = $2 where id = $1', [t, recent]);
+  // face-à-face : ordre des identifiants inversé après fusion (le plus petit devient joueur_a) → victoires et rencontres échangées
+  const [a, bb] = recent < adversaire ? [recent, adversaire] : [adversaire, recent];
+  const rA = a === recent; // le joueur récent (futur ancien) a 5 victoires, l'adversaire 1 ; première rencontre gagnée par le joueur récent
+  await service(`insert into public.h2h (joueur_a, joueur_b, statut, victoires_a, victoires_b, par_surface, rencontres)
+    values ($1, $2, 'ok', $3, $4, $5::jsonb, $6::jsonb)`, [a, bb, rA ? 5 : 1, rA ? 1 : 5,
+    JSON.stringify([{ surface: 'dur', a: rA ? 5 : 1, b: rA ? 1 : 5 }]), JSON.stringify([{ annee: 2020, vainqueur: rA ? 'a' : 'b' }, { annee: 2019, vainqueur: rA ? 'b' : 'a' }])]);
+  const n = (await service('select public.joueurs_fusionner_doublons() as n')).rows[0].n;
+  assert.ok(n >= 1);
+  assert.equal((await service("select count(*)::int n from public.players where nom = 'Ancien Double'")).rows[0].n, 1);
+  const f = (await service('select id, api_id, atp_id, pays, classement from public.players where nom = $1', ['Ancien Double'])).rows[0];
+  assert.deepEqual([String(f.id), f.api_id, f.atp_id, f.pays, f.classement], [String(ancien), 'dbl1', 'AT01', 'FRA', 9]);
+  assert.equal((await service('select count(*)::int n from public.matches where p1_id = $1 and p2_id = $2', [ancien, adversaire])).rows[0].n, 1);
+  assert.equal(String((await service('select finaliste_id from public.tournaments where id = $1', [t])).rows[0].finaliste_id), String(ancien));
+  const h = (await service('select joueur_a, joueur_b, victoires_a, victoires_b, par_surface, rencontres from public.h2h where joueur_a in ($1, $2) and joueur_b in ($1, $2)', [ancien, adversaire])).rows;
+  assert.equal(h.length, 1);
+  const ancienEstA = Number(h[0].joueur_a) === Number(ancien);
+  assert.ok(Number(h[0].joueur_a) < Number(h[0].joueur_b));
+  // l'ancien joueur avait 5 victoires dans le sens d'origine : elles le suivent, quel que soit son côté après fusion
+  assert.equal(ancienEstA ? h[0].victoires_a : h[0].victoires_b, 5);
+  assert.equal(ancienEstA ? h[0].victoires_b : h[0].victoires_a, 1);
+  const r0 = h[0].rencontres[0];
+  assert.equal(r0.vainqueur, ancienEstA ? 'a' : 'b', 'première rencontre gagnée par l’ancien joueur');
+  assert.equal((await service('select public.joueurs_fusionner_doublons() as n')).rows[0].n, 0, 'idempotent');
+});
