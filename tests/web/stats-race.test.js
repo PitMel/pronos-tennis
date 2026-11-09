@@ -210,3 +210,20 @@ test('page détail de l’année : section « Statistiques » après le thermom�
   assert.match(h, /<th scope="col">Nombre de sets<\/th><th scope="col">Vainqueurs<\/th><th scope="col">Finalistes<\/th>/);
   assert.match(h, /<b>67&nbsp;%<\/b><small>4\/6<\/small>/);
 });
+
+test('chouchous et amours impossibles sont recalculés à chaque affichage : un tournoi qui se termine entre dans le décompte', () => {
+  const tournoisEnCours = tournois.map((t) => (t.id === 1 ? { ...t, etat: 'en_cours' } : t));
+  const avant = statsRace({ moteur, annee: 2026, tournois: tournoisEnCours, resultats, profils, matchs, paris, parisTournoi, joueurs });
+  assert.deepEqual(avant.chouchous[0].joueurs, [], 'tournoi pas terminé : aucun match compté');
+  const apres = calculer();
+  assert.deepEqual(apres.chouchous[0].joueurs.map((j) => [j.nom, j.rapport]), [['Alcaraz', '6/6']]);
+  // un deuxième tournoi terminé s'ajoute : le rapport est recalculé avec ses matchs (André parie sur l'adversaire d'Alcaraz)
+  const tournois3 = [...tournois, { id: 3, annee: 2026, nom: 'Wimbledon', categorie: 'grand_slam', etat: 'clos', date_debut: '2026-06-29', vainqueur_id: 10, finaliste_id: 11 }];
+  const matchs3 = [...matchs, { id: 300, tournament_id: 3, tour: 'R16', p1_id: 10, p2_id: 50, vainqueur: 1, sets_joues: 3, fin_match: 'normal', neutralise: false },
+    { id: 301, tournament_id: 3, tour: 'QF', p1_id: 10, p2_id: 51, vainqueur: 1, sets_joues: 3, fin_match: 'normal', neutralise: false }];
+  const paris3 = new Map(paris);
+  paris3.set(300, new Map([['a', { choix: 2, confiance: 7, sets: 3 }]])); // pari sur l'adversaire
+  paris3.set(301, new Map([['a', { choix: 1, confiance: 7, sets: 3 }]]));
+  const r = statsRace({ moteur, annee: 2026, tournois: tournois3, resultats, profils, matchs: matchs3, paris: paris3, parisTournoi, joueurs });
+  assert.deepEqual(r.chouchous[0].joueurs.map((j) => [j.nom, j.rapport]), [['Alcaraz', '7/8']]);
+});
