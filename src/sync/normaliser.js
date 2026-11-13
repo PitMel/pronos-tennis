@@ -120,9 +120,11 @@ function joueur(p) {
 /**
  * @param m match de l'API
  * @param tournoisSuivis Set des identifiants de tournoi de l'API suivis (chaînes)
+ * @param tournoisFinals Set des identifiants d'API des ATP Finals : l'API y publie les matchs de poule sans nom de tour (round_code nul,
+ *        constaté le 13 nov. 2026) ; un match sans tour y est donc compté comme match de poule (« RR »).
  * @returns { ignore: raison } ou { match, anomalies }
  */
-export function normaliserMatch(m, tournoisSuivis) {
+export function normaliserMatch(m, tournoisSuivis, tournoisFinals = new Set()) {
   if (!m || typeof m !== 'object' || m.id === undefined || m.id === null) return { ignore: 'sans_identifiant' };
   if (m.tour !== 'atp') return { ignore: 'pas_atp' };
   if (m.gender !== undefined && m.gender !== null && m.gender !== 'men') return { ignore: 'pas_messieurs' };
@@ -131,7 +133,8 @@ export function normaliserMatch(m, tournoisSuivis) {
   if (m.is_qualifying === true) return { ignore: 'qualification' };
   const tid = m.tournament_id === null || m.tournament_id === undefined ? '' : String(m.tournament_id);
   if (!tid || !tournoisSuivis.has(tid)) return { ignore: 'tournoi_non_suivi' };
-  const tour = typeof m.round_code === 'string' ? m.round_code.toUpperCase() : null;
+  let tour = typeof m.round_code === 'string' && m.round_code.trim() !== '' ? m.round_code.toUpperCase() : null;
+  if (!tour && tournoisFinals.has(tid)) tour = 'RR';
   if (!tour || !TOURS_SUIVIS.includes(tour)) return { ignore: 'tour_non_suivi' };
 
   const { statut, fin_match: fin, anomalies } = interpreterStatut(m);
@@ -158,16 +161,28 @@ export function normaliserMatch(m, tournoisSuivis) {
   };
 }
 
+/** Une poule des ATP Finals compte 12 matchs (2 groupes de 4, 3 tours de 4 matchs) : au-delà, un match sans tour n'est plus une poule. */
+export const MATCHS_DE_POULE_MAX = 12;
+
 /** Normalise une liste de matchs ; renvoie { matchs, anomalies:[{api_id, code, detail}], ignores:{raison: n} } sans doublon d'identifiant. */
-export function normaliserListe(liste, tournoisSuivis) {
+export function normaliserListe(liste, tournoisSuivis, tournoisFinals = new Set()) {
   const matchs = new Map();
   const anomalies = [];
   const ignores = {};
+  const sansTour = new Map(); // identifiant de tournoi -> nombre de matchs de poule déduits (round_code absent)
   for (const m of Array.isArray(liste) ? liste : []) {
-    const r = normaliserMatch(m, tournoisSuivis);
+    const r = normaliserMatch(m, tournoisSuivis, tournoisFinals);
     if (r.ignore) {
       ignores[r.ignore] = (ignores[r.ignore] ?? 0) + 1;
       continue;
+    }
+    if (typeof m.round_code !== 'string' || m.round_code.trim() === '') {
+      const n = (sansTour.get(r.match.tournament_api_id) ?? 0) + 1;
+      sansTour.set(r.match.tournament_api_id, n);
+      if (n > MATCHS_DE_POULE_MAX) {
+        ignores.tour_non_suivi = (ignores.tour_non_suivi ?? 0) + 1;
+        continue;
+      }
     }
     matchs.set(r.match.api_id, r.match);
     for (const a of r.anomalies) anomalies.push({ api_id: r.match.api_id, ...a });

@@ -130,3 +130,26 @@ test('orienterJeux : jeux par joueur (API du 5 nov.) remis en couples par set ; 
   assert.equal(orienterJeux(null, null), null);
   assert.equal(compterSets({ games: orienterJeux([[3, 6, 7], [6, 4, 6]], [2, 1]) }), 3);
 });
+
+test('ATP Finals : un match sans nom de tour (round_code nul) est un match de poule ; ailleurs il reste ignoré', () => {
+  const finals = new Set(['2794', '2795']);
+  const sansTour = (extra = {}) => matchApi({ round_code: null, tournament_id: 2794, ...extra });
+  const r = normaliserMatch(sansTour({ id: 'P1' }), new Set(['2794']), finals);
+  assert.equal(r.match.tour, 'RR');
+  assert.equal(normaliserMatch(sansTour({ round_code: '' }), new Set(['2794']), finals).match.tour, 'RR', 'texte vide aussi');
+  assert.equal(normaliserMatch(sansTour(), new Set(['2794'])).ignore, 'tour_non_suivi', 'sans la liste des ATP Finals : ignoré');
+  assert.equal(normaliserMatch(matchApi({ round_code: null }), suivis, finals).ignore, 'tour_non_suivi', 'Masters de Paris : toujours ignoré');
+  assert.equal(normaliserMatch(sansTour({ round_code: 'SF' }), new Set(['2794']), finals).match.tour, 'SF', 'un tour connu garde son code');
+  assert.equal(normaliserMatch(sansTour({ round_code: 'R32' }), new Set(['2794']), finals).ignore, 'tour_non_suivi', 'un tour non suivi reste ignoré');
+});
+
+test('ATP Finals : au plus 12 matchs sans tour par tournoi (2 groupes de 4, 3 tours de 4 matchs)', () => {
+  const finals = new Set(['2794']);
+  const liste = Array.from({ length: 14 }, (_, i) => matchApi({ id: `P${i + 1}`, round_code: null, tournament_id: 2794 }));
+  const n = normaliserListe(liste, new Set(['2794']), finals);
+  assert.equal(n.matchs.length, 12);
+  assert.equal(n.matchs.every((m) => m.tour === 'RR'), true);
+  assert.deepEqual(n.ignores, { tour_non_suivi: 2 });
+  const mixte = normaliserListe([...liste.slice(0, 12), matchApi({ id: 'S1', round_code: 'SF', tournament_id: 2794 })], new Set(['2794']), finals);
+  assert.equal(mixte.matchs.length, 13);
+});

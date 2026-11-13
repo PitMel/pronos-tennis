@@ -38,6 +38,7 @@ export async function executerSynchro({ api, base, maintenant = new Date(), para
   if (plan.actions.length === 0) return resume;
 
   const suivis = new Set((etat.tournois ?? []).flatMap((t) => (t.api_ids ?? []).map(String)));
+  const finals = new Set((etat.tournois ?? []).filter((t) => t.categorie === 'atp_finals').flatMap((t) => (t.api_ids ?? []).map(String)));
   const dejaVues = new Set();
   let restant = plan.restant;
   let stop = false;
@@ -57,7 +58,7 @@ export async function executerSynchro({ api, base, maintenant = new Date(), para
   }
 
   async function traiter(donnees) {
-    const n = normaliserListe(donnees, suivis);
+    const n = normaliserListe(donnees, suivis, finals);
     for (const [k, v] of Object.entries(n.ignores)) resume.ignores += k ? v : 0;
     if (Object.keys(n.ignores).length) journal(`ignorés : ${JSON.stringify(n.ignores)} (reçus : ${Array.isArray(donnees) ? donnees.length : 0})`);
     await noter(n.anomalies);

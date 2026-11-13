@@ -300,3 +300,8 @@ Choix de conception de l'étape 3.3 (à signaler à Pierre) : la maquette 1 n'es
 
 ## « Pari moyen » (9 nov.)
 - Détail de la saison > Statistiques : colonne « Pari moyen » (confiance moyenne 6–10 des paris de match joués de l'année, nombre de paris en petit). Palmarès > Mes statistiques : même stat par année, après « Pari sur les finalistes ».
+
+## ATP Finals : matchs de poule sans nom de tour (13 nov.)
+- Constat : l'API publie les 12 matchs de poule du tournoi 2794 depuis le 12 nov. (14 h 30) avec `round_code` et `round` nuls ; le normaliseur les ignorait (`tour_non_suivi` : 12). Les affiches n'apparaissaient donc pas dans l'appli.
+- Correction (aucune migration) : pour un tournoi de catégorie `atp_finals`, un match sans nom de tour est compté comme poule (`RR`) ; au plus 12 matchs sans tour par tournoi et par lecture (2 groupes de 4, 3 tours de 4). Un code connu (SF, F…) est conservé ; ailleurs (Masters, Grands Chelems) un match sans tour reste ignoré.
+- Répartition RR1 / RR2 / RR3 inchangée (`sync_repartir_poules`) : par horaire prévu, 4 par tour ; sans horaire, dans l'ordre d'arrivée RR1, puis RR2, puis RR3 ; elle se corrige toute seule quand les horaires arrivent. Fichiers : `src/sync/normaliser.js`, `src/sync/synchro.js`, tests dans `tests/sync/normaliser.test.js` (578 tests OK).
