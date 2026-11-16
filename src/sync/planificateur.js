@@ -31,6 +31,7 @@ export const PARAMETRES = {
   usageIntervalleMin: 180, // /usage (1 crédit) : consulté au plus toutes les 3 h…
   usageIntervalleProcheMin: 60, // … toutes les heures dès que le compteur local atteint le seuil ci-dessous
   usageSeuilProche: 60,
+  verifHorairesHeures: [7, 15], // vérification des horaires : deux créneaux par jour, dès 7 h et dès 15 h (heure de Paris)
 };
 
 /** Heure, minute et date (AAAA-MM-JJ) à Paris. */
@@ -136,6 +137,28 @@ export function afficheAttendue(t) {
   return { attendue: false, motif: 'toutes les affiches utiles sont connues' };
 }
 
+/** Début (instant) du créneau de vérification en cours : deux par jour (dès 7 h et dès 15 h à Paris). De minuit à 1 h, c'est encore le dernier créneau de la veille. */
+export function debutCreneauVerification(now, p = PARAMETRES) {
+  const { heure, minute } = heureLocale(now, p.fuseau);
+  const h = heure < p.heureDebut ? heure + 24 : heure;
+  const debut = [...p.verifHorairesHeures].sort((a, b) => b - a).find((x) => x <= h);
+  if (debut === undefined) return null;
+  return new Date(now.getTime() - (h * 60 + minute - debut * 60) * 60000);
+}
+
+/**
+ * Vérification des horaires (règle de Pierre, 16 nov. 2026) : les horaires des matchs déjà affichés changent (ex. RR2 et RR3 des ATP Finals
+ * restaient à l'horaire provisoire). Tant qu'un tour affiché n'est pas terminé, on relit les affiches au plus une fois par créneau,
+ * soit deux fois par jour. La dernière lecture (derniere_decouverte, quelle qu'en soit la raison) compte pour le créneau.
+ */
+export function verificationHorairesDue(t, now, p = PARAMETRES) {
+  if (!Array.isArray(t.tours) || !t.tours.some((x) => x.termines < x.total)) return { due: false };
+  const debut = debutCreneauVerification(now, p);
+  if (!debut) return { due: false };
+  const derniere = date(t.derniere_decouverte);
+  return { due: !derniere || derniere < debut };
+}
+
 /** Les affiches de ce tournoi doivent-elles être relues maintenant ? */
 export function afficheDue(t, etat, now, p = PARAMETRES) {
   if (t.finale_terminee) return { due: false };
@@ -143,7 +166,10 @@ export function afficheDue(t, etat, now, p = PARAMETRES) {
   const aDesMatchsSuivis = (etat.matchs ?? []).some((m) => m.tournament_id === t.id);
   const enCours = t.etat === 'en_cours' || t.etat === 'pari_tournoi_ouvert';
   const actif = enCours || aDesMatchsSuivis || jourDansLaFenetre(t, heureLocale(now, p.fuseau).jour);
-  if (enCours && !afficheAttendue(t).attendue) return { due: false, actif, rien_de_neuf: true };
+  if (enCours && !afficheAttendue(t).attendue) {
+    if (verificationHorairesDue(t, now, p).due) return { due: true, actif, verification_horaires: true };
+    return { due: false, actif, rien_de_neuf: true };
+  }
   const intervalle = actif ? p.intervalleAffichesActifMin : p.intervalleAffichesQuotidienMin;
   const derniere = date(t.derniere_decouverte);
   const due = !derniere || minutes(now, derniere) >= intervalle - (p.toleranceAffichesMin ?? 0);

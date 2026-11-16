@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { PARAMETRES, heureLocale, dansLaFenetre, matchsASurveiller, directDu, usageDu, afficheDue, afficheAttendue, decider, selectionnerDetails, idsAInterroger, tropTotPourLesAffiches } from '../../src/sync/planificateur.js';
+import { PARAMETRES, heureLocale, dansLaFenetre, matchsASurveiller, directDu, usageDu, afficheDue, afficheAttendue, debutCreneauVerification, verificationHorairesDue, decider, selectionnerDetails, idsAInterroger, tropTotPourLesAffiches } from '../../src/sync/planificateur.js';
 
 const d = (s) => new Date(s);
 // Heures d'été à Paris = UTC+2 (jusqu'au 25 oct. 2026 à 3 h), heures d'hiver = UTC+1 (ensuite).
@@ -232,4 +232,35 @@ test('usageDu : /usage (1 crédit) consulté au plus toutes les 3 h, toutes les 
   assert.equal(usageDu(etat({ derniere_usage: '2026-10-28T09:00:00Z', appels_aujourdhui: 10 }), now), true, '3 h');
   assert.equal(usageDu(etat({ derniere_usage: '2026-10-28T11:30:00Z', appels_aujourdhui: 65 }), now), false, '30 min, près de la limite');
   assert.equal(usageDu(etat({ derniere_usage: '2026-10-28T10:55:00Z', appels_aujourdhui: 65 }), now), true, '1 h 05, près de la limite');
+});
+
+test('vérification des horaires : deux créneaux par jour (dès 7 h et dès 15 h à Paris), tant qu\'un tour affiché n\'est pas terminé', () => {
+  const tr = (tour, total, termines) => ({ tour, total, termines });
+  // Hiver : Paris = UTC+1. Créneaux : 7 h = 06:00Z, 15 h = 14:00Z.
+  assert.equal(debutCreneauVerification(d('2026-11-16T21:34:00Z')).toISOString(), '2026-11-16T14:00:00.000Z', '22 h 34 : créneau de 15 h');
+  assert.equal(debutCreneauVerification(d('2026-11-16T08:10:00Z')).toISOString(), '2026-11-16T06:00:00.000Z', '9 h 10 : créneau de 7 h');
+  assert.equal(debutCreneauVerification(d('2026-11-16T23:30:00Z')).toISOString(), '2026-11-16T14:00:00.000Z', '0 h 30 : encore le créneau de 15 h de la veille');
+  // RR1 en cours, RR2 et RR3 affichés : l'ancienne règle ne relit rien, la vérification oui
+  const atpf = (o = {}) => tournoi({ categorie: 'atp_finals', tours: [tr('RR1', 4, 3), tr('RR2', 4, 0), tr('RR3', 4, 0)], ...o });
+  assert.equal(afficheAttendue(atpf()).attendue, false);
+  const soir = d('2026-11-16T21:34:00Z');
+  assert.equal(afficheDue(atpf({ derniere_decouverte: null }), etat(), soir).due, true, 'jamais relu : vérification due');
+  assert.equal(afficheDue(atpf({ derniere_decouverte: null }), etat(), soir).verification_horaires, true);
+  assert.equal(afficheDue(atpf({ derniere_decouverte: '2026-11-16T09:00:00Z' }), etat(), soir).due, true, 'dernière lecture avant 15 h : créneau du soir dû');
+  assert.equal(afficheDue(atpf({ derniere_decouverte: '2026-11-16T15:30:00Z' }), etat(), soir).due, false, 'déjà relu dans le créneau de 15 h');
+  assert.equal(afficheDue(atpf({ derniere_decouverte: '2026-11-16T07:00:00Z' }), etat(), d('2026-11-16T09:00:00Z')).due, false, 'déjà relu dans le créneau de 7 h');
+  assert.equal(afficheDue(atpf({ derniere_decouverte: '2026-11-15T20:00:00Z' }), etat(), d('2026-11-16T09:00:00Z')).due, true, 'nouveau jour : premier créneau');
+  // Deux relectures par jour au plus : une journée simulée toutes les 20 min, de 7 h à 1 h
+  let derniere = null; let lectures = 0;
+  for (let t = d('2026-11-16T06:00:00Z').getTime(); t < d('2026-11-17T00:00:00Z').getTime(); t += 20 * 60000) {
+    const now = new Date(t);
+    if (!dansLaFenetre(now)) continue;
+    if (afficheDue(atpf({ derniere_decouverte: derniere }), etat(), now).due) { derniere = now.toISOString(); lectures += 1; }
+  }
+  assert.equal(lectures, 2, 'deux relectures sur la journée');
+  // Rien à vérifier : tous les tours affichés sont terminés, ou information indisponible
+  assert.equal(verificationHorairesDue(atpf({ tours: [tr('RR1', 4, 4)] }), soir).due, false);
+  assert.equal(verificationHorairesDue(tournoi(), soir).due, false);
+  // Tournoi pas en cours : la vérification ne s'applique pas
+  assert.equal(afficheDue(atpf({ etat: 'a_venir', date_debut: '2026-12-30' }), etat(), soir).due, false);
 });
