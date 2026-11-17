@@ -108,6 +108,17 @@ test('classementTournoi, en cours : points des matchs visibles seulement, pari t
   assert.equal(c.lignes[3].matchs.negatif, true);
 });
 
+test('classementTournoi : un match dont le résultat est visible mais dont les paris des autres sont cachés n’est pas compté', () => {
+  const match = (id, extra = {}) => ({ id, tour: 'QF', p1_id: 1, p2_id: 2, statut: 'termine', neutralise: false, paris_reveles: false, verrouille: true, resultat_visible: true, vainqueur: 2, sets_joues: 2, fin_match: 'normal', ...extra });
+  const matchs = [match(1), match(2, { paris_reveles: true })];
+  const paris = new Map([
+    [1, new Map([['p', { choix: 1, confiance: 8, sets: null }]])], // seul mon pari est lisible
+    [2, new Map([['p', { choix: 1, confiance: 8, sets: null }], ['l', { choix: 2, confiance: 7, sets: null }], ['m', { choix: 2, confiance: 6, sets: null }], ['t', { choix: 1, confiance: 9, sets: null }]])],
+  ]);
+  const c = classementTournoi({ moteur, tournoi: { id: 1, etat: 'en_cours', categorie: 'masters_1000' }, matchs, paris, archives: [], profils: quatre });
+  assert.equal(c.matchsComptes, 1, 'seul le match aux paris révélés compte');
+});
+
 test('classementTournoi, sans aucun match compté : tous à 0, ex aequo', () => {
   const c = classementTournoi({ moteur, tournoi: { id: 1, etat: 'a_venir', categorie: 'masters_1000' }, matchs: [], paris: new Map(), archives: [], profils: quatre });
   assert.deepEqual(c.lignes.map((l) => [l.rang, l.matchs.texte]), [[1, '0'], [1, '0'], [1, '0'], [1, '0']]);

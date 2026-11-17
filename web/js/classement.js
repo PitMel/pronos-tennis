@@ -2,7 +2,7 @@
 // Le moteur est passé en paramètre (injection) : dans le navigateur c'est /moteur/index.js, dans les tests c'est src/moteur.
 // Jalon 3.5 : classement d'un tournoi en trois temps (matchs, + pari tournoi, + bonus = score final) et détail de la Race.
 import { bilanDuTour } from './cartes.js';
-import { LIBELLES_COURTS } from './tournois.js';
+import { LIBELLES_COURTS, matchCompte } from './tournois.js';
 
 const ORDRE_CATEGORIES = { grand_slam: 0, masters_1000: 1, atp_finals: 2 };
 
@@ -95,7 +95,7 @@ function pointsParTour({ moteur, tournoi, matchs, paris, profils }) {
   const tours = [];
   for (const tour of ORDRE_TOURS) {
     const duTour = matchs.filter((m) => m.tour === tour);
-    if (!duTour.some((m) => m.neutralise || (m.statut === 'termine' && m.resultat_visible))) continue;
+    if (!duTour.some(matchCompte)) continue;
     const bilan = bilanDuTour(duTour, { moteur, categorie: tournoi.categorie, paris });
     tours.push({ tour, libelle: LIBELLES_COURTS[tour] ?? tour, points: new Map(profils.map((x) => [x.id, bilan?.get(x.id) ?? moteur.ZERO])) });
   }
@@ -141,7 +141,7 @@ export function classementTournoi({ moteur, tournoi, matchs, paris, archives, pr
     parTour: Object.fromEntries(tours.map((t) => [t.tour, cellule(moteur, t.points.get(x.id))])),
     matchs: cellule(moteur, points[x.id]), pari: null, bonus: null, final: null, avantBonus: null,
   })).sort((a, b) => a.rang - b.rang || a.prenom.localeCompare(b.prenom, 'fr'));
-  const comptes = matchs.filter((m) => m.neutralise || (m.statut === 'termine' && m.resultat_visible)).length;
+  const comptes = matchs.filter(matchCompte).length;
   return { cloture: false, matchsComptes: comptes, tours: tours.map(({ tour, libelle }) => ({ tour, libelle })), lignes };
 }
 

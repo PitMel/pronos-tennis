@@ -22,19 +22,20 @@ test('table matches : illisible pour un joueur (aucune ligne), lisible par l’a
   assert.deepEqual(admin.rows, [{ vainqueur: 2 }]);
 });
 
-test('match terminé mais paris non révélés : vainqueur, score et sets restent masqués', async () => {
+test('match terminé mais paris non révélés : résultat visible seulement pour qui a parié sur ce match (les autres peuvent encore parier)', async () => {
   const m = await b.nouveauMatch();
   await b.parier(ID.andre, m, 1, 8); // Paul et Jacques n'ont pas parié
   await b.admin(`update public.matches set statut = 'termine', vainqueur = 2, sets_joues = 2,
                  score = '{"sets":[[7,6],[6,4]]}'::jsonb, fin_match = 'abandon' where id = $1`, [m]);
   for (const uid of [ID.andre, ID.paul, ID.jacques]) {
     const v = await vue(uid, m);
+    const aParie = uid === ID.andre;
     assert.equal(v.statut, 'termine', 'le statut « terminé » reste visible');
-    assert.equal(v.vainqueur, null);
-    assert.equal(v.sets_joues, null);
-    assert.equal(v.score, null);
-    assert.equal(v.fin_match, null, 'même le type de fin (abandon) est masqué');
-    assert.equal(v.resultat_visible, false);
+    assert.equal(v.vainqueur, aParie ? 2 : null);
+    assert.equal(v.sets_joues, aParie ? 2 : null);
+    assert.deepEqual(v.score, aParie ? { sets: [[7, 6], [6, 4]] } : null);
+    assert.equal(v.fin_match, aParie ? 'abandon' : null, 'sans pari, même le type de fin (abandon) est masqué');
+    assert.equal(v.resultat_visible, aParie);
     assert.equal(v.paris_reveles, false);
     assert.equal(v.verrouille, uid === ID.andre, 'seul celui qui a parié est verrouillé : les autres peuvent encore parier');
   }

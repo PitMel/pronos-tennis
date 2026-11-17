@@ -2,7 +2,7 @@
 // terrain avec une barre par joueur, puis panneau clair en dessous (résumé des points, scénarios, saisie du pari).
 // Fonctions pures : données → HTML. Le moteur de points est reçu dans le contexte (ctx.moteur).
 import { echapper, formaterHeureParis } from './outils.js';
-import { formaterScore, LIBELLES_TOURS } from './tournois.js';
+import { formaterScore, LIBELLES_TOURS, matchCompte } from './tournois.js';
 import { svgTerrain } from './filet.js';
 import { h2hDuMatch, htmlCompteurH2H } from './h2h.js';
 
@@ -36,12 +36,16 @@ export function listeFrancaise(noms) {
 
 /**
  * État d'une carte, pour la personne connectée :
- *  neutralise · termine · termine-masque · en-cours · revele (à venir, paris révélés et figés) ·
+ *  neutralise · termine (résultat et paris de tous visibles) · termine-partiel (résultat visible pour qui a parié, paris des autres
+ *  pas encore révélés) · termine-masque · en-cours · revele (à venir, paris révélés et figés) ·
  *  verrouille · attente (j'ai parié, modifiable) · ouvert (je n'ai pas parié, modifiable)
  */
 export function etatCarte(match, { aParie }) {
   if (match.neutralise) return 'neutralise';
-  if (match.statut === 'termine') return match.resultat_visible ? 'termine' : (match.verrouille || aParie ? 'termine-masque' : 'ouvert');
+  if (match.statut === 'termine') {
+    if (match.resultat_visible) return match.paris_reveles ? 'termine' : 'termine-partiel';
+    return match.verrouille || aParie ? 'termine-masque' : 'ouvert';
+  }
   if (match.statut === 'en_cours') return match.verrouille || aParie ? 'en-cours' : 'ouvert';
   if (match.verrouille) return match.paris_reveles ? 'revele' : 'verrouille';
   return aParie ? 'attente' : 'ouvert';
@@ -69,7 +73,7 @@ function matchPourMoteur(match, ctx, vainqueur) {
 /** Points de chaque pari visible d'un match compté (terminé avec résultat visible, ou neutralisé) ; sinon null. */
 export function pointsDuMatch(match, ctx, parisMatch) {
   if (!ctx.moteur) return null;
-  if (!match.neutralise && !(match.statut === 'termine' && match.resultat_visible)) return null;
+  if (!matchCompte(match)) return null;
   const paris = {};
   for (const [id, bet] of parisMatch) paris[id] = pariPourMoteur(bet);
   try {
@@ -189,7 +193,7 @@ function brouillonValide(ctx, brouillon) {
 
 function sousTexteCommun(profils, moi, qui) {
   const phrase = phraseQui(profils, moi, qui);
-  return `${phrase ? `${echapper(phrase)} ` : ''}Les paris deviennent visibles quand tout le monde a parié. Un pari posé reste modifiable jusqu’au début du match ou jusqu’à ce que tout le monde ait parié ; un premier pari reste possible pendant et après le match, tant que les paris ne sont pas révélés.`;
+  return `${phrase ? `${echapper(phrase)} ` : ''}Les paris deviennent visibles quand tout le monde a parié sur tous les matchs du tour. Un pari posé reste modifiable jusqu’au début du match ou jusqu’à la révélation des paris du tour ; un premier pari reste possible pendant et après le match, tant que les paris ne sont pas révélés.`;
 }
 
 /**
@@ -260,8 +264,16 @@ export function htmlCarteMatch(match, ctx = {}) {
         + `<strong class="${perdu ? 'neg' : 'pos'}">${v ? echapper(fmt(ctx, v)) : '—'}</strong></div>`;
     }).join('');
     dessous = `<div class="under"><div class="t">${titre}</div><div class="four" style="--n:${Math.max(1, profils.length)}">${cases}</div></div>`;
+  } else if (etat === 'termine-partiel') {
+    // résultat connu (j'ai parié sur ce match) mais les paris des autres ne sont pas encore révélés : pas de points, pas de « pas de pari »
+    const score = formaterScore(match.score, match.fin_match, gagnant);
+    const titre = match.fin_match === 'forfait'
+      ? `Forfait <small>0 point pour tout le monde</small>`
+      : `${echapper(noms[gagnant - 1])} bat ${echapper(noms[gagnant === 1 ? 1 : 0])} <small>${echapper(score)}</small>`;
+    const attente = attendus.length ? ` Il manque encore des paris dans ce tour (${attendus.map(echapper).join(', ')}, ou sur d’autres matchs).` : '';
+    dessous = `<div class="under"><div class="t">${titre}</div><p class="small">Les paris des autres et les points s’affichent quand tout le monde a parié sur tous les matchs du tour.${attente}</p>${monPari ? `<p class="small">Ton pari : ${echapper(nomCourt(monPari.choix === 1 ? p1 : p2))}, confiance ${monPari.confiance}${echapper(setsTexte(monPari))}.</p>` : ''}</div>`;
   } else if (etat === 'termine-masque') {
-    dessous = `<div class="under"><div class="t">Résultat masqué <small>il s’affiche quand tout le monde a parié</small></div>${monPari ? `<p class="small">Ton pari : ${echapper(nomCourt(monPari.choix === 1 ? p1 : p2))}, confiance ${monPari.confiance}${echapper(setsTexte(monPari))}.</p>` : ''}</div>`;
+    dessous = `<div class="under"><div class="t">Résultat masqué <small>il s’affiche dès que tu as parié, ou quand les paris du tour sont révélés</small></div>${monPari ? `<p class="small">Ton pari : ${echapper(nomCourt(monPari.choix === 1 ? p1 : p2))}, confiance ${monPari.confiance}${echapper(setsTexte(monPari))}.</p>` : ''}</div>`;
   } else if (etat === 'neutralise') {
     const cases = profils.filter((p) => parisMatch.has(p.id)).map((p) => `<div class="${p.id === moi ? 'isme' : ''}"><u>${echapper(p.prenom)}</u><s>${echapper(nomCourt(parisMatch.get(p.id).choix === 1 ? p1 : p2))}${NBSP}${parisMatch.get(p.id).confiance}</s><strong>0</strong></div>`).join('');
     dessous = `<div class="under"><div class="t">Match neutralisé <small>0 point pour tout le monde</small></div>${cases ? `<div class="four" style="--n:${Math.max(1, profils.length)}">${cases}</div>` : ''}</div>`;

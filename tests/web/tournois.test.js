@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { echapper, formaterHeureParis, formaterPeriode, anneeCourante } from '../../web/js/outils.js';
-import { ordreTours, grouperParTour, formaterScore, nomAvecClassement, grouperParAnnee, lieuEtSurface, etapesProgression, LIBELLES_TOURS } from '../../web/js/tournois.js';
+import { ordreTours, grouperParTour, formaterScore, nomAvecClassement, grouperParAnnee, lieuEtSurface, etapesProgression, LIBELLES_TOURS, matchCompte } from '../../web/js/tournois.js';
 import { htmlListeTournois, htmlPageTournoi, htmlCarteMatch } from '../../web/js/vues.js';
 
 const m = (id, tour, extra = {}) => ({
@@ -186,4 +186,12 @@ test('vues : en-tête du tournoi (titre d\u2019abord, détails dessous, balle de
   assert.ok(carte.indexOf('<h3>') < carte.indexOf('class="periode"')); // les dates juste sous le titre
   assert.ok(carte.indexOf('class="periode"') < carte.indexOf('badge-categorie')); // l'étiquette est dans la colonne de droite
   assert.ok(carte.indexOf('badge-categorie') < carte.indexOf('class="lieu"'));
+});
+
+test('matchCompte : neutralisé, ou terminé avec résultat visible ET paris révélés (jamais sur le seul résultat visible)', () => {
+  assert.equal(matchCompte({ neutralise: true }), true);
+  assert.equal(matchCompte({ statut: 'termine', resultat_visible: true, paris_reveles: true }), true);
+  assert.equal(matchCompte({ statut: 'termine', resultat_visible: true, paris_reveles: false }), false, 'résultat visible pour qui a parié, mais pas les paris des autres');
+  assert.equal(matchCompte({ statut: 'termine', resultat_visible: false, paris_reveles: false }), false);
+  assert.equal(matchCompte({ statut: 'en_cours', resultat_visible: true, paris_reveles: true }), false);
 });

@@ -79,7 +79,7 @@ test('suppression d’un abonnement refusé : Léa n’est plus destinataire qua
 
 test('match terminé : seulement si tout le monde a parié et que le résultat est connu ; porte les paris ; case décochable ; jamais de courriel', async () => {
   await abonner(ID.lea, 'lea-3');
-  const m = await b.nouveauMatch({ tournoi: TOURNOI.masters, tour: 'QF' });
+  const m = await b.nouveauMatch({ tour: 'QF' }); // seul dans son tour
   const types = async () => (await afaire()).filter((e) => e.type === 'match_termine');
   await b.admin("update public.matches set statut = 'termine', vainqueur = 1, sets_joues = 2 where id = $1", [m]);
   assert.deepEqual(await types(), [], 'personne n’a parié');

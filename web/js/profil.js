@@ -75,9 +75,9 @@ export function htmlBlocCouleur({ profil, message = '', erreur = '' }) {
 
 export const NOTIFICATIONS = [
   ['tour_ouvert', 'Les affiches d’un tour sont toutes connues (pour parier)'],
-  ['paris_visibles', 'Les paris d’un tour sont tous visibles (tout le monde a parié)'],
+  ['paris_visibles', 'Les paris d’un tour sont tous visibles (tout le monde a parié sur tout le tour)'],
   ['tournoi_termine', 'Un tournoi est terminé (résultat et état de la Race)'],
-  ['match_termine', 'Un match sur lequel tout le monde a parié est terminé (notification push seulement)'],
+  ['match_termine', 'Un match dont les paris sont révélés est terminé (notification push seulement)'],
 ];
 
 /** Adresse e-mail valide (même règle que la base) ? Chaîne vide acceptée (= pas de notification). */

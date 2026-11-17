@@ -128,8 +128,8 @@ Les valeurs sont **exactes en interne** (nombres décimaux exacts, pas de flotta
    - l'application a **détecté le début du match** (statut `live` dans l'API) ;
    - **tous les joueurs ont parié** sur ce match.
 2. Pas de date limite fixe.
-3. Les paris des autres sont **invisibles** tant que tous les joueurs actifs n'ont pas parié. Dès que tout le monde a parié : paris **révélés et figés**.
-4. **Résultat et score** du match : affichés seulement quand **tous ont parié ET que le match est terminé**. À ce moment les points sont comptés et affichés.
+3. Les paris des autres sont **invisibles** tant que tous les joueurs actifs n'ont pas parié **sur tous les matchs du tour** (huitièmes, quarts, demi-finales, finale ; RR1, RR2, RR3 aux ATP Finals). Dès que c'est le cas : les paris de **tout le tour** sont **révélés en même temps et figés** (décision de Pierre du 17 nov. 2026, migration 0027 ; avant : révélation match par match). On attend les matchs **connus** du tour, pas ceux qui ne sont pas encore annoncés ; un match **neutralisé** ou sans joueur concerné ne bloque pas.
+4. **Résultat et score** du match : affichés dès que le match est **terminé**, à qui **a parié sur ce match** (un joueur qui n'a pas encore parié peut le faire après la fin du match et ne voit donc le résultat qu'ensuite) ; pour tous une fois les paris du tour révélés. Les **points** (et le classement) ne comptent le match que lorsque les paris du tour sont révélés (décision de Pierre du 17 nov. 2026).
 5. Un joueur voit en permanence **qui a parié / qui n'a pas parié** et si le match est verrouillé.
 6. **[Proposé]** « Tous les joueurs » = tous les comptes joueurs actifs et non-test (ou tous les comptes de test pendant la phase de test, sans mélange entre les deux groupes). Gestion d'un joueur absent à prévoir (voir section 14).
 

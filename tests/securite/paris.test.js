@@ -219,8 +219,9 @@ test('compte désactivé : ne compte plus dans « tous ont parié » et ne peut 
 });
 
 test('exclusion d’un joueur d’un match : le groupe se complète sans lui, et il ne peut plus parier', async () => {
-  const m = await b.nouveauMatch();
-  await b.comme(ID.pierre, 'insert into public.exclusions (joueur_id, tournament_id, match_id) values ($1, $2, $3)', [ID.jacques, TOURNOI.masters, m]);
+  const t = await b.nouveauTournoi();
+  const m = await b.nouveauMatch({ tournoi: t });
+  await b.comme(ID.pierre, 'insert into public.exclusions (joueur_id, tournament_id, match_id) values ($1, $2, $3)', [ID.jacques, t, m]);
   await refuse(b.parier(ID.jacques, m, 1, 8));
   await b.parier(ID.andre, m, 1, 8);
   await b.parier(ID.paul, m, 2, 7);
@@ -333,8 +334,9 @@ test('qui_a_parie : limité au groupe de la personne connectée', async () => {
 });
 
 test('qui_a_parie : un joueur exclu n’apparaît plus', async () => {
-  const m = await b.nouveauMatch();
-  await b.admin('insert into public.exclusions (joueur_id, tournament_id, match_id) values ($1, $2, $3)', [ID.paul, TOURNOI.masters, m]);
+  const t = await b.nouveauTournoi();
+  const m = await b.nouveauMatch({ tournoi: t });
+  await b.admin('insert into public.exclusions (joueur_id, tournament_id, match_id) values ($1, $2, $3)', [ID.paul, t, m]);
   const r = await b.comme(ID.andre, 'select joueur_id from public.qui_a_parie($1)', [m]);
   assert.deepEqual(joueursVus(r.rows), [ID.andre, ID.jacques].sort());
 });

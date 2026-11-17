@@ -32,6 +32,15 @@ export function ordreTours(categorie) {
   return categorie === 'atp_finals' ? ['RR1', 'RR2', 'RR3', 'SF', 'F'] : ['R16', 'QF', 'SF', 'F'];
 }
 
+/**
+ * Un match compte pour les points s'il est neutralisé, ou terminé avec résultat visible ET paris révélés (migration 0027) :
+ * le résultat est visible dès la fin pour qui a parié, mais les paris des autres ne se lisent qu'à la révélation du tour,
+ * et les points d'un match dépendent des paris de tous.
+ */
+export function matchCompte(match) {
+  return match.neutralise === true || (match.statut === 'termine' && match.resultat_visible === true && match.paris_reveles === true);
+}
+
 /** Un match est « terminé » pour l'affichage s'il est fini ou neutralisé. */
 export function matchTermine(match) {
   return match.statut === 'termine' || match.neutralise === true;

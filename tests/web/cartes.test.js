@@ -37,7 +37,8 @@ test('nomCourt, lettresProfils, listeFrancaise', () => {
 
 test('etatCarte : un état par situation', () => {
   assert.equal(etatCarte(match({ neutralise: true }), { aParie: false }), 'neutralise');
-  assert.equal(etatCarte(match({ statut: 'termine', resultat_visible: true }), { aParie: true }), 'termine');
+  assert.equal(etatCarte(match({ statut: 'termine', resultat_visible: true, paris_reveles: true }), { aParie: true }), 'termine');
+  assert.equal(etatCarte(match({ statut: 'termine', resultat_visible: true, paris_reveles: false }), { aParie: true }), 'termine-partiel', 'résultat connu, paris des autres pas encore révélés');
   assert.equal(etatCarte(match({ statut: 'termine' }), { aParie: true }), 'termine-masque');
   assert.equal(etatCarte(match({ statut: 'en_cours' }), { aParie: true }), 'en-cours');
   assert.equal(etatCarte(match({ verrouille: true, paris_reveles: true }), { aParie: true }), 'revele');
@@ -182,4 +183,20 @@ test('match terminé : le H2H disparaît même quand le score est masqué', asyn
   const m = { id: 5, tour: 'R16', statut: 'termine', fin_match: 'normal', resultat_visible: false, paris_reveles: false, verrouille: true, p1_id: 1, p2_id: 2 };
   assert.doesNotMatch(htmlCarteMatch(m, { joueurs, profils: [], h2h }), /btn-h2h|h2h-nb|H2H indisponible/);
   assert.match(htmlCarteMatch({ ...m, statut: 'a_venir' }, { joueurs, profils: [], h2h }), /h2h/);
+});
+
+test('match terminé, résultat visible mais paris du tour non révélés : résultat et mon pari, ni « pas de pari » ni points', () => {
+  const m = match({ statut: 'termine', resultat_visible: true, paris_reveles: false, vainqueur: 2, sets_joues: 2, fin_match: 'normal', score: { sets: [[6, 4], [3, 6], [4, 6]] } });
+  const mesParis = new Map([bet('p', 1, 8)]); // les paris des autres ne sont pas lisibles
+  const ctx = ctxBase({ paris: new Map([[10, mesParis]]), qui: new Map([[10, new Map([['p', true], ['l', true], ['m', true], ['t', false]])]]) });
+  const html = htmlCarteMatch(m, ctx);
+  assert.match(html, /Fritz bat Alcaraz/);
+  assert.match(html, /Ton pari : Alcaraz, confiance 8/);
+  assert.match(html, /quand tout le monde a parié sur tous les matchs du tour/);
+  assert.doesNotMatch(html, /pas de pari/);
+  assert.equal(pointsDuMatch(m, ctx, mesParis), null, 'pas de points tant que les paris des autres sont cachés');
+  // même match, paris révélés : points calculés
+  const rev = { ...m, paris_reveles: true };
+  const tous = new Map([bet('p', 1, 8), bet('l', 2, 7), bet('m', 2, 9), bet('t', 1, 6)]);
+  assert.notEqual(pointsDuMatch(rev, ctxBase({ paris: new Map([[10, tous]]) }), tous), null);
 });

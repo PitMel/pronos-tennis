@@ -87,9 +87,9 @@ export function htmlPageRegles({ moteur }) {
     <section class="carte carte-regles">
       <h3>5. Qui voit quoi, et jusqu’à quand on peut parier</h3>
       <ul>
-        <li>Tu peux <b>modifier</b> ton pari jusqu’au premier de ces deux moments : le match <b>commence</b>, ou <b>tout le monde a parié</b>. Si tu n’as pas encore parié, tu peux le faire <b>même après le début ou la fin du match</b>, tant que les paris ne sont pas révélés (le résultat reste masqué jusque-là). Il n’y a pas d’heure limite fixe.</li>
-        <li>Les paris des autres sont <b>cachés</b> tant que tout le monde n’a pas parié. Ensuite ils sont <b>révélés et figés</b>.</li>
-        <li>Le <b>résultat et le score</b> n’apparaissent que quand tout le monde a parié <b>et</b> que le match est terminé.</li>
+        <li>Tu peux <b>modifier</b> ton pari jusqu’au premier de ces deux moments : le match <b>commence</b>, ou les <b>paris du tour sont révélés</b>. Si tu n’as pas encore parié, tu peux le faire <b>même après le début ou la fin du match</b>, tant que les paris ne sont pas révélés (le résultat reste masqué pour toi jusqu’à ton pari). Il n’y a pas d’heure limite fixe.</li>
+        <li>Les paris des autres sont <b>cachés</b> tant que tout le monde n’a pas parié sur <b>tous les matchs du tour</b> (huitièmes, quarts, demi-finales, finale ; RR1, RR2, RR3 pour les poules des ATP Finals). Ensuite les paris de <b>tout le tour</b> sont <b>révélés en même temps et figés</b>. Un match neutralisé ne bloque pas, et les matchs d’un tour pas encore annoncés ne sont pas attendus.</li>
+        <li>Le <b>résultat et le score</b> d’un match terminé s’affichent dès que <b>tu as parié sur ce match</b>. Les <b>points</b> et le classement ne comptent le match qu’une fois les paris du tour révélés.</li>
         <li>Tu vois toujours <b>qui a parié</b> et si le match est verrouillé.</li>
         <li>« Tout le monde » = les joueurs actifs de ton groupe.</li>
       </ul>

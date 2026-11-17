@@ -79,8 +79,24 @@ class Base {
     return this.comme(null, sql, params, 'anon');
   }
 
-  /** Crée un match (affiche connue, à venir) et renvoie son id. */
-  async nouveauMatch({ tournoi = TOURNOI.masters, tour = 'QF', p1 = TENNIS.alcaraz, p2 = TENNIS.fritz } = {}) {
+  /** Crée un tournoi « en cours » vide, isolé des autres, et renvoie son id. */
+  async nouveauTournoi(categorie = 'masters_1000') {
+    this.compteurTournois = (this.compteurTournois ?? 0) + 1;
+    const t = await this.db.query(
+      "insert into public.tournaments (annee, nom, ville, surface, categorie, etat) values (2026, $1, 'Test', 'dur', $2, 'en_cours') returning id",
+      [`Tournoi de test ${this.compteurTournois}`, categorie],
+    );
+    return t.rows[0].id;
+  }
+
+  /**
+   * Crée un match (affiche connue, à venir) et renvoie son id.
+   * Les paris étant révélés TOUR PAR TOUR (migration 0027), un match créé sans `tournoi` reçoit son propre tournoi :
+   * il est seul dans son tour, donc indépendant des autres matchs du test. Pour tester un tour de plusieurs matchs,
+   * passer le même `tournoi` et le même `tour`.
+   */
+  async nouveauMatch({ tournoi, tour = 'QF', p1 = TENNIS.alcaraz, p2 = TENNIS.fritz } = {}) {
+    if (tournoi === undefined) tournoi = await this.nouveauTournoi(tour.startsWith('RR') ? 'atp_finals' : 'masters_1000');
     const r = await this.db.query(
       'insert into public.matches (tournament_id, tour, p1_id, p2_id, heure_prevue) values ($1,$2,$3,$4, now() + interval \'3 hours\') returning id',
       [tournoi, tour, p1, p2],

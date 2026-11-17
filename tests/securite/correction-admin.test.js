@@ -71,8 +71,9 @@ test('l’administrateur corrige son propre pari : mention posée, visible des a
 
 test('pari manquant saisi après la fin du match : il complète le groupe, révèle les paris et porte la mention', async () => {
   const m = await matchSansLea();
-  // avant : résultat caché pour tout le monde, paris non révélés
-  assert.equal((await b.comme(ID.marc, 'select resultat_visible, vainqueur from public.matches_visibles where id = $1', [m])).rows[0].vainqueur, null);
+  // avant : paris non révélés ; le résultat est visible pour Marc (il a parié) mais caché pour Léa (elle peut encore parier)
+  assert.equal((await b.comme(ID.marc, 'select resultat_visible, vainqueur from public.matches_visibles where id = $1', [m])).rows[0].vainqueur, 1);
+  assert.equal((await b.comme(ID.lea, 'select resultat_visible, vainqueur from public.matches_visibles where id = $1', [m])).rows[0].vainqueur, null);
   assert.deepEqual(await pari(ID.marc, m, ID.pierre), [], 'Marc ne voit pas le pari de Pierre avant la révélation');
 
   const r = await corriger(ID.pierre, m, ID.lea, 2, 9, null, 'Léa me l’a dit par téléphone');
@@ -84,6 +85,7 @@ test('pari manquant saisi après la fin du match : il complète le groupe, rév�
   assert.deepEqual(vus.rows.map((l) => [l.joueur_id, l.corrige_par_admin]),
     [[ID.pierre, false], [ID.lea, true], [ID.marc, false]]);
   assert.equal((await b.comme(ID.marc, 'select vainqueur from public.matches_visibles where id = $1', [m])).rows[0].vainqueur, 1);
+  assert.equal((await b.comme(ID.lea, 'select vainqueur from public.matches_visibles where id = $1', [m])).rows[0].vainqueur, 1, 'Léa, qui vient d’avoir son pari saisi, voit le résultat');
 });
 
 test('pari révélé et match terminé : l’administrateur peut le réécrire, la mention apparaît, le joueur ne peut pas le défaire', async () => {
@@ -176,7 +178,7 @@ test('la correction respecte les contraintes de saisie', async () => {
 });
 
 test('joueur inactif, exclu ou inexistant : correction refusée', async () => {
-  const m = await b.nouveauMatch();
+  const m = await b.nouveauMatch({ tournoi: TOURNOI.masters });
   await b.admin('insert into public.exclusions (joueur_id, tournament_id, match_id) values ($1, $2, $3)', [ID.marc, TOURNOI.masters, m]);
   await refuse(corriger(ID.pierre, m, ID.marc, 1, 8), /exclu/);
   await refuse(corriger(ID.pierre, m, '00000000-0000-4000-8000-0000000000ff', 1, 8), /exclu|inactif/);
@@ -206,7 +208,7 @@ test('isolation des groupes : corriger un faux compte n’expose rien aux vrais 
 
 test('pari tournoi : saisie à la place d’un joueur, avec mention, même si le joueur choisi est éliminé', async () => {
   const t = TOURNOI.masters;
-  const m = await b.nouveauMatch({ p1: TENNIS.deminaur, p2: TENNIS.musetti });
+  const m = await b.nouveauMatch({ tournoi: TOURNOI.masters, p1: TENNIS.deminaur, p2: TENNIS.musetti });
   await b.terminer(m, { vainqueur: 1 }); // Musetti éliminé
   // un joueur ne peut pas choisir un éliminé…
   await refuse(b.comme(ID.lea, 'insert into public.tournament_bets (tournament_id, joueur_id, vainqueur_id, finaliste_id) values ($1, $2, $3, $4)',
@@ -223,7 +225,7 @@ test('pari tournoi : saisie à la place d’un joueur, avec mention, même si le
 
 test('la dérogation « éliminé » n’est pas utilisable par un joueur ni par l’administrateur hors correction', async () => {
   const t = TOURNOI.masters;
-  const m = await b.nouveauMatch({ p1: TENNIS.medvedev, p2: TENNIS.zverev });
+  const m = await b.nouveauMatch({ tournoi: TOURNOI.masters, p1: TENNIS.medvedev, p2: TENNIS.zverev });
   await b.terminer(m, { vainqueur: 1 }); // Zverev éliminé
   // un joueur qui fixe lui-même le réglage de session ne contourne rien
   await b.db.exec('set role authenticated');
