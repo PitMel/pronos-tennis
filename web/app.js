@@ -13,6 +13,7 @@ import { emailTechnique, messageErreurConnexion } from './js/identifiants.js';
 import { echapper, anneeCourante, dateDuJour, formaterMaj } from './js/outils.js';
 import { construireRace, classementTournoi, detailRace } from './js/classement.js';
 import { statsRace } from './js/stats-race.js';
+import { recompensesActuelles } from './js/recompenses.js';
 import { monPalmares } from './js/mon-palmares.js';
 import { htmlMonPalmares } from './js/vues-palmares.js';
 import { creerDonnees } from './js/donnees.js';
@@ -1016,7 +1017,10 @@ async function montrerEcransFinTournoi(profil) {
     for (const annee of ecransSaisonEnAttente({ tournois, resultats, vus: vusSaisons, moi: profil.id })) {
       const race = construireRace({ moteur, annee, tournois, resultats, profils });
       if (!race.terminee) continue;
-      await afficherEcranEtAttendre(htmlEcranFinSaison({ annee, race, moi: profil.id }));
+      // « Tes trophées de saison » : les autres récompenses du joueur (un plus : sans les stats, la section dit « Aucun »)
+      const stats = await chargerStatsAnnee({ moteur, annee, tournois, resultats, profils });
+      const recompenses = recompensesActuelles(stats?.records ?? null, profils).get(profil.id) ?? [];
+      await afficherEcranEtAttendre(htmlEcranFinSaison({ annee, race, moi: profil.id, recompenses }));
       try { await donnees.marquerEcranSaisonVu(profil.id, annee); } catch { /* l'écran reviendra à la prochaine ouverture */ }
       derniereAnnee = annee;
     }

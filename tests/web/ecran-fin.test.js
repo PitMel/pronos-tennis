@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { construireRace } from '../../web/js/classement.js';
 import * as moteur from '../../src/moteur/index.js';
 import { classementTournoi } from '../../web/js/classement.js';
 import { titreFinTournoi, ecransEnAttente, htmlEcranFin, ecransSaisonEnAttente, htmlEcranFinSaison } from '../../web/js/ecran-fin.js';
@@ -120,4 +121,30 @@ test('htmlEcranFinSaison : ex aequo en tête → « X et Y sont champions de la 
   const ex = { lignes: [{ id: 'a', prenom: 'Léa', rang: 1, points: '90' }, { id: 'b', prenom: 'Marc', rang: 1, points: '90' }, { id: 'c', prenom: 'Zoé', rang: 3, points: '10' }] };
   assert.match(htmlEcranFinSaison({ annee: 2026, race: ex, moi: 'c' }), /Léa et Marc sont champions de la saison/);
   assert.match(htmlEcranFinSaison({ annee: 2026, race: ex, moi: 'a' }), /Tu es champion de la saison !/);
+});
+
+test('htmlEcranFinSaison : « Tes trophées de saison » après les scores, avec les autres récompenses du joueur ; « Aucun » sinon', () => {
+  const h = htmlEcranFinSaison({ annee: 2026, race, moi: 'a', recompenses: [{ cle: 'sniper', titre: 'Le sniper', court: 'Sniper', nombre: 1 }, { cle: 'full_strike', titre: 'Le full strike', court: 'Full strike', nombre: 2 }] });
+  assert.ok(h.indexOf('ecran-fin-classement') < h.indexOf('Tes trophées de saison'));
+  assert.ok(h.indexOf('Tes trophées de saison') < h.indexOf('ecran-fin-continuer'));
+  assert.match(h, /Sniper/); assert.match(h, /Full strike ×2/);
+  assert.match(htmlEcranFinSaison({ annee: 2026, race, moi: 'a' }), /Tes trophées de saison[\s\S]*Aucun cette saison/);
+});
+
+test('enchaînement à la clôture des ATP Finals : écran du tournoi, puis bilan de la saison (même ouverture)', () => {
+  const ts = [
+    { id: 1, annee: 2026, etat: 'clos', categorie: 'masters_1000', nom: 'Paris', date_fin: '2026-11-01' },
+    { id: 2, annee: 2026, etat: 'clos', categorie: 'atp_finals', nom: 'Nitto ATP Finals', date_fin: '2026-11-16' },
+  ];
+  const arch = (tid, j, f, r) => ({ tournament_id: tid, joueur_id: j, points_matchs: f, points_pari_tournoi: '0', bonus_classement: '0', score_final: f, rang: r });
+  const resultats = [arch(1, 'a', '50', 1), arch(1, 'b', '40', 2), arch(2, 'a', '30', 2), arch(2, 'b', '35', 1)];
+  const vus = [{ tournament_id: 1 }]; // Paris déjà vu, ATPF jamais vu
+  const profils = [{ id: 'a', prenom: 'Léa' }, { id: 'b', prenom: 'Marc' }];
+  assert.deepEqual(ecransEnAttente({ tournois: ts, resultats, vus, moi: 'a' }).map((t) => t.id), [2]);
+  assert.deepEqual(ecransSaisonEnAttente({ tournois: ts, resultats, vus: [], moi: 'a' }), [2026]);
+  const r = construireRace({ moteur, annee: 2026, tournois: ts, resultats, profils });
+  assert.equal(r.terminee, true);
+  assert.match(htmlEcranFinSaison({ annee: 2026, race: r, moi: 'a' }), /Tu es champion de la saison/);
+  ts[1].etat = 'en_cours';
+  assert.deepEqual(ecransSaisonEnAttente({ tournois: ts, resultats, vus: [], moi: 'a' }), [], 'tant que les ATP Finals ne sont pas clos : pas de bilan');
 });

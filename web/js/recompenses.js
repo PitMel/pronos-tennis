@@ -22,7 +22,7 @@ export function recompensesActuelles(records, profils) {
     for (const x of records.fullStrike ?? []) donner('full_strike', x.id);
     for (const x of records.contradicteur?.tops ?? []) donner('contradicteur', x.id);
   }
-  return new Map(profils.map((p) => [p.id, AUTRES_RECOMPENSES.filter((r) => compte.get(p.id).has(r.cle)).map((r) => ({ cle: r.cle, titre: r.titre, nombre: compte.get(p.id).get(r.cle) }))]));
+  return new Map(profils.map((p) => [p.id, AUTRES_RECOMPENSES.filter((r) => compte.get(p.id).has(r.cle)).map((r) => ({ cle: r.cle, titre: r.titre, court: r.court, nombre: compte.get(p.id).get(r.cle) }))]));
 }
 
 /** Ligne en petite police : le prénom de chaque joueur suivi de ses récompenses (miniatures). '' sans records. */

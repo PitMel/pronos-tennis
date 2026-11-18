@@ -2,7 +2,7 @@
 // clos, avant l'accès normal à l'application. Fonctions pures (testées) ; le branchement est dans app.js.
 
 import { echapper } from './outils.js';
-import { htmlTrophee } from './trophees.js';
+import { htmlTrophee, htmlIconeRecompense } from './trophees.js';
 import { listeFrancaise } from './cartes.js';
 
 const sansAccent = (s) => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '');
@@ -91,7 +91,7 @@ export function ecransSaisonEnAttente({ tournois, resultats, vus, moi }) {
  * vice-champion : son trophée et « Tu es vice-champion de la saison ! » ; les autres : pas de trophée, « X est champion de la saison ».
  * Puis le classement final : une ligne par joueur avec son total de points de la Race.
  */
-export function htmlEcranFinSaison({ annee, race, moi }) {
+export function htmlEcranFinSaison({ annee, race, moi, recompenses = [] }) {
   const lignes = race.lignes;
   const champions = lignes.filter((l) => l.rang === 1).map((l) => l.prenom);
   const monRang = lignes.find((l) => l.id === moi)?.rang;
@@ -111,6 +111,15 @@ export function htmlEcranFinSaison({ annee, race, moi }) {
       ${trophee}
       <p class="ecran-fin-phrase">${echapper(phrase)}</p>
       <ol class="ecran-fin-classement" aria-label="Classement final de la saison ${echapper(annee)}">${lignes.map(ligne).join('')}</ol>
+      ${htmlTropheesSaison(recompenses)}
       <button type="button" class="ecran-fin-continuer" data-action="ecran-fin-continuer">Continuer</button>
     </section>`;
+}
+
+/** « Tes trophées de saison » : les « Autres récompenses » remportées par le joueur, en petit (icône, nom, ×n si plusieurs). */
+function htmlTropheesSaison(recompenses) {
+  const liste = recompenses.length
+    ? `<ul class="ecran-fin-recompenses">${recompenses.map((r) => `<li>${htmlIconeRecompense(r.cle, 28)}<span>${echapper(r.court ?? r.titre)}${r.nombre > 1 ? ` ×${echapper(r.nombre)}` : ''}</span></li>`).join('')}</ul>`
+    : '<p class="ecran-fin-aucun">Aucun cette saison</p>';
+  return `<h2 class="ecran-fin-sous-titre">Tes trophées de saison</h2>${liste}`;
 }
