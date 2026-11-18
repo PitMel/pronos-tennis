@@ -19,7 +19,7 @@ test('titreFinTournoi : article du tournoi, sans année ; rien pour Wimbledon et
   assert.equal(t('US Open', 'grand_slam'), 'L’US Open est terminé\u00A0!');
   assert.equal(t('Roland-Garros', 'grand_slam'), 'Roland-Garros est terminé\u00A0!');
   assert.equal(t('Wimbledon', 'grand_slam'), 'Wimbledon est terminé\u00A0!');
-  assert.equal(t('Nitto ATP Finals', 'atp_finals'), 'Les Nitto ATP Finals sont terminées\u00A0!');
+  assert.equal(t('Nitto ATP Finals', 'atp_finals'), 'Les Nitto ATP Finals sont terminés\u00A0!');
   assert.equal(t('US Open 2026', 'grand_slam'), 'L’US Open est terminé\u00A0!', 'l’année est retirée');
 });
 
@@ -54,7 +54,8 @@ test('htmlEcranFin : le vainqueur voit le trophée en grand et « Tu remportes l
   assert.match(html, /Jacques<\/span> <b class="neg">−19<\/b>(?! <span)/, 'pas de bonification pour le 3e, score négatif signalé');
   assert.match(html, /class="isme"><span class="ecran-fin-prenom">Paul/);
   assert.match(html, /data-action="ecran-fin-continuer">Continuer</);
-  // classement dans l'ordre : Paul, André, Jacques
+  // dans l'ordre : trophée, phrase, puis classement (Paul, André, Jacques)
+  assert.ok(html.indexOf('ecran-fin-trophee') < html.indexOf('Tu remportes') && html.indexOf('Tu remportes') < html.indexOf('<ol'));
   assert.ok(html.indexOf('Paul</span>') < html.indexOf('André</span>') && html.indexOf('André</span>') < html.indexOf('Jacques</span>'));
 });
 
@@ -64,6 +65,7 @@ test('htmlEcranFin : les autres joueurs n’ont pas de trophée, et la phrase no
   assert.doesNotMatch(html, /ecran-fin-trophee|<svg/);
   assert.match(html, /Paul remporte le tournoi</);
   assert.doesNotMatch(html, /Tu remportes/);
+  assert.ok(html.indexOf('Paul remporte le tournoi') < html.indexOf('<ol'), 'la phrase vient avant le classement');
 });
 
 test('htmlEcranFin : ex aequo en tête → « X et Y remportent le tournoi » ; chacun des deux voit « Tu remportes le tournoi ! »', () => {
@@ -78,7 +80,7 @@ test('htmlEcranFin : ATP Finals → trophée des ATP Finals et titre au pluriel 
   const finals = { id: 12, etat: 'clos', categorie: 'atp_finals', nom: 'Nitto ATP Finals', annee: 2026 };
   const c = classementTournoi({ moteur, tournoi: finals, matchs: [], paris: new Map(), archives: [{ tournament_id: 12, joueur_id: 'x', points_matchs: '5', points_pari_tournoi: '0', bonus_classement: '0', score_final: '5', rang: 1 }], profils: [{ id: 'x', prenom: '<b>Zoé</b>' }] });
   const html = htmlEcranFin({ tournoi: finals, classement: c, moi: 'x' });
-  assert.match(html, /Les Nitto ATP Finals sont terminées\u00A0!/);
+  assert.match(html, /Les Nitto ATP Finals sont terminés\u00A0!/);
   assert.match(html, /Trophée : Nitto ATP Finals 2026/);
   assert.doesNotMatch(html, /<b>Zoé<\/b>/);
 });

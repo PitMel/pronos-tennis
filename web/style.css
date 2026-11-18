@@ -675,12 +675,12 @@ html, body { overflow-x: hidden; }
 .ecran-fin-titre { font-size: clamp(2rem, 8vw, 3.2rem); line-height: 1.12; font-weight: 800; margin: 0 0 22px; max-width: 18ch; text-wrap: balance; }
 .ecran-fin-trophee { margin: 4px 0 22px; display: flex; justify-content: center; }
 .ecran-fin-trophee .trophee { width: min(68vw, 260px); height: auto; }
-.ecran-fin-classement { list-style: none; margin: 0 0 22px; padding: 0; font-size: 1.2rem; line-height: 1.9; }
+.ecran-fin-classement { list-style: none; margin: 0 0 30px; padding: 0; font-size: 1.2rem; line-height: 1.9; }
 .ecran-fin-classement li { text-align: center; }
 .ecran-fin-classement li.isme .ecran-fin-prenom { text-decoration: underline; text-decoration-color: var(--balle); text-underline-offset: 4px; }
 .ecran-fin-classement b { font-variant-numeric: tabular-nums; }
 .ecran-fin-classement b.neg { color: #ffb4a9; }
 .ecran-fin-bonus { color: var(--balle); font-weight: 700; }
-.ecran-fin-phrase { font-size: 1.4rem; font-weight: 700; margin: 0 0 28px; text-wrap: balance; }
+.ecran-fin-phrase { font-size: 1.4rem; font-weight: 700; margin: 0 0 16px; text-wrap: balance; }
 button.ecran-fin-continuer { background: var(--balle); color: var(--vert-fonce); font-weight: 800; font-size: 1.1rem; padding: 14px 44px; border: 0; border-radius: 999px; cursor: pointer; }
 button.ecran-fin-continuer:hover { background: #e6f26a; }

@@ -9,14 +9,14 @@ const sansAccent = (s) => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '
 
 /**
  * Titre de l'écran : « Le Rolex Paris Masters est terminé ! » (espace insécable avant le « ! »), « L'US Open est terminé ! », « Wimbledon est terminé ! »,
- * « Les Nitto ATP Finals sont terminées ! ». Nom sans l'année ; aucun article pour Wimbledon et Roland-Garros ;
+ * « Les Nitto ATP Finals sont terminés ! ». Nom sans l'année ; aucun article pour Wimbledon et Roland-Garros ;
  * « Les » pour les ATP Finals ; « L' » devant une voyelle ; « Le » sinon.
  */
 export function titreFinTournoi(tournoi) {
   const nom = String(tournoi.nom ?? '').replace(/\s*\b(?:19|20)\d{2}\b/g, '').trim();
   const cle = sansAccent(nom).toLowerCase();
   if (/^wimbledon$|^roland[ -]?garros$/.test(cle)) return `${nom} est terminé\u00A0!`;
-  if (tournoi.categorie === 'atp_finals') return `Les ${nom} sont terminées\u00A0!`;
+  if (tournoi.categorie === 'atp_finals') return `Les ${nom} sont terminés\u00A0!`;
   if (/^[aeiouy]/.test(cle)) return `L’${nom} est terminé\u00A0!`;
   return `Le ${nom} est terminé\u00A0!`;
 }
@@ -38,8 +38,8 @@ export function ecransEnAttente({ tournois, resultats, vus, moi }) {
 
 /**
  * Page entière, tout est centré. `classement` = résultat de classementTournoi() d'un tournoi clos (lignes avec rang, prenom,
- * avantBonus, bonus). Vainqueur : trophée du tournoi en très grand, classement, « Tu remportes le tournoi ! ».
- * Les autres : pas de trophée, classement, « X remporte le tournoi ».
+ * avantBonus, bonus). Vainqueur : trophée du tournoi en très grand, « Tu remportes le tournoi ! », puis le classement.
+ * Les autres : pas de trophée, « X remporte le tournoi », puis le classement.
  */
 export function htmlEcranFin({ tournoi, classement, moi }) {
   const lignes = classement.lignes;
@@ -62,8 +62,8 @@ export function htmlEcranFin({ tournoi, classement, moi }) {
     <section class="ecran-fin" aria-labelledby="ecran-fin-titre">
       <h1 id="ecran-fin-titre" class="ecran-fin-titre">${echapper(titreFinTournoi(tournoi))}</h1>
       ${trophee}
-      <ol class="ecran-fin-classement" aria-label="Classement du tournoi">${lignes.map(ligne).join('')}</ol>
       <p class="ecran-fin-phrase">${echapper(phrase)}</p>
+      <ol class="ecran-fin-classement" aria-label="Classement du tournoi">${lignes.map(ligne).join('')}</ol>
       <button type="button" class="ecran-fin-continuer" data-action="ecran-fin-continuer">Continuer</button>
     </section>`;
 }
