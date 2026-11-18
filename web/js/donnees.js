@@ -14,6 +14,18 @@ export function creerDonnees(supabase) {
         .select('id, annee, nom, ville, surface, indoor, categorie, date_debut, date_fin, etat, vainqueur_id, finaliste_id'));
     },
 
+    /** Écrans de fin de tournoi déjà montrés à la personne connectée (la base ne lui rend que les siens). */
+    ecransVus() {
+      return lire(supabase.from('ecrans_fin_tournoi_vus').select('tournament_id'));
+    },
+
+    /** Note que l'écran de fin de ce tournoi a été montré (une seule fois par joueur : une ligne déjà là n'est pas une erreur). */
+    async marquerEcranVu(joueurId, tournoiId) {
+      const { error } = await supabase.from('ecrans_fin_tournoi_vus').upsert(
+        { joueur_id: joueurId, tournament_id: tournoiId }, { onConflict: 'joueur_id,tournament_id', ignoreDuplicates: true });
+      if (error) throw error;
+    },
+
     async tournoi(id) {
       const lignes = await lire(supabase.from('tournaments')
         .select('id, annee, nom, ville, surface, indoor, categorie, date_debut, date_fin, etat, vainqueur_id, finaliste_id')
