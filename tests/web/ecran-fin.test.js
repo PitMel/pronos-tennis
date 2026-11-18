@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as moteur from '../../src/moteur/index.js';
 import { classementTournoi } from '../../web/js/classement.js';
-import { titreFinTournoi, ecransEnAttente, htmlEcranFin } from '../../web/js/ecran-fin.js';
+import { titreFinTournoi, ecransEnAttente, htmlEcranFin, ecransSaisonEnAttente, htmlEcranFinSaison } from '../../web/js/ecran-fin.js';
 
 test('titreFinTournoi : article du tournoi, sans année ; rien pour Wimbledon et Roland-Garros ; « Les » pour les ATP Finals', () => {
   const t = (nom, categorie = 'masters_1000') => titreFinTournoi({ nom, categorie });
@@ -83,4 +83,41 @@ test('htmlEcranFin : ATP Finals → trophée des ATP Finals et titre au pluriel 
   assert.match(html, /Les Nitto ATP Finals sont terminés\u00A0!/);
   assert.match(html, /Trophée : Nitto ATP Finals 2026/);
   assert.doesNotMatch(html, /<b>Zoé<\/b>/);
+});
+
+test('ecransSaisonEnAttente : tous les tournois de l’année clos, un résultat à mon nom, pas déjà vue', () => {
+  const ts = [{ id: 1, annee: 2025, etat: 'clos' }, { id: 2, annee: 2026, etat: 'clos' }, { id: 3, annee: 2026, etat: 'en_cours' }, { id: 4, annee: 2027, etat: 'clos' }];
+  const r = [res(1, 'a'), res(2, 'a'), res(4, 'b')];
+  assert.deepEqual(ecransSaisonEnAttente({ tournois: ts, resultats: r, vus: [], moi: 'a' }), [2025], '2026 attend ses ATP Finals');
+  assert.deepEqual(ecransSaisonEnAttente({ tournois: ts, resultats: r, vus: [{ annee: 2025 }], moi: 'a' }), []);
+  ts[2].etat = 'clos';
+  assert.deepEqual(ecransSaisonEnAttente({ tournois: ts, resultats: r, vus: [{ annee: 2025 }], moi: 'a' }), [2026]);
+  assert.deepEqual(ecransSaisonEnAttente({ tournois: ts, resultats: r, vus: [], moi: 'b' }), [2027], 'rien sans résultat à mon nom');
+});
+
+const race = { lignes: [
+  { id: 'a', prenom: 'Léa', rang: 1, points: '120' }, { id: 'b', prenom: 'Marc', rang: 2, points: '95' },
+  { id: 'c', prenom: 'Zoé', rang: 3, points: '−4' } ] };
+
+test('htmlEcranFinSaison : champion = trophée en grand + « Tu es champion de la saison ! »', () => {
+  const h = htmlEcranFinSaison({ annee: 2026, race, moi: 'a' });
+  assert.match(h, /La saison 2026 est terminée\u00A0!/);
+  assert.match(h, /ecran-fin-trophee/);
+  assert.match(h, /Tu es champion de la saison !/);
+  assert.ok(h.indexOf('ecran-fin-phrase') < h.indexOf('ecran-fin-classement'), 'phrase avant les scores');
+  assert.equal((h.match(/<li /g) || []).length, 3);
+  assert.match(h, /class="neg">−4/);
+});
+
+test('htmlEcranFinSaison : vice-champion, puis les autres sans trophée', () => {
+  const v = htmlEcranFinSaison({ annee: 2026, race, moi: 'b' });
+  assert.match(v, /ecran-fin-trophee/); assert.match(v, /Tu es vice-champion de la saison !/);
+  const c = htmlEcranFinSaison({ annee: 2026, race, moi: 'c' });
+  assert.doesNotMatch(c, /ecran-fin-trophee/); assert.match(c, /Léa est champion de la saison/);
+});
+
+test('htmlEcranFinSaison : ex aequo en tête → « X et Y sont champions de la saison »', () => {
+  const ex = { lignes: [{ id: 'a', prenom: 'Léa', rang: 1, points: '90' }, { id: 'b', prenom: 'Marc', rang: 1, points: '90' }, { id: 'c', prenom: 'Zoé', rang: 3, points: '10' }] };
+  assert.match(htmlEcranFinSaison({ annee: 2026, race: ex, moi: 'c' }), /Léa et Marc sont champions de la saison/);
+  assert.match(htmlEcranFinSaison({ annee: 2026, race: ex, moi: 'a' }), /Tu es champion de la saison !/);
 });

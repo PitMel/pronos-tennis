@@ -33,7 +33,7 @@ import { htmlComptesAdmin, htmlFormulaireCompte, validerCompte, comptePourBase, 
 import { htmlParisAdmin, validerCorrectionPari, pariPourBase, validerCorrectionPariTournoi, messageErreurParisAdmin } from './js/admin-paris.js';
 import { htmlClotureAdmin, apercuCloture, messageErreurCloture } from './js/admin-cloture.js';
 import { validerMatch, matchPourBase, messageErreurMatch, htmlMatchsAdmin, htmlFormulaireMatch } from './js/admin-matchs.js';
-import { ecransEnAttente, htmlEcranFin } from './js/ecran-fin.js';
+import { ecransEnAttente, htmlEcranFin, ecransSaisonEnAttente, htmlEcranFinSaison } from './js/ecran-fin.js';
 import { regrouperParisTournoi, choisir, brouillonDepuisPariTournoi, messageErreurPariTournoi, contextePariTournoi } from './js/pari-tournoi.js';
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_CLE_PUBLIABLE, {
@@ -982,30 +982,44 @@ function afficherServiceIndisponiblePleinePage(probleme) {
 }
 
 /**
- * Écran « le tournoi est terminé » : montré UNE fois par joueur, plein écran, avant l'accès normal ; « Continuer » mène au détail de
- * la saison. Les tournois déjà clos à la mise en service n'en ont pas (migration 0028). Ne bloque jamais l'appli : au moindre
- * problème de chargement, on passe directement à l'application.
+ * Écrans de fin : « le tournoi est terminé » (un par tournoi clos que le joueur n'a pas vu), puis « la saison est terminée » (une fois
+ * tous les tournois de l'année clos). Chacun est montré UNE fois par joueur, plein écran, avant l'accès normal ; le dernier
+ * « Continuer » mène au détail de la saison. Les tournois et saisons déjà terminés à la mise en service n'en ont pas (migrations
+ * 0028 et 0029). Ne bloque jamais l'appli : au moindre problème de chargement, on passe directement à l'application.
  */
+async function afficherEcranEtAttendre(html) {
+  racine.innerHTML = html;
+  window.scrollTo(0, 0);
+  const bouton = racine.querySelector('[data-action="ecran-fin-continuer"]');
+  bouton.focus();
+  await new Promise((fin) => bouton.addEventListener('click', fin, { once: true }));
+}
+
 async function montrerEcransFinTournoi(profil) {
-  let attente = []; let resultats = []; let profils = []; let moteur = null;
+  let tournois; let resultats; let vus; let vusSaisons; let profils; let moteur;
   try {
-    const [tournois, res, vus, groupe, m] = await Promise.all([
+    [tournois, resultats, vus, profils, moteur] = await Promise.all([
       donnees.tournois(), donnees.resultats(), donnees.ecransVus(), donnees.profilsGroupe(profil.is_test), import('./moteur/index.js'),
     ]);
-    attente = ecransEnAttente({ tournois, resultats: res, vus, moi: profil.id });
-    resultats = res; profils = groupe; moteur = m;
+    // la table des saisons est lue à part : si elle manque ou échoue, les écrans de tournoi sont montrés quand même
+    vusSaisons = await donnees.ecransSaisonVus().catch(() => null);
   } catch { return; }
   let derniereAnnee = null;
-  for (const t of attente) {
+  for (const t of ecransEnAttente({ tournois, resultats, vus, moi: profil.id })) {
     const classement = classementTournoi({ moteur, tournoi: t, matchs: [], paris: new Map(), archives: resultats.filter((r) => r.tournament_id === t.id), profils });
     if (!classement.cloture) continue;
-    racine.innerHTML = htmlEcranFin({ tournoi: t, classement, moi: profil.id });
-    window.scrollTo(0, 0);
-    const bouton = racine.querySelector('[data-action="ecran-fin-continuer"]');
-    bouton.focus();
-    await new Promise((fin) => bouton.addEventListener('click', fin, { once: true }));
+    await afficherEcranEtAttendre(htmlEcranFin({ tournoi: t, classement, moi: profil.id }));
     try { await donnees.marquerEcranVu(profil.id, t.id); } catch { /* l'écran reviendra à la prochaine ouverture */ }
     derniereAnnee = t.annee;
+  }
+  if (vusSaisons) {
+    for (const annee of ecransSaisonEnAttente({ tournois, resultats, vus: vusSaisons, moi: profil.id })) {
+      const race = construireRace({ moteur, annee, tournois, resultats, profils });
+      if (!race.terminee) continue;
+      await afficherEcranEtAttendre(htmlEcranFinSaison({ annee, race, moi: profil.id }));
+      try { await donnees.marquerEcranSaisonVu(profil.id, annee); } catch { /* l'écran reviendra à la prochaine ouverture */ }
+      derniereAnnee = annee;
+    }
   }
   // « Continuer » envoie sur le détail de la saison (sans déclencher le routage avant que le cadre existe)
   if (derniereAnnee) window.history.replaceState(null, '', `#/race/${derniereAnnee}`);

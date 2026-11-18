@@ -26,6 +26,18 @@ export function creerDonnees(supabase) {
       if (error) throw error;
     },
 
+    /** Écrans de fin de saison déjà montrés à la personne connectée (la base ne lui rend que les siens). */
+    ecransSaisonVus() {
+      return lire(supabase.from('ecrans_fin_saison_vus').select('annee'));
+    },
+
+    /** Note que l'écran de fin de cette saison a été montré (une ligne déjà là n'est pas une erreur). */
+    async marquerEcranSaisonVu(joueurId, annee) {
+      const { error } = await supabase.from('ecrans_fin_saison_vus').upsert(
+        { joueur_id: joueurId, annee }, { onConflict: 'joueur_id,annee', ignoreDuplicates: true });
+      if (error) throw error;
+    },
+
     async tournoi(id) {
       const lignes = await lire(supabase.from('tournaments')
         .select('id, annee, nom, ville, surface, indoor, categorie, date_debut, date_fin, etat, vainqueur_id, finaliste_id')

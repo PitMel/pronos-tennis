@@ -67,3 +67,50 @@ export function htmlEcranFin({ tournoi, classement, moi }) {
       <button type="button" class="ecran-fin-continuer" data-action="ecran-fin-continuer">Continuer</button>
     </section>`;
 }
+
+/* ---------- Écran « la saison est terminée » (18 nov. 2026, migration 0029) ---------- */
+
+/**
+ * Saisons dont l'écran reste à montrer à `moi` : tous leurs tournois sont clos, j'ai un résultat archivé dans l'un d'eux, pas encore
+ * vue. De la plus ancienne à la plus récente. (La saison 2026 se termine à la clôture des ATP Finals.)
+ */
+export function ecransSaisonEnAttente({ tournois, resultats, vus, moi }) {
+  const dejaVues = new Set(vus.map((v) => Number(v.annee)));
+  const mesTournois = new Set(resultats.filter((r) => r.joueur_id === moi).map((r) => Number(r.tournament_id)));
+  const parAnnee = new Map();
+  for (const t of tournois) parAnnee.set(Number(t.annee), [...(parAnnee.get(Number(t.annee)) ?? []), t]);
+  return [...parAnnee]
+    .filter(([annee, liste]) => liste.every((t) => t.etat === 'clos') && liste.some((t) => mesTournois.has(Number(t.id))) && !dejaVues.has(annee))
+    .map(([annee]) => annee)
+    .sort((a, b) => a - b);
+}
+
+/**
+ * Page entière, tout est centré, même style que l'écran de fin de tournoi. `race` = résultat de construireRace() d'une saison terminée
+ * (lignes avec rang, prenom, points). Champion : trophée « champion de la saison » en très grand, « Tu es champion de la saison ! » ;
+ * vice-champion : son trophée et « Tu es vice-champion de la saison ! » ; les autres : pas de trophée, « X est champion de la saison ».
+ * Puis le classement final : une ligne par joueur avec son total de points de la Race.
+ */
+export function htmlEcranFinSaison({ annee, race, moi }) {
+  const lignes = race.lignes;
+  const champions = lignes.filter((l) => l.rang === 1).map((l) => l.prenom);
+  const monRang = lignes.find((l) => l.id === moi)?.rang;
+  const grandTrophee = (cle) => `<div class="ecran-fin-trophee">${htmlTrophee(cle, null, null, 260)}</div>`;
+  let trophee = '';
+  let phrase;
+  if (monRang === 1) { trophee = grandTrophee('champion_saison'); phrase = 'Tu es champion de la saison !'; }
+  else if (monRang === 2) { trophee = grandTrophee('vice_champion_saison'); phrase = 'Tu es vice-champion de la saison !'; }
+  else phrase = `${listeFrancaise(champions)} ${champions.length > 1 ? 'sont champions' : 'est champion'} de la saison`;
+  const ligne = (l) => {
+    const negatif = /^[−-]/.test(l.points);
+    return `<li class="${l.id === moi ? 'isme' : ''}"><span class="ecran-fin-prenom">${echapper(l.prenom)}</span> <b class="${negatif ? 'neg' : ''}">${echapper(l.points)}</b></li>`;
+  };
+  return `
+    <section class="ecran-fin ecran-fin-saison" aria-labelledby="ecran-fin-titre">
+      <h1 id="ecran-fin-titre" class="ecran-fin-titre">${echapper(`La saison ${annee} est terminée !`)}</h1>
+      ${trophee}
+      <p class="ecran-fin-phrase">${echapper(phrase)}</p>
+      <ol class="ecran-fin-classement" aria-label="Classement final de la saison ${echapper(annee)}">${lignes.map(ligne).join('')}</ol>
+      <button type="button" class="ecran-fin-continuer" data-action="ecran-fin-continuer">Continuer</button>
+    </section>`;
+}
