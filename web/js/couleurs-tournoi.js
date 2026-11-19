@@ -7,7 +7,7 @@
 const sansAccent = (s) => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '');
 const cle = (nom) => sansAccent(nom).toLowerCase().replace(/\b(?:19|20)\d{2}\b/g, '').replace(/[^a-z0-9]+/g, ' ').trim();
 
-const ORANGE = { fond: '#CC4E0E', terrain: '#CC4E0E' };
+const ORANGE = { fond: '#EB6510', terrain: '#EB6510' };
 /** Couleurs choisies, par nom de tournoi (sans accent ni année, en minuscules). */
 export const COULEURS = {
   'monte carlo masters': ORANGE,
