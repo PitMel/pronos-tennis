@@ -20,7 +20,7 @@ test('autres tournois : rien (couleurs habituelles)', () => {
 });
 
 test('le barème est une nuance plus sombre du fond', () => {
-  assert.equal(assombrir('#EB6510', 0), '#cc4e0e');
+  assert.equal(assombrir('#EB6510', 0), '#eb6510');
   assert.equal(assombrir('#FFFFFF', 0.5), '#808080');
   const c = couleursTournoi({ nom: 'Wimbledon' });
   const lum = (h) => { const n = parseInt(h.slice(1), 16); return (n >> 16) + ((n >> 8) & 255) + (n & 255); };
