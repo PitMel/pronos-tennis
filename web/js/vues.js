@@ -3,6 +3,7 @@ import { echapper, formaterPeriode } from './outils.js';
 import {
   CATEGORIES, ETATS, grouperParTour, grouperParAnnee, lieuEtSurface, etapesProgression,
 } from './tournois.js';
+import { styleCouleursTournoi } from './couleurs-tournoi.js';
 import { htmlCarteMatch, htmlBaremeTour, bilanDuTour, matchsAParier } from './cartes.js';
 import { htmlSectionPariTournoi, contextePariTournoi } from './pari-tournoi.js';
 import { htmlTrophee, htmlIconeRecompense } from './trophees.js';
@@ -487,6 +488,7 @@ export function htmlPageTournoi({ tournoi, matchs, joueurs, ctx = {} }) {
   };
 
   return `
+    <div class="page-tournoi" style="${styleCouleursTournoi(tournoi)}">
     <section class="hero categorie-${echapper(tournoi.categorie)}">
       <a class="retour retour-clair" href="#/saison">← Saison ${echapper(tournoi.annee)}</a>
       <h2 class="hero-titre">${echapper(tournoi.nom)}${htmlTrophee(tournoi.categorie, tournoi.nom, tournoi)}</h2>
@@ -497,7 +499,8 @@ export function htmlPageTournoi({ tournoi, matchs, joueurs, ctx = {} }) {
     </section>
     ${ctx.classement ? htmlClassementTournoi(ctx.classement, { moi: ctx.moi, tournoi }) : ''}
     ${ctx.parisTournoi !== undefined ? htmlSectionPariTournoi({ tournoi, matchs, joueurs, ctx: contextePariTournoi(ctx) }) : ''}
-    ${sections.map(htmlSection).join('')}`;
+    ${sections.map(htmlSection).join('')}
+    </div>`;
 }
 
 export function htmlErreur(message) {

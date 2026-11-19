@@ -334,3 +334,8 @@ Choix de conception de l'étape 3.3 (à signaler à Pierre) : la maquette 1 n'es
 ## Classement du tournoi : noms à gauche, « Score » toujours à droite (19 nov. 2026, demandé par Pierre)
 - Page tournoi, « Classement du tournoi », pour tous les tournois : noms des joueurs alignés à gauche (le rang reste dans la première colonne) ; colonne « Score » tout à droite = score cumulé actuel (somme des points de matchs déjà comptés ; tournoi clos : score final, déjà en dernière colonne). Avant, la colonne « Score » n'apparaissait qu'à partir des quarts. Sans détail par tour, la colonne « Matchs » est remplacée par « Score » (elle faisait double emploi).
 - Fichiers : `web/js/vues.js` (`htmlClassementTournoi`), `web/style.css`, tests `tests/web/classement.test.js` et `tests/web/h2h.test.js`.
+
+## Couleurs par tournoi (19 nov. 2026, demandé par Pierre)
+- Trois couleurs par tournoi, dans `web/js/couleurs-tournoi.js` (table `COULEURS`, tournoi reconnu par son nom, valable chaque année) : **fond** (bandeau de la page tournoi, fond des cartes de match, écran de fin de tournoi), **terrain** (terrain de pari ; sans valeur = bleu habituel) et **barème** (calculé : le fond assombri de 32 %).
+- Choisies : Monte-Carlo, Madrid, Rome, Roland-Garros = #CC4E0E (fond et terrain) ; Wimbledon = #8AA74B (fond et terrain) ; ATP Finals = fond #6BA7ED (terrain inchangé) ; Open d'Australie = fond #0091D2 (terrain inchangé). Les autres tournois gardent les couleurs habituelles. Pour changer : modifier `COULEURS`.
+- Mécanisme : variables CSS `--fond-tournoi`, `--bareme-tournoi`, `--terrain` posées sur `.page-tournoi` et sur l'écran de fin de tournoi ; le terrain SVG (`filet.js`) lit `var(--terrain)`.

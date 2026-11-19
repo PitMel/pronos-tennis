@@ -4,6 +4,7 @@
 import { echapper } from './outils.js';
 import { htmlTrophee, htmlIconeRecompense } from './trophees.js';
 import { listeFrancaise } from './cartes.js';
+import { styleCouleursTournoi } from './couleurs-tournoi.js';
 
 const sansAccent = (s) => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '');
 
@@ -59,7 +60,7 @@ export function htmlEcranFin({ tournoi, classement, moi }) {
     ? `<div class="ecran-fin-trophee">${htmlTrophee(tournoi.categorie, tournoi.nom, tournoi, 260)}</div>`
     : '';
   return `
-    <section class="ecran-fin" aria-labelledby="ecran-fin-titre">
+    <section class="ecran-fin" style="${styleCouleursTournoi(tournoi)}" aria-labelledby="ecran-fin-titre">
       <h1 id="ecran-fin-titre" class="ecran-fin-titre">${echapper(titreFinTournoi(tournoi))}</h1>
       ${trophee}
       <p class="ecran-fin-phrase">${echapper(phrase)}</p>

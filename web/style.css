@@ -167,7 +167,7 @@ a.retour { display: inline-block; margin: 0 0 12px; color: var(--vert-fonce); fo
 .pastille-petite { width: 28px; height: 28px; font-size: .85rem; }
 
 /* ---------- En-tête d'un tournoi (maquette 1) ---------- */
-.hero { background: var(--vert-fonce); color: #fff; margin: -20px -16px 18px; padding: 16px 16px 20px; }
+.hero { background: var(--fond-tournoi, var(--vert-fonce)); color: #fff; margin: -20px -16px 18px; padding: 16px 16px 20px; }
 .hero-titre { font-size: clamp(1.9rem, 6vw, 2.8rem); line-height: 1.05; letter-spacing: -.03em; font-weight: 800; margin: 10px 0 8px; color: #fff; }
 /* trophée du tournoi après le titre : taille proche de celle du texte */
 .hero-titre .trophee { width: 1.35em; height: 1.35em; margin-left: .3em; vertical-align: -.3em; }
@@ -194,7 +194,7 @@ a.retour-clair { color: #BFD2C9; margin: 0; }
 .neg { color: #D13B28; }
 .matchs { gap: 14px; padding: 0 12px 14px; }
 
-.match { background: var(--vert); color: #EAF2EC; border-radius: 22px; padding: 12px 10px 10px; border: 1px solid rgba(244, 247, 242, .10); }
+.match { background: var(--fond-tournoi, var(--vert)); color: #EAF2EC; border-radius: 22px; padding: 12px 10px 10px; border: 1px solid rgba(244, 247, 242, .10); }
 .ch { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; padding: 0 4px 8px; }
 .ch time { font-weight: 700; font-size: .95rem; color: #fff; }
 .chip { font-size: .78rem; font-weight: 700; padding: 3px 10px; border-radius: 99px; display: inline-flex; align-items: center; gap: 6px; }
@@ -252,7 +252,7 @@ svg.filet[data-edition="1"] { cursor: pointer; }
 .btn-sets:hover { background: #d6e0d6; }
 .btn-sets.choisi { background: var(--balle); border-color: #0F2A26; }
 
-.bareme { background: #1A453C; color: #fff; border-radius: 18px; padding: 13px 12px; margin: 0 12px 14px; }
+.bareme { background: var(--bareme-tournoi, #1A453C); color: #fff; border-radius: 18px; padding: 13px 12px; margin: 0 12px 14px; }
 .bareme h4 { margin: 0; font-size: 1rem; }
 .bareme p { margin: 2px 0 10px; font-size: .78rem; color: #BFD2C9; }
 .grid5 { display: grid; grid-template-columns: 62px repeat(5, 1fr); gap: 4px; align-items: center; text-align: center; }
@@ -667,7 +667,7 @@ html, body { overflow-x: hidden; }
 /* Écran « le tournoi est terminé » : plein écran, fond vert uni de l'appli, tout centré (migration 0028) */
 .ecran-fin {
   position: fixed; inset: 0; z-index: 100; overflow-y: auto;
-  background: var(--vert-fonce); color: #fff; text-align: center;
+  background: var(--fond-tournoi, var(--vert-fonce)); color: #fff; text-align: center;
   display: flex; flex-direction: column; align-items: center;
   padding: calc(24px + env(safe-area-inset-top, 0px)) 20px calc(24px + env(safe-area-inset-bottom, 0px));
 }

@@ -130,7 +130,7 @@ export function svgTerrain({ colonnes = [], gagnant = null, brouillon = null, ed
   const p = [];
 
   // surface et couloirs
-  p.push(`<rect x="${X0}" y="${MARGE}" width="${X1 - X0}" height="${2 * DEMI}" rx="3" fill="${BLEU}"/>`);
+  p.push(`<rect x="${X0}" y="${MARGE}" width="${X1 - X0}" height="${2 * DEMI}" rx="3" style="fill:var(--terrain, ${BLEU})"/>`);
   p.push(`<rect x="${X0}" y="${MARGE}" width="${COULOIR}" height="${2 * DEMI}" fill="#000" fill-opacity=".07"/>`);
   p.push(`<rect x="${XS_D}" y="${MARGE}" width="${COULOIR}" height="${2 * DEMI}" fill="#000" fill-opacity=".07"/>`);
 
