@@ -706,5 +706,6 @@ button.ecran-fin-continuer:hover { background: #e6f26a; }
 .page-tournoi[style*="--fond-tournoi"] .sets.perdant b { color: var(--estompe-tournoi); }
 /* tournoi coloré : intitulés (Classement du tournoi, Huitièmes de finale…) et scores positifs du classement, de la couleur du barème */
 .page-tournoi[style*="--fond-tournoi"] .carte-classement h3,
+.page-tournoi[style*="--fond-tournoi"] .carte-pari > h3,
 .page-tournoi[style*="--fond-tournoi"] .tour summary,
 .page-tournoi[style*="--fond-tournoi"] .classement-tournoi td.pos { color: var(--bareme-tournoi); }
