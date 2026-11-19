@@ -691,3 +691,14 @@ button.ecran-fin-continuer:hover { background: #e6f26a; }
 .ecran-fin-recompenses { list-style: none; margin: 0 0 30px; padding: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px 18px; font-size: .82rem; }
 .ecran-fin-recompenses li { display: inline-flex; align-items: center; gap: 5px; }
 .ecran-fin-aucun { margin: 0 0 30px; font-size: .85rem; opacity: .75; }
+
+/* Tournoi aux couleurs choisies : les textes secondaires, pâles sur le fond vert habituel, passent en blanc (fonds clairs) */
+.page-tournoi[style*="--fond-tournoi"] .hero-details,
+.page-tournoi[style*="--fond-tournoi"] a.retour-clair,
+.page-tournoi[style*="--fond-tournoi"] .etape,
+.page-tournoi[style*="--fond-tournoi"] .rang-joueur,
+.page-tournoi[style*="--fond-tournoi"] .ligne-joueur.perdant .nom-joueur,
+.page-tournoi[style*="--fond-tournoi"] .sets.perdant b,
+.page-tournoi[style*="--fond-tournoi"] .bareme p,
+.page-tournoi[style*="--fond-tournoi"] .grid5 .rl { color: #fff; }
+.page-tournoi[style*="--fond-tournoi"] .etape i { background: var(--fond-tournoi); }

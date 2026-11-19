@@ -9,7 +9,7 @@ test('couleurs choisies par Pierre, d’une année à l’autre', () => {
     assert.deepEqual([couleursTournoi({ nom }).fond, couleursTournoi({ nom }).terrain], ['#CC4E0E', '#CC4E0E'], nom);
   }
   assert.deepEqual([couleursTournoi({ nom: 'Wimbledon' }).fond, couleursTournoi({ nom: 'Wimbledon' }).terrain], ['#8AA74B', '#8AA74B']);
-  assert.deepEqual(couleursTournoi({ nom: 'Nitto ATP Finals' }), { fond: '#6BA7ED', terrain: null, bareme: assombrir('#6BA7ED', 0.32) });
+  assert.deepEqual(couleursTournoi({ nom: 'Nitto ATP Finals' }), { fond: '#6BA7ED', terrain: null, bareme: '#1F4E96' });
   assert.equal(couleursTournoi({ nom: 'Open d’Australie' }).fond, '#0091D2');
   assert.equal(couleursTournoi({ nom: 'Open d\'Australie' }).terrain, null, 'terrain inchangé');
 });

@@ -1,7 +1,7 @@
 // Couleurs propres à chaque tournoi (Pierre, 19 nov. 2026). Trois couleurs :
 //  - « fond » : bandeau de la page du tournoi, fond des cartes de match, page de fin de tournoi ;
 //  - « terrain » : le terrain sur lequel on parie (sans valeur : le bleu habituel) ;
-//  - « barème » : encadré Barème, toujours une nuance plus sombre du fond (calculée ici).
+//  - « barème » : encadré Barème, une nuance plus sombre du fond (calculée ici, sauf si une couleur « bareme » est donnée).
 // Tournoi reconnu par son nom (le même d'une année à l'autre). Sans entrée : couleurs habituelles de l'appli.
 
 const sansAccent = (s) => String(s ?? '').normalize('NFD').replace(/[̀-ͯ]/g, '');
@@ -15,7 +15,7 @@ export const COULEURS = {
   'masters de rome': ORANGE,
   'roland garros': ORANGE,
   'wimbledon': { fond: '#8AA74B', terrain: '#8AA74B' },
-  'nitto atp finals': { fond: '#6BA7ED' },
+  'nitto atp finals': { fond: '#6BA7ED', bareme: '#1F4E96' }, // barème plus bleu et plus foncé que le calcul automatique
   'open d australie': { fond: '#0091D2' },
 };
 
@@ -33,7 +33,7 @@ export function assombrir(couleur, part) {
 /** @returns {{fond:string, terrain:string|null, bareme:string}|null} null si le tournoi n'a pas de couleurs choisies */
 export function couleursTournoi(tournoi) {
   const c = COULEURS[cle(tournoi?.nom)];
-  return c ? { fond: c.fond, terrain: c.terrain ?? null, bareme: assombrir(c.fond, PART_NOIR_BAREME) } : null;
+  return c ? { fond: c.fond, terrain: c.terrain ?? null, bareme: c.bareme ?? assombrir(c.fond, PART_NOIR_BAREME) } : null;
 }
 
 /** Attribut style (variables CSS) à poser sur la page ou l'écran du tournoi ; '' sans couleurs choisies. */
