@@ -709,3 +709,11 @@ button.ecran-fin-continuer:hover { background: #e6f26a; }
 .page-tournoi[style*="--fond-tournoi"] .carte-pari > h3,
 .page-tournoi[style*="--fond-tournoi"] .tour summary,
 .page-tournoi[style*="--fond-tournoi"] .classement-tournoi td.pos { color: var(--bareme-tournoi); }
+/* tournoi coloré : noms des joueurs et rangs en noir dans « Classement du tournoi » et « Pari tournoi » */
+.page-tournoi[style*="--fond-tournoi"] .classement-tournoi tbody th,
+.page-tournoi[style*="--fond-tournoi"] .classement-tournoi td.rang,
+.page-tournoi[style*="--fond-tournoi"] .choix-tous tbody th,
+.page-tournoi[style*="--fond-tournoi"] .choix-tous tbody td:not(.pos):not(.vide),
+.page-tournoi[style*="--fond-tournoi"] .carte-pari .choix-en-cours,
+.page-tournoi[style*="--fond-tournoi"] .carte-pari .mon-pari,
+.page-tournoi[style*="--fond-tournoi"] .palmares-pari { color: #000; }
