@@ -163,14 +163,18 @@ test('vues : classement du tournoi clos (3 colonnes + score), en cours (matchs s
   const h2 = htmlClassementTournoi(cours, { tournoi: { etat: 'en_cours' } });
   assert.doesNotMatch(h2, /Pari tournoi<\/th>/);
   assert.match(h2, /Aucun match compté/);
-  // dès les quarts (tournoi en cours) : colonne « Score » à droite = somme des points de matchs ; pas avant
+  assert.match(h2, /<th>Score<\/th><\/tr>/); // sans tour détaillé : seule la colonne « Score » (cumul actuel) à droite
+  assert.doesNotMatch(h2, /<th>Matchs<\/th>/);
+  // tournoi en cours, à tout moment : colonne « Score » tout à droite = somme des points de matchs déjà obtenus
   const cell = (texte) => ({ texte, positif: true, negatif: false });
   const fake = (tours) => ({ cloture: false, matchsComptes: 3, tours: tours.map((t) => ({ tour: t, libelle: t })),
     lignes: [{ id: 'p', prenom: 'Pierre', rang: 1, couleur: null, parTour: Object.fromEntries(tours.map((t) => [t, cell('+2')])), matchs: cell('+4'), pari: null, bonus: null, final: null }] });
   const avecQuarts = htmlClassementTournoi(fake(['R16', 'QF']), { tournoi: { etat: 'en_cours' } });
   assert.match(avecQuarts, /<th>QF<\/th><th>Score<\/th><\/tr>/);
   assert.match(avecQuarts, /<td class="final pos">\+4<\/td><\/tr>/);
-  assert.doesNotMatch(htmlClassementTournoi(fake(['R32', 'R16']), { tournoi: { etat: 'en_cours' } }), /Score/);
+  const avantQuarts = htmlClassementTournoi(fake(['R32', 'R16']), { tournoi: { etat: 'en_cours' } });
+  assert.match(avantQuarts, /<th>R16<\/th><th>Score<\/th><\/tr>/);
+  assert.match(avantQuarts, /<td class="final pos">\+4<\/td><\/tr>/);
   const sansArchive = classementTournoi({ moteur, tournoi: { id: 1, etat: 'clos', categorie: 'masters_1000' }, matchs: [], paris: new Map(), archives: [], profils: duo });
   assert.match(htmlClassementTournoi(sansArchive, { tournoi: { etat: 'clos' } }), /Aucun score archivé pour ton groupe/);
   assert.equal(htmlClassementTournoi({ lignes: [] }), '');
@@ -427,7 +431,7 @@ test('classement du tournoi : une colonne de points par tour (Huitièmes, Quarts
   assert.doesNotMatch(html, /<th>Matchs<\/th>/);
   const p = c.lignes.find((l) => l.prenom === 'Pierre');
   assert.ok(p.parTour.R16 && p.parTour.QF);
-  // sans matchs fournis (liste des tournois) : retour à la colonne unique
+  // sans matchs fournis (liste des tournois) : retour à la colonne unique, « Score » (cumul actuel)
   const sans = classementTournoi({ moteur, tournoi: { id: 1, etat: 'en_cours', categorie: 'masters_1000' }, matchs: [], paris: new Map(), archives: [], profils: quatre });
-  assert.match(htmlClassementTournoi(sans, {}), /<th>Matchs<\/th>/);
+  assert.match(htmlClassementTournoi(sans, {}), /<th>Score<\/th><\/tr>/);
 });

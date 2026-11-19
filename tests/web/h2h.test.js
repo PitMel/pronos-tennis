@@ -72,4 +72,5 @@ test('feuille de style : rouge à la place du vert dans la fenêtre H2H, colonne
   assert.doesNotMatch(css, /h2h-g1[^\n]*(#DCEFE5|#1F6B4F)/, 'plus de vert pour le joueur 1');
   assert.match(regle('.h2h-table th, .h2h-table td'), /text-align: center/, 'toutes les colonnes centrées');
   assert.match(regle('.classement-tournoi thead th, .classement-tournoi td'), /text-align: center/);
+  assert.match(regle('.classement-tournoi tbody th'), /text-align: left/, 'noms des joueurs alignés à gauche');
 });

@@ -150,11 +150,13 @@ export function htmlClassementTournoi(classement, { moi = null, tournoi = null }
   // tournoi terminé : le trophée suit le nom du (ou des) premier(s) du classement
   const trophee = tournoi && clos ? htmlTrophee(tournoi.categorie, tournoi.nom, tournoi) : '';
   const nom = (l) => `${htmlPastille(l, 'pastille pastille-petite')}<span>${echapper(l.prenom)}</span>${trophee && l.rang === 1 ? `<span class="trophee-vainqueur">${trophee}</span>` : ''}`;
-  // dès les quarts (tournoi en cours) : colonne « Score » = somme des points de matchs déjà obtenus
-  const colScore = !clos && tours.some((t) => ['QF', 'SF', 'F'].includes(t.tour));
+  // tournoi en cours : colonne « Score » tout à droite = somme des points de matchs déjà obtenus (score cumulé actuel) ;
+  // tournoi terminé : la dernière colonne « Score » est le score final
+  const colScore = !clos;
+  const colMatchs = tours.length > 0 || clos; // sans tour détaillé et en cours, « Matchs » ferait double emploi avec « Score »
   const lignes = classement.lignes.map((l) => `
       <tr class="${l.id === moi ? 'isme' : ''}"><td class="rang">${echapper(l.rang)}</td><th scope="row">${nom(l)}</th>
-        ${tours.length ? tours.map((t) => casePoints(l.parTour[t.tour])).join('') : casePoints(l.matchs)}${clos ? `${casePoints(l.pari)}${casePoints(l.bonus)}${casePoints(l.final, 'final')}` : ''}${colScore ? casePoints(l.matchs, 'final') : ''}</tr>`).join('');
+        ${tours.length ? tours.map((t) => casePoints(l.parTour[t.tour])).join('') : colMatchs ? casePoints(l.matchs) : ''}${clos ? `${casePoints(l.pari)}${casePoints(l.bonus)}${casePoints(l.final, 'final')}` : ''}${colScore ? casePoints(l.matchs, 'final') : ''}</tr>`).join('');
   let note;
   if (clos) note = 'Score final = points des matchs (par tour) + pari tournoi + bonus de classement. Les chiffres sont figés à la clôture.';
   else if (tournoi?.etat === 'clos') note = 'Aucun score archivé pour ton groupe sur ce tournoi.';
@@ -164,7 +166,7 @@ export function htmlClassementTournoi(classement, { moi = null, tournoi = null }
     <section class="carte carte-classement">
       <h3>Classement du tournoi</h3>
       <div class="tableau-defilant"><table class="classement-tournoi">
-        <thead><tr><th></th><th></th>${tours.length ? tours.map((t) => `<th>${echapper(t.libelle)}</th>`).join('') : '<th>Matchs</th>'}${clos ? '<th>Pari tournoi</th><th>Bonus</th><th>Score</th>' : ''}${colScore ? '<th>Score</th>' : ''}</tr></thead>
+        <thead><tr><th></th><th></th>${tours.length ? tours.map((t) => `<th>${echapper(t.libelle)}</th>`).join('') : colMatchs ? '<th>Matchs</th>' : ''}${clos ? '<th>Pari tournoi</th><th>Bonus</th><th>Score</th>' : ''}${colScore ? '<th>Score</th>' : ''}</tr></thead>
         <tbody>${lignes}</tbody>
       </table></div>
       <p class="small">${echapper(note)}</p>

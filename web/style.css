@@ -315,7 +315,8 @@ svg.filet[data-edition="1"] { cursor: pointer; }
 .classement-tournoi thead th, .detail-race thead th { border-top: 0; font-size: .72rem; font-weight: 700; color: var(--gris); vertical-align: bottom; }
 .classement-tournoi thead th, .classement-tournoi td { text-align: center; } /* scores centrés sous l'intitulé de leur colonne (Huitièmes de finale, etc.) */
 .classement-tournoi td.rang { width: 26px; text-align: center; font-size: 1.05rem; }
-.classement-tournoi tbody th { font-weight: 700; }
+.classement-tournoi tbody th { font-weight: 700; text-align: left; } /* noms alignés à gauche */
+.classement-tournoi thead th:nth-child(2) { text-align: left; }
 .classement-tournoi tbody th span, .detail-race thead th span { margin-left: 6px; }
 .classement-tournoi tbody th { display: table-cell; white-space: nowrap; }
 .classement-tournoi td.final { font-weight: 800; font-size: 1rem; }
