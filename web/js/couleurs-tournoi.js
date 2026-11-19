@@ -21,6 +21,8 @@ export const COULEURS = {
 
 /** Part de noir mélangée au fond pour obtenir le barème. */
 const PART_NOIR_BAREME = 0.32;
+/** Texte « estompé » (nom et score du perdant) : le fond assombri de cette part, lisible sur tous les fonds choisis. */
+const PART_NOIR_ESTOMPE = 0.55;
 
 const hex = (n) => `#${[n >> 16, (n >> 8) & 255, n & 255].map((v) => v.toString(16).padStart(2, '0')).join('')}`;
 /** Mélange d'une couleur #rrggbb avec du noir : `part` = proportion de noir (0 à 1). */
@@ -30,15 +32,15 @@ export function assombrir(couleur, part) {
   return hex((f(n >> 16) << 16) | (f((n >> 8) & 255) << 8) | f(n & 255));
 }
 
-/** @returns {{fond:string, terrain:string|null, bareme:string}|null} null si le tournoi n'a pas de couleurs choisies */
+/** @returns {{fond:string, terrain:string|null, bareme:string, estompe:string}|null} null si le tournoi n'a pas de couleurs choisies */
 export function couleursTournoi(tournoi) {
   const c = COULEURS[cle(tournoi?.nom)];
-  return c ? { fond: c.fond, terrain: c.terrain ?? null, bareme: c.bareme ?? assombrir(c.fond, PART_NOIR_BAREME) } : null;
+  return c ? { fond: c.fond, terrain: c.terrain ?? null, bareme: c.bareme ?? assombrir(c.fond, PART_NOIR_BAREME), estompe: assombrir(c.fond, PART_NOIR_ESTOMPE) } : null;
 }
 
 /** Attribut style (variables CSS) à poser sur la page ou l'écran du tournoi ; '' sans couleurs choisies. */
 export function styleCouleursTournoi(tournoi) {
   const c = couleursTournoi(tournoi);
   if (!c) return '';
-  return `--fond-tournoi:${c.fond};--bareme-tournoi:${c.bareme}${c.terrain ? `;--terrain:${c.terrain}` : ''}`;
+  return `--fond-tournoi:${c.fond};--bareme-tournoi:${c.bareme};--estompe-tournoi:${c.estompe}${c.terrain ? `;--terrain:${c.terrain}` : ''}`;
 }

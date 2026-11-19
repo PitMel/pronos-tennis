@@ -697,8 +697,9 @@ button.ecran-fin-continuer:hover { background: #e6f26a; }
 .page-tournoi[style*="--fond-tournoi"] a.retour-clair,
 .page-tournoi[style*="--fond-tournoi"] .etape,
 .page-tournoi[style*="--fond-tournoi"] .rang-joueur,
-.page-tournoi[style*="--fond-tournoi"] .ligne-joueur.perdant .nom-joueur,
-.page-tournoi[style*="--fond-tournoi"] .sets.perdant b,
 .page-tournoi[style*="--fond-tournoi"] .bareme p,
 .page-tournoi[style*="--fond-tournoi"] .grid5 .rl { color: #fff; }
 .page-tournoi[style*="--fond-tournoi"] .etape i { background: var(--fond-tournoi); }
+/* nom et score du perdant : ton plus sombre que le fond (estompé mais lisible) */
+.page-tournoi[style*="--fond-tournoi"] .ligne-joueur.perdant .nom-joueur,
+.page-tournoi[style*="--fond-tournoi"] .sets.perdant b { color: var(--estompe-tournoi); }

@@ -9,7 +9,7 @@ test('couleurs choisies par Pierre, d’une année à l’autre', () => {
     assert.deepEqual([couleursTournoi({ nom }).fond, couleursTournoi({ nom }).terrain], ['#EB6510', '#EB6510'], nom);
   }
   assert.deepEqual([couleursTournoi({ nom: 'Wimbledon' }).fond, couleursTournoi({ nom: 'Wimbledon' }).terrain], ['#8AA74B', '#8AA74B']);
-  assert.deepEqual(couleursTournoi({ nom: 'Nitto ATP Finals' }), { fond: '#6BA7ED', terrain: null, bareme: '#1F4E96' });
+  assert.deepEqual(couleursTournoi({ nom: 'Nitto ATP Finals' }), { fond: '#6BA7ED', terrain: null, bareme: '#1F4E96', estompe: assombrir('#6BA7ED', 0.55) });
   assert.equal(couleursTournoi({ nom: 'Open d’Australie' }).fond, '#0091D2');
   assert.equal(couleursTournoi({ nom: 'Open d\'Australie' }).terrain, null, 'terrain inchangé');
 });
@@ -28,7 +28,7 @@ test('le barème est une nuance plus sombre du fond', () => {
 });
 
 test('variables posées sur la page du tournoi et sur l’écran de fin ; terrain seulement s’il est choisi', () => {
-  assert.equal(styleCouleursTournoi({ nom: 'Wimbledon' }), `--fond-tournoi:#8AA74B;--bareme-tournoi:${assombrir('#8AA74B', 0.32)};--terrain:#8AA74B`);
+  assert.equal(styleCouleursTournoi({ nom: 'Wimbledon' }), `--fond-tournoi:#8AA74B;--bareme-tournoi:${assombrir('#8AA74B', 0.32)};--estompe-tournoi:${assombrir('#8AA74B', 0.55)};--terrain:#8AA74B`);
   assert.doesNotMatch(styleCouleursTournoi({ nom: 'Open d’Australie' }), /--terrain/);
   const t = { id: 1, annee: 2026, nom: 'Roland-Garros', categorie: 'grand_slam', etat: 'en_cours', surface: 'terre' };
   assert.match(htmlPageTournoi({ tournoi: t, matchs: [], joueurs: new Map() }), /class="page-tournoi" style="--fond-tournoi:#EB6510/);
