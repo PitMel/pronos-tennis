@@ -717,3 +717,22 @@ button.ecran-fin-continuer:hover { background: #e6f26a; }
 .page-tournoi[style*="--fond-tournoi"] .carte-pari .choix-en-cours,
 .page-tournoi[style*="--fond-tournoi"] .carte-pari .mon-pari,
 .page-tournoi[style*="--fond-tournoi"] .palmares-pari { color: #000; }
+
+/* Écran d'ouverture : plein écran, fond vert de l'appli, tout centré ; tout l'écran se touche pour continuer (migration 0031) */
+.ecran-ouverture {
+  position: fixed; inset: 0; z-index: 110; overflow-y: auto; cursor: pointer;
+  background: var(--vert-fonce); color: #fff; text-align: center;
+  display: flex; flex-direction: column; align-items: center; justify-content: space-between; gap: 18px;
+  padding: calc(28px + env(safe-area-inset-top, 0px)) 24px calc(24px + env(safe-area-inset-bottom, 0px));
+}
+.ecran-ouverture:focus { outline: none; }
+.ouverture-marque { margin: 0; font-size: 1.1rem; font-weight: 800; letter-spacing: .02em; opacity: .85; }
+.ouverture-marque span { color: var(--balle); }
+.ouverture-contenu { display: flex; flex-direction: column; align-items: center; gap: 16px; max-width: 30rem; }
+.ouverture-citation { margin: 0; font-size: clamp(1.5rem, 6vw, 2.3rem); line-height: 1.3; font-weight: 700; text-wrap: balance; }
+.ouverture-info-etiquette { margin: 0; font-size: .95rem; font-weight: 800; color: var(--balle); text-transform: uppercase; letter-spacing: .08em; }
+.ouverture-info { margin: 0; font-size: clamp(1.3rem, 5vw, 1.9rem); line-height: 1.4; font-weight: 600; text-wrap: balance; }
+.ouverture-image { max-width: 100%; max-height: 62vh; border-radius: 10px; object-fit: contain; }
+.ouverture-legende { margin: 0; font-size: 1.15rem; font-weight: 600; text-wrap: balance; }
+.ouverture-signature { margin: 0; font-size: 1rem; color: var(--balle); font-weight: 700; }
+.ouverture-aide { margin: 0; font-size: .85rem; opacity: .65; }

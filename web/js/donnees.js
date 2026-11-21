@@ -38,6 +38,13 @@ export function creerDonnees(supabase) {
       if (error) throw error;
     },
 
+    /** Écran d'ouverture : l'interrupteur (éteint par défaut) puis, seulement s'il est allumé, les contenus actifs. */
+    async ecranOuverture() {
+      const reglage = await lire(supabase.from('ecran_ouverture_reglage').select('actif'));
+      if (!reglage[0]?.actif) return [];
+      return lire(supabase.from('ecran_ouverture_contenus').select('id, type, texte, auteur, source, image_url, actif').eq('actif', true));
+    },
+
     async tournoi(id) {
       const lignes = await lire(supabase.from('tournaments')
         .select('id, annee, nom, ville, surface, indoor, categorie, date_debut, date_fin, etat, vainqueur_id, finaliste_id')

@@ -35,6 +35,7 @@ import { htmlParisAdmin, validerCorrectionPari, pariPourBase, validerCorrectionP
 import { htmlClotureAdmin, apercuCloture, messageErreurCloture } from './js/admin-cloture.js';
 import { validerMatch, matchPourBase, messageErreurMatch, htmlMatchsAdmin, htmlFormulaireMatch } from './js/admin-matchs.js';
 import { ecransEnAttente, htmlEcranFin, ecransSaisonEnAttente, htmlEcranFinSaison } from './js/ecran-fin.js';
+import { choisirContenu, htmlEcranOuverture } from './js/ecran-ouverture.js';
 import { regrouperParisTournoi, choisir, brouillonDepuisPariTournoi, messageErreurPariTournoi, contextePariTournoi } from './js/pari-tournoi.js';
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_CLE_PUBLIABLE, {
@@ -996,6 +997,26 @@ async function afficherEcranEtAttendre(html) {
   await new Promise((fin) => bouton.addEventListener('click', fin, { once: true }));
 }
 
+/**
+ * Écran d'ouverture (21 nov. 2026, migration 0031) : à chaque lancement, une citation, une info ou une image tirée au hasard ;
+ * un clic (ou Entrée / Espace) n'importe où le ferme. Éteint tant que l'interrupteur de la base n'est pas allumé. Ne bloque jamais
+ * l'appli : base vide, interrupteur éteint, image qui ne charge pas ou erreur de lecture → on passe directement à la suite.
+ */
+async function montrerEcranOuverture() {
+  let contenu;
+  try { contenu = choisirContenu(await donnees.ecranOuverture()); } catch { return; }
+  if (!contenu) return;
+  racine.innerHTML = htmlEcranOuverture(contenu);
+  window.scrollTo(0, 0);
+  const ecran = racine.querySelector('[data-action="ecran-ouverture-fermer"]');
+  ecran.querySelector('img')?.addEventListener('error', (e) => e.target.remove(), { once: true });
+  await new Promise((fin) => {
+    ecran.addEventListener('click', fin, { once: true });
+    ecran.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fin(); } }, { once: true });
+    ecran.focus();
+  });
+}
+
 async function montrerEcransFinTournoi(profil) {
   let tournois; let resultats; let vus; let vusSaisons; let profils; let moteur;
   try {
@@ -1053,6 +1074,7 @@ async function demarrer() {
     return;
   }
   profilCourant = profil;
+  await montrerEcranOuverture();
   await montrerEcransFinTournoi(profil);
   afficherCadre(profil);
   majHeureSynchro();
