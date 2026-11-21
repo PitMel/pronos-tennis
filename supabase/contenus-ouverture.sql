@@ -9,3 +9,7 @@ insert into public.ecran_ouverture_contenus (type, texte, image_url) values
 -- Image fournie par Pierre (21 nov. 2026).
 insert into public.ecran_ouverture_contenus (type, texte, image_url) values
   ('image', 'Roger Federer - Wimbledon 2003', './images/ouverture/federer-wimbledon-2003.jpg');
+
+-- Image fournie par Pierre (21 nov. 2026).
+insert into public.ecran_ouverture_contenus (type, texte, image_url) values
+  ('image', 'Carlos Alcaraz - Wimbledon 2025', './images/ouverture/alcaraz-wimbledon-2025.jpg');
