@@ -19,23 +19,32 @@ export function choisirContenu(contenus, hasard = Math.random) {
   return liste[Math.min(liste.length - 1, Math.floor(hasard() * liste.length))];
 }
 
+/** Taille du texte selon sa longueur : une phrase courte se lit en grand, un long paragraphe reste entièrement visible sur un téléphone. */
+export function classeTaille(texte) {
+  const n = [...String(texte ?? '')].length;
+  return n <= 90 ? 'court' : n <= 180 ? 'moyen' : 'long';
+}
+
 /** Page entière, tout est centré, même fond vert que les écrans de fin. Tout l'écran est cliquable (voir app.js). */
 export function htmlEcranOuverture(contenu) {
-  const signature = [contenu.auteur, contenu.source].filter((s) => String(s ?? '').trim()).map(echapper).join(' · ');
+  const plein = (s) => String(s ?? '').trim();
+  const auteur = plein(contenu.auteur) ? `<p class="ouverture-auteur">${echapper(contenu.auteur)}</p>` : '';
+  const contexte = plein(contenu.source) ? `<p class="ouverture-source">${echapper(contenu.source)}</p>` : '';
+  const signature = auteur || contexte ? `<div class="ouverture-signature">${auteur}${contexte}</div>` : '';
+  const taille = `t-${classeTaille(contenu.texte)}`;
   let corps;
   if (contenu.type === 'image') {
-    const legende = String(contenu.texte ?? '').trim() ? `<p class="ouverture-legende">${echapper(contenu.texte)}</p>` : '';
+    const legende = plein(contenu.texte) ? `<p class="ouverture-legende">${echapper(contenu.texte)}</p>` : '';
     corps = `<img class="ouverture-image" src="${echapper(contenu.image_url)}" alt="${echapper(contenu.texte ?? 'Image du tennis')}">${legende}`;
   } else if (contenu.type === 'citation') {
-    corps = `<blockquote class="ouverture-citation">« ${echapper(contenu.texte)} »</blockquote>`;
+    corps = `<blockquote class="ouverture-citation ${taille}">« ${echapper(contenu.texte)} »</blockquote>`;
   } else {
-    corps = `<p class="ouverture-info-etiquette">Le saviez-vous ?</p><p class="ouverture-info">${echapper(contenu.texte)}</p>`;
+    corps = `<p class="ouverture-info-etiquette">Le saviez-vous ?</p><p class="ouverture-info ${taille}">${echapper(contenu.texte)}</p>`;
   }
-  const pied = signature ? `<p class="ouverture-signature">${signature}</p>` : '';
   return `
     <section class="ecran-ouverture" role="button" tabindex="0" aria-label="Touche l’écran pour continuer" data-action="ecran-ouverture-fermer">
       <h1 class="ouverture-marque">Pronos <span>Tennis</span></h1>
-      <div class="ouverture-contenu">${corps}${pied}</div>
+      <div class="ouverture-contenu">${corps}${signature}</div>
       <p class="ouverture-aide">Touche l’écran pour continuer</p>
     </section>`;
 }

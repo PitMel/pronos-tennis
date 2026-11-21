@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { contenuValide, choisirContenu, htmlEcranOuverture } from '../../web/js/ecran-ouverture.js';
+import { contenuValide, choisirContenu, htmlEcranOuverture, classeTaille } from '../../web/js/ecran-ouverture.js';
 
 const cit = { id: 1, type: 'citation', texte: 'Texte A', auteur: 'Quelqu’un', source: '2010', actif: true };
 const inf = { id: 2, type: 'info', texte: 'Une info', actif: true };
@@ -33,11 +33,21 @@ test('htmlEcranOuverture : citation, info et image ; texte échappé ; tout l’
   const h = htmlEcranOuverture(cit);
   assert.match(h, /data-action="ecran-ouverture-fermer"/);
   assert.match(h, /« Texte A »/);
-  assert.match(h, /Quelqu’un · 2010/);
+  assert.match(h, /<p class="ouverture-auteur">Quelqu’un<\/p>/);
+  assert.match(h, /<p class="ouverture-source">2010<\/p>/);
   assert.match(htmlEcranOuverture(inf), /Le saviez-vous/);
   const hi = htmlEcranOuverture(img);
   assert.match(hi, /<img [^>]*src="https:\/\/exemple\.org\/a\.jpg"/);
   assert.match(hi, /Légende/);
   assert.doesNotMatch(htmlEcranOuverture({ ...cit, texte: '<script>x</script>' }), /<script>/);
   assert.doesNotMatch(htmlEcranOuverture(inf), /ouverture-signature/, 'pas de signature vide');
+});
+
+test('classeTaille : court, moyen, long selon le nombre de caractères ; la taille est portée par le texte', () => {
+  assert.equal(classeTaille('Dix Grands Chelems.'), 'court');
+  assert.equal(classeTaille('x'.repeat(91)), 'moyen');
+  assert.equal(classeTaille('x'.repeat(181)), 'long');
+  assert.equal(classeTaille(null), 'court');
+  assert.match(htmlEcranOuverture({ ...cit, texte: 'x'.repeat(200) }), /ouverture-citation t-long/);
+  assert.match(htmlEcranOuverture(inf), /ouverture-info t-court/);
 });
