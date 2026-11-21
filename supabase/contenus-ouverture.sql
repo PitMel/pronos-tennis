@@ -5,3 +5,7 @@
 -- Image fournie par Pierre (21 nov. 2026) : le fichier est dans web/images/ouverture/, publié avec le site.
 insert into public.ecran_ouverture_contenus (type, texte, image_url) values
   ('image', 'Medvedev-Tiafoe, ATPF 2026', './images/ouverture/medvedev-tiafoe-atpf-2026.jpg');
+
+-- Image fournie par Pierre (21 nov. 2026).
+insert into public.ecran_ouverture_contenus (type, texte, image_url) values
+  ('image', 'Roger Federer - Wimbledon 2003', './images/ouverture/federer-wimbledon-2003.jpg');
