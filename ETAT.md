@@ -362,3 +362,10 @@ Choix de conception de l'étape 3.3 (à signaler à Pierre) : la maquette 1 n'es
 - Aussi : feuille des polices Google non bloquante, images de l'écran d'ouverture en cache d'abord dans le service worker (`sw.js`), deux images lourdes recompressées (2,1 Mo → 1,6 Mo au total).
 - Mesure en navigateur (bibliothèque externe volontairement bloquée 4 s) : citation visible après ~180 ms.
 - Test connu dépendant de l'heure, sans rapport : `tests/sync/bout-en-bout.test.js` n° 4 échoue après 15 h (créneau de vérification des affiches), à rendre indépendant de l'heure.
+
+## Accueil plus rapide : préchargement pendant l'écran d'ouverture (21 nov. 2026, demandé par Pierre)
+- Avant, après le clic sur l'écran d'ouverture : écrans de fin de tournoi (1 lecture), saisons vues (2), puis l'accueil relisait tournois / résultats / profils (3), puis matchs et paris du tournoi (4), puis « qui a parié » (5) = cinq allers-retours l'un après l'autre.
+- Maintenant (`web/app.js` : `lancerPrechargement`, `lireBase`) : dès que la session est connue, les lectures indépendantes du profil partent en parallèle de sa lecture ; dès que le profil est là partent les profils du groupe et les blocs de l'accueil. Tout se charge pendant que le joueur lit la citation ; les écrans de fin et l'accueil réutilisent ces données, sans les redemander.
+- Garde-fous : données utilisées une seule fois, jamais pour un rafraîchissement silencieux, jamais au-delà de 2 minutes ; si une lecture échoue, chacun retombe sur son propre chargement (comportement d'avant). Les écrans de fin sont toujours décidés après le clic, dans le même ordre.
+- Mesure en navigateur avec fausse base (150 ms par requête) : clic → accueil affiché 1 340 ms avant, ~60 ms après (2 840 ms → 60 ms à 400 ms par requête) ; 16 requêtes après le clic avant, 1 après (la date de dernière synchro, en arrière-plan). Le script de mesure n'est pas dans le dépôt.
+- Non fait (inutile maintenant que tout est masqué par l'écran d'ouverture) : fonction groupée « qui a parié » pour tous les matchs ; elle reste possible si l'accueil doit un jour s'afficher sans écran d'ouverture.

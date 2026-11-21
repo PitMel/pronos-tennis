@@ -784,6 +784,9 @@ async function afficherRoute({ silencieux = false } = {}) {
   const contenu = document.getElementById('contenu');
   if (!contenu) return;
   const route = lireRoute();
+  // préchargement du démarrage : utilisé une seule fois, jamais pour un rafraîchissement silencieux, jamais s'il est périmé
+  const pre = !silencieux && prechargement && Date.now() - prechargement.le < FRAICHEUR_PRECHARGEMENT_MS ? prechargement : null;
+  prechargement = null;
   // un rafraîchissement silencieux garde l'état des sections et la position de défilement
   const ouverts = silencieux ? [...contenu.querySelectorAll('details.tour')].map((d) => d.open) : [];
   const defilement = window.scrollY;
@@ -909,9 +912,7 @@ async function afficherRoute({ silencieux = false } = {}) {
       contenu.querySelectorAll('details.tour').forEach((d, i) => { if (i < ouverts.length) d.open = ouverts[i]; });
     } else if (route.nom === 'saison') {
       page = null;
-      const [tournois, resultats, profils, moteur] = await Promise.all([
-        donnees.tournois(), donnees.resultats(), donnees.profilsGroupe(profilCourant.is_test), import('./moteur/index.js'),
-      ]);
+      const { tournois, resultats, profils, moteur } = await lireBase(pre);
       const annee = anneeCourante();
       const affichee = route.annee ?? annee;
       const race = construireRace({ moteur, annee: affichee, tournois, resultats, profils });
@@ -925,13 +926,11 @@ async function afficherRoute({ silencieux = false } = {}) {
       contenu.innerHTML = htmlListeTournois(tournois, { race, anneeCourante: affichee, anneeAffichee: affichee, classements, joueurs, moi: profilCourant.id, stats });
     } else {
       page = null;
-      const [tournois, resultats, profils, moteur] = await Promise.all([
-        donnees.tournois(), donnees.resultats(), donnees.profilsGroupe(profilCourant.is_test), import('./moteur/index.js'),
-      ]);
+      const { tournois, resultats, profils, moteur, blocs: blocsPrecharges } = await lireBase(pre);
       const annee = anneeCourante();
       const race = construireRace({ moteur, annee, tournois, resultats, profils });
       const { encours, prochain } = tournoisPourAccueil(tournois, dateDuJour());
-      const blocs = await Promise.all(encours.map((t) => chargerBlocAccueil(t)));
+      const blocs = blocsPrecharges ?? await Promise.all(encours.map((t) => chargerBlocAccueil(t)));
       contenu.innerHTML = htmlAccueil({ profil: profilCourant, race, blocs, prochain });
     }
     window.scrollTo(0, silencieux ? defilement : 0);
@@ -1029,15 +1028,47 @@ async function montrerEcranOuverture() {
   });
 }
 
-async function montrerEcransFinTournoi(profil) {
-  let tournois; let resultats; let vus; let vusSaisons; let profils; let moteur;
-  try {
-    [tournois, resultats, vus, profils, moteur] = await Promise.all([
-      donnees.tournois(), donnees.resultats(), donnees.ecransVus(), donnees.profilsGroupe(profil.is_test), import('./moteur/index.js'),
-    ]);
-    // la table des saisons est lue à part : si elle manque ou échoue, les écrans de tournoi sont montrés quand même
-    vusSaisons = await donnees.ecransSaisonVus().catch(() => null);
-  } catch { return; }
+/**
+ * Préchargement du démarrage (21 nov. 2026, demandé par Pierre : accueil plus rapide). Les lectures dont dépendent les écrans de
+ * fin de tournoi / de saison et l'accueil sont lancées dès que la session est connue, pendant l'écran d'ouverture, et partagées :
+ * les écrans de fin et l'accueil ne les redemandent plus (avant : cinq allers-retours réseau l'un après l'autre après le clic).
+ * La première étape ne dépend pas du profil ; la seconde (profils du groupe, blocs de l'accueil) démarre dès que le profil est lu.
+ * Échec de n'importe quelle lecture : null, et chaque utilisateur retombe sur son propre chargement, comme avant.
+ */
+const FRAICHEUR_PRECHARGEMENT_MS = 2 * 60 * 1000; // au-delà, l'accueil relit tout
+let prechargement = null; // { tournois, resultats, vus, vusSaisons, profils, moteur, blocs, le } — à usage unique (prisé par afficherRoute)
+
+function lancerPrechargement() {
+  // la table des saisons est lue à part : si elle manque ou échoue, les écrans de tournoi sont montrés quand même
+  const independantes = Promise.all([
+    donnees.tournois(), donnees.resultats(), donnees.ecransVus(), import('./moteur/index.js'), donnees.ecransSaisonVus().catch(() => null),
+  ]);
+  independantes.catch(() => {}); // l'échec est traité plus bas, pas comme une erreur non gérée
+  return async (profil) => {
+    try {
+      const [[tournois, resultats, vus, moteur, vusSaisons], profils] = await Promise.all([independantes, donnees.profilsGroupe(profil.is_test)]);
+      let blocs = null;
+      if (lireRoute().nom === 'accueil') {
+        const { encours } = tournoisPourAccueil(tournois, dateDuJour());
+        blocs = await Promise.all(encours.map((t) => chargerBlocAccueil(t))).catch(() => null);
+      }
+      return { tournois, resultats, vus, vusSaisons, profils, moteur, blocs, le: Date.now() };
+    } catch { return null; }
+  };
+}
+
+/** Tournois, résultats, profils du groupe et moteur : ceux du préchargement s'il est frais, sinon une lecture comme avant. */
+async function lireBase(pre) {
+  if (pre) return pre;
+  const [tournois, resultats, profils, moteur] = await Promise.all([
+    donnees.tournois(), donnees.resultats(), donnees.profilsGroupe(profilCourant.is_test), import('./moteur/index.js'),
+  ]);
+  return { tournois, resultats, profils, moteur };
+}
+
+async function montrerEcransFinTournoi(profil, pre) {
+  if (!pre) return; // lecture impossible : pas d'écran de fin cette fois-ci (l'accueil dira si le service est en panne)
+  const { tournois, resultats, vus, vusSaisons, profils, moteur } = pre;
   let derniereAnnee = null;
   for (const t of ecransEnAttente({ tournois, resultats, vus, moi: profil.id })) {
     const classement = classementTournoi({ moteur, tournoi: t, matchs: [], paris: new Map(), archives: resultats.filter((r) => r.tournament_id === t.id), profils });
@@ -1065,6 +1096,7 @@ async function montrerEcransFinTournoi(profil) {
 async function demarrer() {
   const { data: { session } } = await supabase.auth.getSession();
   if (!session) { afficherConnexion(); return; }
+  const preparer = lancerPrechargement(); // lectures indépendantes du profil : lancées tout de suite, en parallèle de sa lecture
 
   const { data: profil, error } = await supabase
     .from('profiles')
@@ -1086,8 +1118,10 @@ async function demarrer() {
     return;
   }
   profilCourant = profil;
+  const preparation = preparer(profil); // profils du groupe + blocs de l'accueil : chargés pendant que la citation est lue
   await montrerEcranOuverture();
-  await montrerEcransFinTournoi(profil);
+  prechargement = await preparation;
+  await montrerEcransFinTournoi(profil, prechargement);
   afficherCadre(profil);
   majHeureSynchro();
   notificationsParDefaut();

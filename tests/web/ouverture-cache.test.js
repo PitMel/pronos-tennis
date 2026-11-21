@@ -65,3 +65,19 @@ test('service worker : images de l’écran d’ouverture en cache d’abord ; d
   assert.match(sw, /cachePuisReseau/);
   assert.match(sw, /'demarrage\.js'/);
 });
+
+test('démarrage : les lectures des écrans de fin et de l’accueil sont préchargées pendant l’écran d’ouverture et partagées', () => {
+  const app = lire('app.js');
+  // lancées dès la session connue (avant la lecture du profil), terminées pendant la lecture de la citation
+  assert.ok(app.indexOf('lancerPrechargement()') < app.indexOf("from('profiles')") || /afficherConnexion\(\); return; \}\s*const preparer = lancerPrechargement\(\)/.test(app));
+  assert.match(app, /const preparation = preparer\(profil\);\s*[^\n]*\n\s*await montrerEcranOuverture\(\);\s*prechargement = await preparation;/);
+  assert.match(app, /montrerEcransFinTournoi\(profil, prechargement\)/);
+  // l'accueil et la saison réutilisent ces données (une seule fois, jamais en rafraîchissement silencieux, jamais périmées)
+  assert.equal((app.match(/await lireBase\(pre\)/g) ?? []).length, 2);
+  assert.match(app, /!silencieux && prechargement && Date\.now\(\) - prechargement\.le < FRAICHEUR_PRECHARGEMENT_MS/);
+  assert.match(app, /prechargement = null;/);
+  assert.match(app, /blocsPrecharges \?\? await Promise\.all\(encours\.map/, 'repli sur le chargement normal des blocs');
+  // plus de lecture en double des tournois / résultats dans les écrans de fin
+  const fin = app.slice(app.indexOf('async function montrerEcransFinTournoi'), app.indexOf('async function demarrer()'));
+  assert.doesNotMatch(fin, /donnees\.tournois\(\)|donnees\.resultats\(\)/);
+});
