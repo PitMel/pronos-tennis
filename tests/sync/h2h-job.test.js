@@ -54,10 +54,14 @@ test('H2H : années terminées une seule fois, année courante au début de chaq
   assert.equal(p.rencontres[0].annee, 2027);
   assert.deepEqual(w.enregistre[0].joueurs.map((j) => j.atp_id).sort(), ['A1', 'S1']);
 
-  // même tournoi, nouvelle affiche : rien n'est retéléchargé
+  // même tournoi, nouvelle affiche quelques heures plus tard : rien n'est retéléchargé
   w.appels.length = 0;
-  await executerH2H({ base: w.base, telecharger: w.telecharger, dossier, maintenant: new Date('2027-03-02T10:00:00Z'), premiereAnnee: 2024 });
+  await executerH2H({ base: w.base, telecharger: w.telecharger, dossier, maintenant: new Date('2027-03-01T12:00:00Z'), premiereAnnee: 2024 });
   assert.deepEqual(w.appels, []);
+  // paires à recalculer le lendemain (tournoi terminé entre-temps) : le fichier de l'année courante, vieux de plus de 6 h, est retéléchargé
+  await executerH2H({ base: w.base, telecharger: w.telecharger, dossier, maintenant: new Date('2027-03-02T10:00:00Z'), premiereAnnee: 2024 });
+  assert.deepEqual(w.appels, [URL_SITE(2027)]);
+  w.appels.length = 0;
   // un nouveau tournoi : seul le fichier de l'année courante est retéléchargé
   await executerH2H({ base: { ...w.base, h2hACalculer: async () => [paire([7, 8])] }, telecharger: w.telecharger, dossier, maintenant: new Date('2027-03-10T10:00:00Z'), premiereAnnee: 2024 });
   assert.deepEqual(w.appels, [URL_SITE(2027)]);

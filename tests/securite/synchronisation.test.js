@@ -366,6 +366,24 @@ test('0016 : une ligne H2H sans le classement de l\'époque est de nouveau « à
   assert.equal((await aCalculer()).length, 0, 'indisponible : on ne réessaie pas');
 });
 
+test('0030 : une ligne H2H calculée avant la fin d\'un tournoi est de nouveau « à calculer » ; recalculée après, elle est à jour', async () => {
+  const m = await ligne('CONF-1');
+  const [a, b2] = [Math.min(m.p1_id, m.p2_id), Math.max(m.p1_id, m.p2_id)];
+  const aCalculer = async () => (await service('select public.sync_h2h_a_calculer() as r')).rows[0].r.filter((x) => x.joueur_a === a && x.joueur_b === b2);
+  const rencontres = JSON.stringify([{ annee: 2025, tournoi: 'Paris', score: '6-4 6-4', vainqueur: 'a', classement_vainqueur: 3, classement_vaincu: 12 }]);
+  const poser = (calculeLe, statut = 'ok') => b.admin(
+    `insert into public.h2h (joueur_a, joueur_b, statut, victoires_a, victoires_b, rencontres, calcule_le) values ($1, $2, $3, 1, 0, $4::jsonb, $5::timestamptz)
+     on conflict (joueur_a, joueur_b) do update set statut = excluded.statut, rencontres = excluded.rencontres, calcule_le = excluded.calcule_le`, [a, b2, statut, rencontres, calculeLe]);
+  await b.admin(`insert into public.tournaments (annee, nom, ville, surface, categorie, etat, date_debut, date_fin) values (2026, 'Tournoi terminé (test 0030)', 'Test', 'dur', 'masters_1000', 'clos', '2026-11-02', '2026-11-08')`);
+  await poser('2026-11-07T23:56:00Z');
+  assert.equal((await aCalculer()).length, 1, 'calculé avant la fin du tournoi : à recalculer');
+  await poser('2026-11-07T23:56:00Z', 'indisponible');
+  assert.equal((await aCalculer()).length, 0, 'indisponible : on ne réessaie pas');
+  await poser('2026-11-09T00:20:00Z');
+  assert.equal((await aCalculer()).length, 0, 'calculé après la fin du tournoi : à jour');
+  await b.admin(`delete from public.tournaments where nom = 'Tournoi terminé (test 0030)'`);
+});
+
 test('0016 : les deux fonctions restent réservées au rôle service', async () => {
   for (const f of ['select public.sync_etat()', 'select public.sync_h2h_a_calculer()']) {
     await refuse(b.comme(ID.pierre, f));

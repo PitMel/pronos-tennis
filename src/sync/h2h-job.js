@@ -13,7 +13,8 @@ export const PREMIERE_ANNEE = 1968;
 export const DERNIERE_ANNEE_GITHUB = 2025; // le dépôt GitHub n'est plus alimenté après janvier 2026
 export const URL_GITHUB = (annee) => `https://raw.githubusercontent.com/Tennismylife/TML-Database/master/${annee}.csv`;
 export const URL_SITE = (annee) => `https://stats.tennismylife.org/data/${annee}.csv`;
-export const SOURCE = 'TennisMyLife (stats.tennismylife.org)';
+export const FRAICHEUR_MS = 6 * 3600 * 1000; // âge maximal du fichier de l'année courante quand il y a des paires à calculer
+export const SOURCE ='TennisMyLife (stats.tennismylife.org)';
 
 async function lireMeta(dossier) {
   try { return JSON.parse(await readFile(join(dossier, 'meta.json'), 'utf8')); } catch { return { annees: {}, courant: null }; }
@@ -70,7 +71,9 @@ export async function executerH2H({ base, telecharger, dossier, maintenant = new
   const tournois = [...new Set(aCalculer.flatMap((p) => p.tournois ?? []))].map(String);
   const vus = new Set(meta.courant?.annee === anneeCourante ? meta.courant.tournois : []);
   const nouveaux = tournois.filter((t) => !vus.has(t));
-  if (nouveaux.length > 0 || !meta.annees[anneeCourante] || meta.courant?.annee !== anneeCourante) {
+  // (ou si le fichier conservé date de plus de 6 h : des paires redeviennent « à calculer » après la fin d'un tournoi, il faut les matchs qui viennent d'être joués)
+  const vieux = !meta.annees[anneeCourante]?.telecharge_le || maintenant - new Date(meta.annees[anneeCourante].telecharge_le) > FRAICHEUR_MS;
+  if (nouveaux.length > 0 || vieux || meta.courant?.annee !== anneeCourante) {
     try {
       await enregistrerFichier(anneeCourante, await telecharger(URL_SITE(anneeCourante)), 'site');
       meta.courant = { annee: anneeCourante, tournois: [...new Set([...vus, ...tournois])], telecharge_le: maintenant.toISOString() };
