@@ -19,10 +19,11 @@ test('le script d’insertion est valide, rend des contenus complets, et toutes 
   const { rows } = await db.query('select type, texte, image_url, actif from public.ecran_ouverture_contenus');
   const nb = (t, actif) => rows.filter((r) => r.type === t && r.actif === actif).length;
   assert.equal(nb('image', true), 12);
-  assert.equal(nb('citation', true), 47);
-  assert.equal(nb('citation', false), 1, 'une citation mise en pause');
-  assert.equal(nb('info', true), 4);
-  assert.equal(nb('info', false), 1, 'une statistique mise en pause');
+  assert.equal(nb('citation', true), 48);
+  assert.equal(nb('citation', false), 0);
+  assert.equal(nb('info', true), 5);
+  assert.equal(nb('info', false), 0);
+  assert.ok(rows.some((r) => r.texte?.startsWith('Pendant l’ère Open, aucun joueur')), 'la statistique précise l’ère Open');
   for (const r of rows.filter((x) => x.type === 'image')) {
     assert.match(r.image_url, /^\.\/images\/ouverture\/[a-z0-9-]+\.jpg$/);
     assert.ok(existsSync(join(racine, 'web', r.image_url.slice(2))), `image manquante : ${r.image_url}`);

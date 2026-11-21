@@ -2,7 +2,6 @@
 -- À exécuter UNE SEULE FOIS dans le SQL Editor de Supabase, APRÈS la migration 0031 (sinon les contenus seraient en double).
 -- Les images sont dans web/images/ouverture/ (publiées avec le site). Ajouter ensuite d'autres lignes de la même façon.
 -- Interrupteur de l'écran : update public.ecran_ouverture_reglage set actif = true;   (false pour l'éteindre)
--- Deux contenus sont mis en pause (actif = false) en attendant l'avis de Pierre : voir les commentaires dans les blocs.
 
 -- Images fournies par Pierre (21 nov. 2026) ; le nom du fichier est la légende, un simple chiffre = pas de légende
 insert into public.ecran_ouverture_contenus (type, texte, auteur, source, image_url, actif) values
@@ -63,7 +62,7 @@ insert into public.ecran_ouverture_contenus (type, texte, auteur, source, image_
   ('citation', 'Le système du classement ATP est tellement bien fait qu’on peut être mort et toujours numéro un mondial.', 'Pete Sampras', null, null, true),
   ('citation', 'En 1997, mon meilleur résultat, ça a été mon mariage avec Brooke Shields.', 'Andre Agassi', null, null, true),
   ('citation', 'Chez les amateurs, le meilleur moment pour commettre une double faute se situe juste après un ace. Lequel, de l’ace ou de la double faute, était accidentel ?', 'Brad Gilbert', null, null, true),
-  ('citation', 'Après avoir perdu un match, je me suis souvent dit qu’il fallait que j’arrête le tennis. Mais ça, c’était dans les bons jours. Parfois, j’avais juste envie de me suicider.', 'Ivan Lendl', null, null, false),
+  ('citation', 'Après avoir perdu un match, je me suis souvent dit qu’il fallait que j’arrête le tennis. Mais ça, c’était dans les bons jours. Parfois, j’avais juste envie de me suicider.', 'Ivan Lendl', null, null, true),
   ('citation', 'Je déteste la défaite plus que j’aime la victoire. Je ne supporte pas de lire le moindre signe de satisfaction sur le visage de mon adversaire.', 'Jimmy Connors', null, null, true),
   ('citation', 'Si vous voulez assister à un match avec des crises de colère et des grands moments de rigolade, il vaut mieux éviter de venir me voir jouer.', 'Ivan Lendl', null, null, true),
   ('citation', 'Mes chances de gagner l’US Open cette année sont les mêmes que celles de tous les joueurs qui ne se prénomment pas Roger.', 'Andy Roddick', null, null, true),
@@ -75,5 +74,5 @@ insert into public.ecran_ouverture_contenus (type, texte, auteur, source, image_
   ('info', 'Thomas Muster, n° 1 mondial et vainqueur de 44 titres sur le circuit, n’a jamais gagné un seul match à Wimbledon.', null, null, null, true),
   ('info', 'Andy Murray a eu plus de succès à Roland-Garros (76,5 % de victoires) qu’à l’Open d’Australie (76,1 %).', null, null, null, true),
   ('info', 'Patrick Rafter, n° 1 mondial pendant une semaine, n’a jamais eu l’occasion de jouer un match officiel avec le classement de n° 1.', null, null, null, true),
-  ('info', 'Aucun joueur n’a jamais gagné le tournoi du Grand Chelem suivant son premier titre en Grand Chelem.', null, null, null, false),
+  ('info', 'Pendant l’ère Open, aucun joueur n’a gagné le tournoi du Grand Chelem suivant son premier titre en Grand Chelem.', null, null, null, true),
   ('info', 'Novak Djokovic a remporté 3 des 4 tournois du Grand Chelem en 2011, 2015, 2021 et 2023. Ces années-là, il n’a pourtant jamais perdu contre Nadal à Roland-Garros.', null, null, null, true);
