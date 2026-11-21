@@ -76,3 +76,9 @@ insert into public.ecran_ouverture_contenus (type, texte, auteur, source, image_
   ('info', 'Patrick Rafter, n° 1 mondial pendant une semaine, n’a jamais eu l’occasion de jouer un match officiel avec le classement de n° 1.', null, null, null, true),
   ('info', 'Pendant l’ère Open, aucun joueur n’a gagné le tournoi du Grand Chelem suivant son premier titre en Grand Chelem.', null, null, null, true),
   ('info', 'Novak Djokovic a remporté 3 des 4 tournois du Grand Chelem en 2011, 2015, 2021 et 2023. Ces années-là, il n’a pourtant jamais perdu contre Nadal à Roland-Garros.', null, null, null, true);
+
+-- Statistiques ajoutées le 21 nov. 2026 (17 h), avec emojis
+insert into public.ecran_ouverture_contenus (type, texte, auteur, source, image_url, actif) values
+  ('info', '👑 29 joueuses ont été n° 1 mondiales WTA. Au cours de sa carrière, Serena Williams a battu au moins une fois 23 d’entre elles. Elle n’a jamais affronté les 5 joueuses qui manquent à son tableau de chasse.', null, null, null, true),
+  ('info', '🟠 Rafael Nadal a remporté plus de titres sur terre battue qu’il n’a perdu de matchs sur cette surface.', null, null, null, true),
+  ('info', '🎾 Dans 49,7 % des matchs ATP et 54,1 % des matchs WTA, le vainqueur du premier point a finalement remporté le match.', null, null, null, true);

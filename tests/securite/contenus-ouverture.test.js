@@ -21,7 +21,7 @@ test('le script d’insertion est valide, rend des contenus complets, et toutes 
   assert.equal(nb('image', true), 12);
   assert.equal(nb('citation', true), 48);
   assert.equal(nb('citation', false), 0);
-  assert.equal(nb('info', true), 5);
+  assert.equal(nb('info', true), 8);
   assert.equal(nb('info', false), 0);
   assert.ok(rows.some((r) => r.texte?.startsWith('Pendant l’ère Open, aucun joueur')), 'la statistique précise l’ère Open');
   for (const r of rows.filter((x) => x.type === 'image')) {
