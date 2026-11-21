@@ -8,7 +8,7 @@
  */
 const CACHE = 'pronos-tennis-v1';
 const DELAI_RESEAU_MS = 4000;
-const COQUE = ['./', 'index.html', 'style.css', 'app.js', 'config.js', 'manifest.webmanifest', 'icons/icone-192.png'];
+const COQUE = ['./', 'index.html', 'style.css', 'demarrage.js', 'app.js', 'config.js', 'manifest.webmanifest', 'icons/icone-192.png'];
 const HOTES_STATIQUES = ['cdn.jsdelivr.net', 'fonts.googleapis.com', 'fonts.gstatic.com'];
 
 self.addEventListener('install', (evt) => {
@@ -60,12 +60,24 @@ async function cacheRafraichi(requete) {
   return enCache || (await reseau) || Response.error();
 }
 
+/** Images de l'écran d'ouverture : elles ne changent jamais (un nom de fichier = une image) → cache d'abord, réseau seulement la première fois. */
+async function cachePuisReseau(requete) {
+  const cache = await caches.open(CACHE);
+  const enCache = await cache.match(requete);
+  if (enCache) return enCache;
+  const reponse = await fetch(requete);
+  if (reponse && reponse.ok) cache.put(requete, reponse.clone());
+  return reponse;
+}
+
 self.addEventListener('fetch', (evt) => {
   const requete = evt.request;
   if (requete.method !== 'GET') return;
   const url = new URL(requete.url);
 
-  if (url.origin === self.location.origin) {
+  if (url.origin === self.location.origin && url.pathname.includes('/images/ouverture/')) {
+    evt.respondWith(cachePuisReseau(requete));
+  } else if (url.origin === self.location.origin) {
     evt.respondWith(reseauPuisCache(requete));
   } else if (HOTES_STATIQUES.includes(url.hostname)) {
     evt.respondWith(cacheRafraichi(requete));

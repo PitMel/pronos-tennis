@@ -36,6 +36,7 @@ import { htmlClotureAdmin, apercuCloture, messageErreurCloture } from './js/admi
 import { validerMatch, matchPourBase, messageErreurMatch, htmlMatchsAdmin, htmlFormulaireMatch } from './js/admin-matchs.js';
 import { ecransEnAttente, htmlEcranFin, ecransSaisonEnAttente, htmlEcranFinSaison } from './js/ecran-fin.js';
 import { choisirContenu, htmlEcranOuverture } from './js/ecran-ouverture.js';
+import { ecrireCache } from './js/ouverture-cache.js';
 import { regrouperParisTournoi, choisir, brouillonDepuisPariTournoi, messageErreurPariTournoi, contextePariTournoi } from './js/pari-tournoi.js';
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_CLE_PUBLIABLE, {
@@ -1003,8 +1004,19 @@ async function afficherEcranEtAttendre(html) {
  * l'appli : base vide, interrupteur éteint, image qui ne charge pas ou erreur de lecture → on passe directement à la suite.
  */
 async function montrerEcranOuverture() {
+  // Lancement rapide (demarrage.js) : l'écran est déjà affiché depuis la copie de l'appareil ; on la met à jour pour la prochaine
+  // fois (sans attendre) et on attend seulement que le joueur le ferme.
+  const rapide = globalThis.pronosOuverture;
+  if (rapide) {
+    globalThis.pronosOuverture = null;
+    donnees.ecranOuverture().then((liste) => ecrireCache(localStorage, liste)).catch(() => {});
+    await rapide.fermee;
+    return;
+  }
   let contenu;
-  try { contenu = choisirContenu(await donnees.ecranOuverture()); } catch { return; }
+  let liste;
+  try { liste = await donnees.ecranOuverture(); contenu = choisirContenu(liste); } catch { return; }
+  ecrireCache(localStorage, liste); // première ouverture (ou après connexion) : la copie servira dès le prochain lancement
   if (!contenu) return;
   racine.innerHTML = htmlEcranOuverture(contenu);
   window.scrollTo(0, 0);
