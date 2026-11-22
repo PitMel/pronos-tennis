@@ -217,6 +217,12 @@ test('afficheAttendue : règle de Pierre (tour incomplet, moitié du tour termin
   const atpf = tournoi({ categorie: 'atp_finals', tours: [tr('RR1', 4, 2)] });
   assert.equal(afficheAttendue(atpf).attendue, true, 'poule : moitié de RR1 terminée, RR2 pas affiché');
   assert.equal(afficheAttendue(tournoi({ categorie: 'atp_finals', tours: [tr('RR1', 4, 0), tr('RR2', 4, 0), tr('RR3', 4, 0)] })).attendue, false);
+  // tous les matchs du dernier tour affiché sont terminés : le tour suivant doit être cherché (finale des ATP Finals, 22 nov. 2026)
+  assert.equal(afficheAttendue(mm([tr('SF', 2, 2)])).attendue, true, 'deux demi-finales terminées, finale pas affichée');
+  assert.equal(afficheAttendue(mm([tr('R16', 8, 8), tr('QF', 4, 4)])).attendue, true, 'quarts terminés, demi-finales pas affichées');
+  assert.equal(afficheAttendue(tournoi({ categorie: 'atp_finals', tours: [tr('RR1', 4, 4), tr('RR2', 4, 4), tr('RR3', 4, 4)] })).attendue, true, 'poules terminées, demi-finales pas affichées');
+  assert.equal(afficheAttendue(mm([tr('SF', 2, 2), tr('F', 1, 1)])).attendue, false, 'finale terminée : rien à chercher');
+  assert.equal(afficheDue(tournoi({ categorie: 'atp_finals', tours: [tr('RR3', 4, 4), tr('SF', 2, 2)], derniere_decouverte: '2026-11-22T06:00:00Z' }), etat(), d('2026-11-22T08:20:00Z')).due, true, 'ATP Finals dimanche 9 h 20 : finale cherchée');
   // dans afficheDue : même 2 h après la dernière lecture, rien de neuf = pas de lecture ; lecture due si la règle l'autorise
   const now = d('2026-11-07T12:00:00Z');
   const vieille = '2026-11-07T09:00:00Z';

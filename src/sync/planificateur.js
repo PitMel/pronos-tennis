@@ -120,7 +120,8 @@ const attendus = (t, tour) => (tour.startsWith('RR') ? 4 : { R16: 8, QF: 4, SF: 
  * Entrée : t.tours = [{ tour, total, termines }] (matchs connus par tour). Sans cette information : on relit (ancien comportement).
  *  1. aucune affiche connue (le tournoi est dans sa fenêtre de 3 jours, voir tropTotPourLesAffiches) ;
  *  2. un tour déjà affiché est incomplet (moins de matchs que prévu) ;
- *  3. la moitié des matchs du tour en cours sont terminés et le tour suivant n'est pas encore affiché.
+ *  3. la moitié des matchs du tour en cours sont terminés et le tour suivant n'est pas encore affiché ;
+ *  4. tous les matchs du dernier tour affiché sont terminés (hors finale) et le tour suivant n'est pas encore affiché.
  */
 export function afficheAttendue(t) {
   if (!Array.isArray(t.tours)) return { attendue: true, motif: 'information indisponible' };
@@ -134,6 +135,10 @@ export function afficheAttendue(t) {
     const suivantAffiche = tours.some((x) => x.tour === suivant);
     if (!suivantAffiche && courant.termines * 2 >= courant.total) return { attendue: true, motif: `moitié du tour ${courant.tour} terminée` };
   }
+  // 4. tous les matchs du dernier tour affiché sont terminés (ex. les deux demi-finales) et le tour suivant n'est pas encore affiché :
+  //    il faut le chercher (sans cela, la finale n'était jamais relue une fois la seconde demi-finale terminée — 22 nov. 2026)
+  const dernier = tours[tours.length - 1];
+  if (!courant && dernier.tour !== 'F') return { attendue: true, motif: `tour ${dernier.tour} terminé, suivant pas encore affiché` };
   return { attendue: false, motif: 'toutes les affiches utiles sont connues' };
 }
 
