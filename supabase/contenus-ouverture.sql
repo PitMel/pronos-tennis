@@ -13,7 +13,7 @@ insert into public.ecran_ouverture_contenus (type, texte, auteur, source, image_
   ('image', null, null, null, './images/ouverture/sans-legende-2.jpg', true),
   ('image', 'Novak Djokovic - Wimbledon 2024', null, null, './images/ouverture/novak-djokovic-wimbledon-2024.jpg', true),
   ('image', null, null, null, './images/ouverture/sans-legende-1.jpg', true),
-  ('image', 'Big Boys don’t cry 2003', null, null, './images/ouverture/big-boys-dont-cry-2003.jpg', true),
+  ('image', 'Big Boys don’t cry - Laver Cup 2003', null, null, './images/ouverture/big-boys-dont-cry-2003.jpg', true),
   ('image', null, null, null, './images/ouverture/sans-legende-3.jpg', true),
   ('image', null, null, null, './images/ouverture/sans-legende-4.jpg', true),
   ('image', 'Dream of a life Andy Murray 2021', null, null, './images/ouverture/dream-of-a-life-andy-murray-2021.jpg', true);
