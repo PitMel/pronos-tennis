@@ -25,6 +25,14 @@ export function classeTaille(texte) {
   return n <= 90 ? 'court' : n <= 180 ? 'moyen' : 'long';
 }
 
+/**
+ * Légende d'image : chaque « - » entouré d'espaces devient un retour à la ligne (« Roger Federer - Wimbledon 2003 » s'affiche sur deux lignes).
+ * Les traits d'union collés aux mots (« Roland-Garros », « Medvedev-Tiafoe ») ne sont pas touchés. Texte échappé.
+ */
+export function lignesLegende(texte) {
+  return String(texte ?? '').trim().split(/\s+[-–—]\s+/).map(echapper).join('<br>');
+}
+
 /** Page entière, tout est centré, même fond vert que les écrans de fin. Tout l'écran est cliquable (voir app.js). */
 export function htmlEcranOuverture(contenu) {
   const plein = (s) => String(s ?? '').trim();
@@ -34,7 +42,7 @@ export function htmlEcranOuverture(contenu) {
   const taille = `t-${classeTaille(contenu.texte)}`;
   let corps;
   if (contenu.type === 'image') {
-    const legende = plein(contenu.texte) ? `<p class="ouverture-legende">${echapper(contenu.texte)}</p>` : '';
+    const legende = plein(contenu.texte) ? `<p class="ouverture-legende">${lignesLegende(contenu.texte)}</p>` : '';
     corps = `<img class="ouverture-image" src="${echapper(contenu.image_url)}" alt="${echapper(contenu.texte ?? 'Image du tennis')}">${legende}`;
   } else if (contenu.type === 'citation') {
     corps = `<blockquote class="ouverture-citation ${taille}">« ${echapper(contenu.texte)} »</blockquote>`;

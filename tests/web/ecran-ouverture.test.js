@@ -1,7 +1,7 @@
 import test from 'node:test';
 import { readFileSync } from 'node:fs';
 import assert from 'node:assert/strict';
-import { contenuValide, choisirContenu, htmlEcranOuverture, classeTaille } from '../../web/js/ecran-ouverture.js';
+import { contenuValide, choisirContenu, htmlEcranOuverture, classeTaille, lignesLegende } from '../../web/js/ecran-ouverture.js';
 
 const cit = { id: 1, type: 'citation', texte: 'Texte A', auteur: 'Quelqu’un', source: '2010', actif: true };
 const inf = { id: 2, type: 'info', texte: 'Une info', actif: true };
@@ -58,4 +58,16 @@ test('statistique sur plusieurs lignes : les retours à la ligne sont conservés
   assert.match(h, /Titre :\n🥇 A\n🥈 B/);
   const css = readFileSync(new URL('../../web/style.css', import.meta.url), 'utf8');
   assert.match(css, /\.ouverture-info \{[^}]*white-space: pre-line/);
+});
+
+test('légende d’image : chaque « - » entouré d’espaces devient un retour à la ligne, les traits d’union des noms restent', () => {
+  assert.equal(lignesLegende('Roger Federer - Wimbledon 2003'), 'Roger Federer<br>Wimbledon 2003');
+  assert.equal(lignesLegende('Dans 5 ans... - Rafael Nadal Petits As 2000'), 'Dans 5 ans...<br>Rafael Nadal Petits As 2000');
+  assert.equal(lignesLegende('Medvedev-Tiafoe, ATPF 2026'), 'Medvedev-Tiafoe, ATPF 2026', 'trait d’union sans espaces : intact');
+  assert.equal(lignesLegende('Long live the King - Nadal Roland-Garros 2024'), 'Long live the King<br>Nadal Roland-Garros 2024');
+  assert.equal(lignesLegende('Ouch....'), 'Ouch....');
+  assert.equal(lignesLegende('A - <b>B</b>'), 'A<br>&lt;b&gt;B&lt;/b&gt;', 'texte échappé');
+  const h = htmlEcranOuverture({ type: 'image', image_url: 'https://exemple.org/a.jpg', texte: 'Nom - Lieu 2026', actif: true });
+  assert.match(h, /<p class="ouverture-legende">Nom<br>Lieu 2026<\/p>/);
+  assert.match(h, /alt="Nom - Lieu 2026"/, 'le texte alternatif garde la légende d’origine');
 });
