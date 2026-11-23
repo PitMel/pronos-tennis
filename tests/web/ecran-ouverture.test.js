@@ -1,4 +1,5 @@
 import test from 'node:test';
+import { readFileSync } from 'node:fs';
 import assert from 'node:assert/strict';
 import { contenuValide, choisirContenu, htmlEcranOuverture, classeTaille } from '../../web/js/ecran-ouverture.js';
 
@@ -50,4 +51,11 @@ test('classeTaille : court, moyen, long selon le nombre de caractères ; la tail
   assert.equal(classeTaille(null), 'court');
   assert.match(htmlEcranOuverture({ ...cit, texte: 'x'.repeat(200) }), /ouverture-citation t-long/);
   assert.match(htmlEcranOuverture(inf), /ouverture-info t-court/);
+});
+
+test('statistique sur plusieurs lignes : les retours à la ligne sont conservés et la feuille de style les respecte', () => {
+  const h = htmlEcranOuverture({ type: 'info', texte: 'Titre :\n🥇 A\n🥈 B', actif: true });
+  assert.match(h, /Titre :\n🥇 A\n🥈 B/);
+  const css = readFileSync(new URL('../../web/style.css', import.meta.url), 'utf8');
+  assert.match(css, /\.ouverture-info \{[^}]*white-space: pre-line/);
 });

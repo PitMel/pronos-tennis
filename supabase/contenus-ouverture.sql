@@ -82,3 +82,27 @@ insert into public.ecran_ouverture_contenus (type, texte, auteur, source, image_
   ('info', '👑 29 joueuses ont été n° 1 mondiales WTA. Au cours de sa carrière, Serena Williams a battu au moins une fois 23 d’entre elles. Elle n’a jamais affronté les 5 joueuses qui manquent à son tableau de chasse.', null, null, null, true),
   ('info', '🟠 Rafael Nadal a remporté plus de titres sur terre battue qu’il n’a perdu de matchs sur cette surface.', null, null, null, true),
   ('info', '🎾 Dans 49,7 % des matchs ATP et 54,1 % des matchs WTA, le vainqueur du premier point a finalement remporté le match.', null, null, null, true);
+
+-- Images fournies par Pierre (23 nov. 2026) ; le nom du fichier est la légende, un simple chiffre = pas de légende
+insert into public.ecran_ouverture_contenus (type, texte, auteur, source, image_url, actif) values
+  ('image', 'Tous à l’école de Rafa - 2026', null, null, './images/ouverture/tous-a-l-ecole-de-rafa-2026.jpg', true),
+  ('image', 'C’est à moi que tu parles ?! - Flavio Cobolli 2026', null, null, './images/ouverture/cobolli-c-est-a-moi-que-tu-parles-2026.jpg', true),
+  ('image', 'Ouch....', null, null, './images/ouverture/ouch.jpg', true),
+  ('image', 'Long live the King - Nadal Roland Garros 2024', null, null, './images/ouverture/long-live-the-king-nadal-roland-garros-2024.jpg', true),
+  ('image', null, null, null, './images/ouverture/sans-legende-5.jpg', true),
+  ('image', null, null, null, './images/ouverture/sans-legende-6.jpg', true),
+  ('image', 'King of Clay is born - Nadal Roland Garros 2005', null, null, './images/ouverture/king-of-clay-is-born-nadal-roland-garros-2005.jpg', true),
+  ('image', 'La Résurrection - Roger Federer Open d’Australie 2017', null, null, './images/ouverture/la-resurrection-roger-federer-open-d-australie-2017.jpg', true),
+  ('image', 'Dans 5 ans... - Rafael Nadal Petits As 2000', null, null, './images/ouverture/dans-5-ans-rafael-nadal-petits-as-2000.jpg', true),
+  ('image', 'Dieu qu’il était laid - Roger Federer Marseille Open 2000', null, null, './images/ouverture/dieu-qu-il-etait-laid-roger-federer-marseille-open-2000.jpg', true);
+
+-- Statistiques ajoutées le 23 nov. 2026 (retours à la ligne respectés à l'affichage)
+insert into public.ecran_ouverture_contenus (type, texte, auteur, source, image_url, actif) values
+  ('info', '🏆 Meilleur ratio titres / participations en Grand Chelem (hors forfaits) :
+🥇 Björn Borg : 11/27 (40,7 %)
+🥈 Rafael Nadal : 22/66 (33,3 %)
+🥉 Novak Djokovic : 24/84 (28,6 %)
+4️⃣ Pete Sampras : 14/52 (26,9 %)
+5️⃣ Roger Federer : 20/80 (25,0 %)
+6️⃣ John McEnroe : 7/45 (15,6 %)', null, 'Chiffres de Novak Djokovic à fin 2026', null, true),
+  ('info', '🤕 Sur ses 21 années de joueur professionnel (hors pandémie), Rafael Nadal a déclaré forfait 7 fois à Wimbledon, soit une année sur trois. En comparaison : 6 fois à l’US Open, et 4 fois à Roland-Garros comme à l’Open d’Australie.', null, null, null, true);
