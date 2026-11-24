@@ -106,3 +106,30 @@ insert into public.ecran_ouverture_contenus (type, texte, auteur, source, image_
 5️⃣ Roger Federer : 20/80 (25,0 %)
 6️⃣ John McEnroe : 7/45 (15,6 %)', null, 'Chiffres de Novak Djokovic à fin 2026', null, true),
   ('info', '🤕 Sur ses 21 années de joueur professionnel (hors pandémie), Rafael Nadal a déclaré forfait 7 fois à Wimbledon, soit une année sur trois. En comparaison : 6 fois à l’US Open, et 4 fois à Roland-Garros comme à l’Open d’Australie.', null, null, null, true);
+
+-- Statistiques ajoutées le 24 nov. 2026 (séries en Grand Chelem d'après les tableaux de Pierre ; podium en Masters 1000)
+insert into public.ecran_ouverture_contenus (type, texte, auteur, source, image_url, actif) values
+  ('info', '🏆 Séries record de finales consécutives disputées en Grand Chelem (hommes) :
+🥇 Roger Federer : 10 (2005-2007)
+🥈 Roger Federer : 8 (2008-2010)
+🥉 Novak Djokovic : 6 (2015-2016)
+4️⃣ Rafael Nadal : 5 (2011-2012)
+4️⃣ Novak Djokovic : 5 (2020-2021)
+4️⃣ Jannik Sinner : 5 (2024-2025)', null, null, null, true),
+  ('info', '🏆 Séries record de demi-finales consécutives disputées en Grand Chelem (hommes) :
+🥇 Roger Federer : 23 (2004-2010)
+🥈 Novak Djokovic : 14 (2010-2013)
+🥉 Ivan Lendl : 10 (1985-1988)
+4️⃣ Novak Djokovic : 9 (2014-2016)
+5️⃣ Rafael Nadal : 7 (2018-2019)
+6️⃣ Ivan Lendl : 6 (1983-1984)
+6️⃣ Jannik Sinner : 6 (2024-2026)', null, null, null, true),
+  ('info', '🏆 Séries record de quarts de finale consécutifs disputés en Grand Chelem (hommes) :
+🥇 Roger Federer : 36 (2004-2013)
+🥈 Novak Djokovic : 28 (2009-2016)
+🥉 Ivan Lendl : 14 (1985-1989)
+4️⃣ Rafael Nadal : 11 (2009-2012)', null, null, null, true),
+  ('info', '🏆 En Masters 1000, Djokovic, Nadal et Federer occupent le podium, toujours dans cet ordre, pour les records de titres, de finales, de demi-finales, de matchs joués et de matchs remportés :
+🥇 Novak Djokovic
+🥈 Rafael Nadal
+🥉 Roger Federer', null, null, null, true);

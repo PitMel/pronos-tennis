@@ -21,7 +21,7 @@ test('le script d’insertion est valide, rend des contenus complets, et toutes 
   assert.equal(nb('image', true), 22);
   assert.equal(nb('citation', true), 48);
   assert.equal(nb('citation', false), 0);
-  assert.equal(nb('info', true), 10);
+  assert.equal(nb('info', true), 14);
   assert.equal(nb('info', false), 0);
   assert.ok(rows.some((r) => r.texte?.startsWith('Pendant l’ère Open, aucun joueur')), 'la statistique précise l’ère Open');
   for (const r of rows.filter((x) => x.type === 'image')) {
@@ -37,6 +37,14 @@ test('le script d’insertion est valide, rend des contenus complets, et toutes 
   assert.deepEqual(pourcents, [40.7, 33.3, 28.6, 26.9, 25.0, 15.6], 'classement des ratios, ordre décroissant');
   assert.match(classement.texte, /🥇 Björn Borg : 11\/27/);
   assert.ok(rows.some((r) => r.texte?.includes('forfait 7 fois à Wimbledon')));
+  for (const debut of ['🏆 Séries record de finales', '🏆 Séries record de demi-finales', '🏆 Séries record de quarts de finale']) {
+    const s = rows.find((r) => r.texte?.startsWith(debut));
+    assert.ok(s, `statistique manquante : ${debut}`);
+    const series = [...s.texte.matchAll(/ : (\d+) \(/g)].map((m) => Number(m[1]));
+    assert.ok(series.length >= 4, `${debut} : au moins quatre lignes`);
+    assert.deepEqual(series, [...series].sort((a, b) => b - a), `${debut} : ordre décroissant`);
+  }
+  assert.ok(rows.some((r) => r.texte?.includes('Masters 1000, Djokovic, Nadal et Federer occupent le podium')), 'podium Masters 1000');
   const { rows: reglage } = await db.query('select actif from public.ecran_ouverture_reglage');
   assert.deepEqual(reglage, [{ actif: false }], 'le script n’allume pas l’interrupteur');
 });
