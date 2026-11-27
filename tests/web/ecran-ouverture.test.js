@@ -71,3 +71,16 @@ test('légende d’image : chaque « - » entouré d’espaces devient un retour
   assert.match(h, /<p class="ouverture-legende">Nom<br>Lieu 2026<\/p>/);
   assert.match(h, /alt="Nom - Lieu 2026"/, 'le texte alternatif garde la légende d’origine');
 });
+
+test('image : le titre reste visible, joueur / année / lieu / tournoi passent en détails très discrets', () => {
+  const h = htmlEcranOuverture({ type: 'image', image_url: 'https://exemple.org/a.jpg', texte: 'Dans 5 ans...', source: 'Rafael Nadal Petits As 2000', actif: true });
+  assert.match(h, /<p class="ouverture-legende">Dans 5 ans\.\.\.<\/p>\s*<p class="ouverture-details">Rafael Nadal Petits As 2000<\/p>/);
+  assert.doesNotMatch(h, /ouverture-source|ouverture-signature/, 'pas de doublon avec la signature');
+  assert.match(h, /alt="Dans 5 ans\.\.\. - Rafael Nadal Petits As 2000"/);
+  const seul = htmlEcranOuverture({ type: 'image', image_url: 'https://exemple.org/a.jpg', source: 'Roger Federer - Wimbledon 2003', actif: true });
+  assert.doesNotMatch(seul, /ouverture-legende/);
+  assert.match(seul, /<p class="ouverture-details">Roger Federer<br>Wimbledon 2003<\/p>/);
+  const css = readFileSync(new URL('../../web/style.css', import.meta.url), 'utf8');
+  assert.match(css, /\.ouverture-details \{[^}]*font-size: \.8rem/);
+  assert.match(css, /\.ouverture-details \{[^}]*opacity: \.6/);
+});

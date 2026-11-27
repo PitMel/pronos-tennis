@@ -38,12 +38,16 @@ export function htmlEcranOuverture(contenu) {
   const plein = (s) => String(s ?? '').trim();
   const auteur = plein(contenu.auteur) ? `<p class="ouverture-auteur">${echapper(contenu.auteur)}</p>` : '';
   const contexte = plein(contenu.source) ? `<p class="ouverture-source">${echapper(contenu.source)}</p>` : '';
-  const signature = auteur || contexte ? `<div class="ouverture-signature">${auteur}${contexte}</div>` : '';
+  // image : sa « source » devient les détails très discrets sous la légende (voir plus bas), pas la signature
+  const signature = contenu.type !== 'image' && (auteur || contexte) ? `<div class="ouverture-signature">${auteur}${contexte}</div>` : '';
   const taille = `t-${classeTaille(contenu.texte)}`;
   let corps;
   if (contenu.type === 'image') {
+    // texte = titre de la photo (visible) ; source = joueur, année, lieu, tournoi (très discret, sous le titre)
     const legende = plein(contenu.texte) ? `<p class="ouverture-legende">${lignesLegende(contenu.texte)}</p>` : '';
-    corps = `<img class="ouverture-image" src="${echapper(contenu.image_url)}" alt="${echapper(contenu.texte ?? 'Image du tennis')}">${legende}`;
+    const details = plein(contenu.source) ? `<p class="ouverture-details">${lignesLegende(contenu.source)}</p>` : '';
+    const alt = [plein(contenu.texte), plein(contenu.source)].filter(Boolean).join(' - ') || 'Image du tennis';
+    corps = `<img class="ouverture-image" src="${echapper(contenu.image_url)}" alt="${echapper(alt)}">${legende}${details}`;
   } else if (contenu.type === 'citation') {
     corps = `<blockquote class="ouverture-citation ${taille}">« ${echapper(contenu.texte)} »</blockquote>`;
   } else {

@@ -5,18 +5,18 @@
 
 -- Images fournies par Pierre (21 nov. 2026) ; le nom du fichier est la légende, un simple chiffre = pas de légende
 insert into public.ecran_ouverture_contenus (type, texte, auteur, source, image_url, actif) values
-  ('image', 'Medvedev-Tiafoe, ATPF 2026', null, null, './images/ouverture/medvedev-tiafoe-atpf-2026.jpg', true),
-  ('image', 'Roger Federer - Wimbledon 2003', null, null, './images/ouverture/federer-wimbledon-2003.jpg', true),
-  ('image', 'Carlos Alcaraz - Wimbledon 2025', null, null, './images/ouverture/alcaraz-wimbledon-2025.jpg', true),
-  ('image', 'La Monf as Superman 2021', null, null, './images/ouverture/la-monf-as-superman-2021.jpg', true),
-  ('image', 'Roger Federer - Roland Garros 2009', null, null, './images/ouverture/roger-federer-roland-garros-2009.jpg', true),
+  ('image', null, null, 'Medvedev-Tiafoe, ATPF 2026', './images/ouverture/medvedev-tiafoe-atpf-2026.jpg', true),
+  ('image', null, null, 'Roger Federer - Wimbledon 2003', './images/ouverture/federer-wimbledon-2003.jpg', true),
+  ('image', null, null, 'Carlos Alcaraz - Wimbledon 2025', './images/ouverture/alcaraz-wimbledon-2025.jpg', true),
+  ('image', 'La Monf as Superman', null, '2021', './images/ouverture/la-monf-as-superman-2021.jpg', true),
+  ('image', null, null, 'Roger Federer - Roland Garros 2009', './images/ouverture/roger-federer-roland-garros-2009.jpg', true),
   ('image', null, null, null, './images/ouverture/sans-legende-2.jpg', true),
-  ('image', 'Novak Djokovic - Wimbledon 2024', null, null, './images/ouverture/novak-djokovic-wimbledon-2024.jpg', true),
+  ('image', null, null, 'Novak Djokovic - Wimbledon 2024', './images/ouverture/novak-djokovic-wimbledon-2024.jpg', true),
   ('image', null, null, null, './images/ouverture/sans-legende-1.jpg', true),
-  ('image', 'Big Boys don’t cry - Laver Cup 2022', null, null, './images/ouverture/big-boys-dont-cry-2003.jpg', true),
+  ('image', 'Big Boys don’t cry', null, 'Laver Cup 2022', './images/ouverture/big-boys-dont-cry-2003.jpg', true),
   ('image', null, null, null, './images/ouverture/sans-legende-3.jpg', true),
   ('image', null, null, null, './images/ouverture/sans-legende-4.jpg', true),
-  ('image', 'Dream of a life Andy Murray 2021', null, null, './images/ouverture/dream-of-a-life-andy-murray-2021.jpg', true);
+  ('image', 'Dream of a life', null, 'Andy Murray 2021', './images/ouverture/dream-of-a-life-andy-murray-2021.jpg', true);
 
 -- Citations (21 nov. 2026)
 insert into public.ecran_ouverture_contenus (type, texte, auteur, source, image_url, actif) values
@@ -85,16 +85,16 @@ insert into public.ecran_ouverture_contenus (type, texte, auteur, source, image_
 
 -- Images fournies par Pierre (23 nov. 2026) ; le nom du fichier est la légende, un simple chiffre = pas de légende
 insert into public.ecran_ouverture_contenus (type, texte, auteur, source, image_url, actif) values
-  ('image', 'Tous à l’école de Rafa - 2026', null, null, './images/ouverture/tous-a-l-ecole-de-rafa-2026.jpg', true),
-  ('image', 'C’est à moi que tu parles ?! - Flavio Cobolli 2026', null, null, './images/ouverture/cobolli-c-est-a-moi-que-tu-parles-2026.jpg', true),
+  ('image', 'Tous à l’école de Rafa', null, '2026', './images/ouverture/tous-a-l-ecole-de-rafa-2026.jpg', true),
+  ('image', 'C’est à moi que tu parles ?!', null, 'Flavio Cobolli 2026', './images/ouverture/cobolli-c-est-a-moi-que-tu-parles-2026.jpg', true),
   ('image', 'Ouch....', null, null, './images/ouverture/ouch.jpg', true),
-  ('image', 'Long live the King - Nadal Roland Garros 2024', null, null, './images/ouverture/long-live-the-king-nadal-roland-garros-2024.jpg', true),
+  ('image', 'Long live the King', null, 'Nadal Roland Garros 2024', './images/ouverture/long-live-the-king-nadal-roland-garros-2024.jpg', true),
   ('image', null, null, null, './images/ouverture/sans-legende-5.jpg', true),
   ('image', null, null, null, './images/ouverture/sans-legende-6.jpg', true),
-  ('image', 'King of Clay is born - Nadal Roland Garros 2005', null, null, './images/ouverture/king-of-clay-is-born-nadal-roland-garros-2005.jpg', true),
-  ('image', 'La Résurrection - Roger Federer Open d’Australie 2017', null, null, './images/ouverture/la-resurrection-roger-federer-open-d-australie-2017.jpg', true),
-  ('image', 'Dans 5 ans... - Rafael Nadal Petits As 2000', null, null, './images/ouverture/dans-5-ans-rafael-nadal-petits-as-2000.jpg', true),
-  ('image', 'Dieu qu’il était laid - Roger Federer Marseille Open 2000', null, null, './images/ouverture/dieu-qu-il-etait-laid-roger-federer-marseille-open-2000.jpg', true);
+  ('image', 'King of Clay is born', null, 'Nadal Roland Garros 2005', './images/ouverture/king-of-clay-is-born-nadal-roland-garros-2005.jpg', true),
+  ('image', 'La Résurrection', null, 'Roger Federer Open d’Australie 2017', './images/ouverture/la-resurrection-roger-federer-open-d-australie-2017.jpg', true),
+  ('image', 'Dans 5 ans...', null, 'Rafael Nadal Petits As 2000', './images/ouverture/dans-5-ans-rafael-nadal-petits-as-2000.jpg', true),
+  ('image', 'Dieu qu’il était laid', null, 'Roger Federer Marseille Open 2000', './images/ouverture/dieu-qu-il-etait-laid-roger-federer-marseille-open-2000.jpg', true);
 
 -- Statistiques ajoutées le 23 nov. 2026 (retours à la ligne respectés à l'affichage)
 insert into public.ecran_ouverture_contenus (type, texte, auteur, source, image_url, actif) values
@@ -133,3 +133,6 @@ insert into public.ecran_ouverture_contenus (type, texte, auteur, source, image_
 🥇 Novak Djokovic
 🥈 Rafael Nadal
 🥉 Roger Federer', null, null, null, true);
+
+-- Légendes d'images (25 nov. 2026) : le titre reste dans « texte » (visible), joueur / année / lieu / tournoi passent dans « source » (très discret).
+-- Les lignes d'images ci-dessus sont déjà dans cet état final ; pour une base déjà remplie, voir la mise à jour faite le 27 nov. 2026 (ETAT.md).

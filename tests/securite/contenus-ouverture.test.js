@@ -16,7 +16,7 @@ test('le script d’insertion est valide, rend des contenus complets, et toutes 
   const dossier = join(racine, 'supabase', 'migrations');
   for (const f of readdirSync(dossier).filter((n) => n.endsWith('.sql')).sort()) await db.exec(readFileSync(join(dossier, f), 'utf8'));
   await db.exec(readFileSync(join(racine, 'supabase', 'contenus-ouverture.sql'), 'utf8'));
-  const { rows } = await db.query('select type, texte, image_url, actif from public.ecran_ouverture_contenus');
+  const { rows } = await db.query('select type, texte, source, image_url, actif from public.ecran_ouverture_contenus');
   const nb = (t, actif) => rows.filter((r) => r.type === t && r.actif === actif).length;
   assert.equal(nb('image', true), 22);
   assert.equal(nb('citation', true), 48);
@@ -30,8 +30,14 @@ test('le script d’insertion est valide, rend des contenus complets, et toutes 
   }
   assert.ok(rows.some((r) => r.texte?.includes('Ça fait un record')), 'les apostrophes et accents sont conservés');
   const cobolli = rows.find((r) => r.image_url?.includes('cobolli'));
-  assert.equal(cobolli.texte, 'C’est à moi que tu parles\u00a0?! - Flavio Cobolli 2026');
-  assert.equal(rows.filter((r) => r.type === 'image' && r.texte === null).length, 6, 'six images sans légende');
+  assert.equal(cobolli.texte, 'C’est à moi que tu parles ?!');
+  assert.equal(cobolli.source, 'Flavio Cobolli 2026', 'détails (joueur, année) séparés du titre');
+  const images = rows.filter((r) => r.type === 'image');
+  assert.equal(images.filter((r) => r.texte === null && r.source === null).length, 6, 'six images sans légende');
+  assert.equal(images.filter((r) => r.texte === null && r.source !== null).length, 5, 'cinq images avec détails seulement');
+  assert.equal(images.filter((r) => r.texte !== null && r.source !== null).length, 10, 'dix images avec titre et détails');
+  assert.equal(images.filter((r) => r.texte !== null && r.source === null).length, 1, '« Ouch.... » : titre seul');
+  assert.ok(images.every((r) => !/\s-\s/.test(r.texte ?? '')), 'plus de « - » dans les titres : le reste est dans les détails');
   const classement = rows.find((r) => r.texte?.startsWith('🏆 Meilleur ratio'));
   const pourcents = [...classement.texte.matchAll(/\((\d+,\d)\u00a0%\)/g)].map((m) => Number(m[1].replace(',', '.')));
   assert.deepEqual(pourcents, [40.7, 33.3, 28.6, 26.9, 25.0, 15.6], 'classement des ratios, ordre décroissant');
